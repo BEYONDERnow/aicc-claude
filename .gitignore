@@ -1,0 +1,26 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node (falls später hinzugefügt)
+node_modules/
+npm-debug.log
+package-lock.json
+
+# Build artifacts
+dist/
+build/
+
+# Extension packaging
+*.zip
+*.crx
+*.pem
+
+# Logs
+*.log

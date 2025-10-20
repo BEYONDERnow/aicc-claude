@@ -1,0 +1,517 @@
+/**
+ * AI Compliance Checker - Styles
+ * Styling für Status-Indikatoren, Tooltips und Modal
+ */
+
+/* ===========================
+   Status Indikator
+   =========================== */
+
+.aicc-status-indicator {
+  position: fixed;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+}
+
+.aicc-status-indicator[data-status="safe"] {
+  background: #10b981;
+}
+
+.aicc-status-indicator[data-status="warning"] {
+  background: #f59e0b;
+  animation: pulse-warning 2s ease-in-out infinite;
+}
+
+.aicc-status-indicator[data-status="critical"] {
+  background: #ef4444;
+  animation: pulse-critical 1s ease-in-out infinite;
+}
+
+.aicc-status-circle {
+  fill: currentColor;
+}
+
+.aicc-status-indicator svg {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+/* Pulse Animationen */
+@keyframes pulse-warning {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  50% {
+    box-shadow: 0 2px 16px rgba(245, 158, 11, 0.5);
+  }
+}
+
+@keyframes pulse-critical {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  50% {
+    box-shadow: 0 2px 20px rgba(239, 68, 68, 0.6);
+  }
+}
+
+/* ===========================
+   Tooltip
+   =========================== */
+
+.aicc-tooltip {
+  position: fixed;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 16px;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  z-index: 10001;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  display: none;
+}
+
+.aicc-tooltip-header {
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 15px;
+}
+
+.aicc-tooltip-safe {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.aicc-tooltip-items {
+  margin-top: 8px;
+}
+
+.aicc-tooltip-category {
+  margin-bottom: 12px;
+}
+
+.aicc-tooltip-category:last-child {
+  margin-bottom: 0;
+}
+
+.aicc-tooltip-category strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #374151;
+}
+
+.aicc-tooltip-category ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.aicc-tooltip-category li {
+  margin: 4px 0;
+  color: #6b7280;
+}
+
+.aicc-severity-critical {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.aicc-severity-warning {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+/* ===========================
+   Modal
+   =========================== */
+
+.aicc-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.aicc-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.aicc-modal-content {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  animation: modal-appear 0.3s ease-out;
+}
+
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.aicc-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.aicc-modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aicc-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.aicc-modal-close:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.aicc-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.aicc-modal-intro {
+  margin: 0 0 20px 0;
+  color: #374151;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.aicc-modal-warning {
+  margin-top: 20px;
+  padding: 12px 16px;
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #92400e;
+}
+
+.aicc-modal-warning strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.aicc-detection-list {
+  margin: 0;
+}
+
+.aicc-detection-group {
+  margin-bottom: 20px;
+  padding: 16px;
+  border-radius: 8px;
+  border: 2px solid;
+}
+
+.aicc-detection-group:last-child {
+  margin-bottom: 0;
+}
+
+.aicc-detection-critical {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+.aicc-detection-warning {
+  background: #fffbeb;
+  border-color: #f59e0b;
+}
+
+.aicc-detection-group h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.aicc-detection-critical h3 {
+  color: #991b1b;
+}
+
+.aicc-detection-warning h3 {
+  color: #92400e;
+}
+
+.aicc-detection-group ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.aicc-detection-group li {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.aicc-detection-group code {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.aicc-detection-group small {
+  display: block;
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.aicc-modal-footer {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+  justify-content: flex-end;
+}
+
+/* ===========================
+   Buttons
+   =========================== */
+
+.aicc-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.aicc-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.aicc-btn-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.aicc-btn-primary:hover {
+  background: #2563eb;
+}
+
+.aicc-btn-secondary {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.aicc-btn-secondary:hover {
+  background: #d1d5db;
+}
+
+.aicc-btn-warning {
+  background: #f59e0b;
+  color: white;
+}
+
+.aicc-btn-warning:hover {
+  background: #d97706;
+}
+
+/* ===========================
+   Responsive
+   =========================== */
+
+@media (max-width: 640px) {
+  .aicc-modal-content {
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .aicc-modal-header {
+    padding: 16px;
+  }
+
+  .aicc-modal-header h2 {
+    font-size: 18px;
+  }
+
+  .aicc-modal-body {
+    padding: 16px;
+  }
+
+  .aicc-modal-footer {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+  }
+
+  .aicc-btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .aicc-tooltip {
+    max-width: 300px;
+    font-size: 13px;
+  }
+}
+
+/* ===========================
+   Dark Mode Support
+   =========================== */
+
+@media (prefers-color-scheme: dark) {
+  .aicc-tooltip {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f3f4f6;
+  }
+
+  .aicc-tooltip-header {
+    border-bottom-color: #374151;
+  }
+
+  .aicc-tooltip-category strong {
+    color: #f3f4f6;
+  }
+
+  .aicc-tooltip-category li {
+    color: #d1d5db;
+  }
+
+  .aicc-modal-content {
+    background: #1f2937;
+    color: #f3f4f6;
+  }
+
+  .aicc-modal-header {
+    background: #111827;
+    border-bottom-color: #374151;
+  }
+
+  .aicc-modal-header h2 {
+    color: #f3f4f6;
+  }
+
+  .aicc-modal-close {
+    color: #9ca3af;
+  }
+
+  .aicc-modal-close:hover {
+    background: #374151;
+    color: #f3f4f6;
+  }
+
+  .aicc-modal-body {
+    color: #d1d5db;
+  }
+
+  .aicc-modal-intro {
+    color: #d1d5db;
+  }
+
+  .aicc-modal-footer {
+    background: #111827;
+    border-top-color: #374151;
+  }
+
+  .aicc-detection-critical {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+  }
+
+  .aicc-detection-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: #f59e0b;
+  }
+
+  .aicc-detection-critical h3 {
+    color: #fca5a5;
+  }
+
+  .aicc-detection-warning h3 {
+    color: #fcd34d;
+  }
+
+  .aicc-detection-group code {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f3f4f6;
+  }
+
+  .aicc-detection-group small {
+    color: #9ca3af;
+  }
+
+  .aicc-btn-secondary {
+    background: #374151;
+    color: #f3f4f6;
+  }
+
+  .aicc-btn-secondary:hover {
+    background: #4b5563;
+  }
+
+  .aicc-modal-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: #f59e0b;
+    color: #fcd34d;
+  }
+}
