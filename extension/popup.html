@@ -12,191 +12,319 @@
     }
 
     body {
-      width: 320px;
+      width: 360px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      padding: 16px;
-      background: #f9fafb;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
 
     .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 24px 20px;
       text-align: center;
-      margin-bottom: 20px;
     }
 
-    .header h1 {
-      font-size: 18px;
-      color: #111827;
-      margin-bottom: 4px;
-    }
-
-    .header p {
-      font-size: 12px;
-      color: #6b7280;
-    }
-
-    .status {
-      background: white;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    .status-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+    .header-icon {
+      font-size: 48px;
       margin-bottom: 12px;
     }
 
-    .status-item:last-child {
-      margin-bottom: 0;
+    .header h1 {
+      font-size: 20px;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .header .beta {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.3);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-left: 8px;
+    }
+
+    .header p {
+      font-size: 13px;
+      opacity: 0.95;
+      margin-top: 8px;
+    }
+
+    .content {
+      background: white;
+      padding: 20px;
+    }
+
+    .status {
+      background: #f0fdf4;
+      border: 2px solid #10b981;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
     .status-icon {
-      width: 32px;
-      height: 32px;
+      width: 40px;
+      height: 40px;
+      background: #10b981;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 20px;
       flex-shrink: 0;
     }
 
-    .status-icon.active {
-      background: #10b981;
-      color: white;
-    }
-
-    .status-icon.inactive {
-      background: #e5e7eb;
-      color: #9ca3af;
-    }
-
     .status-text h3 {
-      font-size: 14px;
-      color: #111827;
-      margin-bottom: 2px;
+      font-size: 15px;
+      color: #065f46;
+      margin-bottom: 4px;
     }
 
     .status-text p {
+      font-size: 13px;
+      color: #047857;
+    }
+
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section h2 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .platforms {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .platform-badge {
+      background: #f3f4f6;
+      color: #374151;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid #e5e7eb;
+    }
+
+    .features {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .feature {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .feature:last-child {
+      margin-bottom: 0;
+    }
+
+    .feature-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .feature-text {
+      flex: 1;
+    }
+
+    .feature-text h4 {
+      font-size: 13px;
+      color: #111827;
+      margin-bottom: 2px;
+      font-weight: 600;
+    }
+
+    .feature-text p {
       font-size: 12px;
       color: #6b7280;
+      line-height: 1.4;
     }
 
-    .info {
-      background: #dbeafe;
-      border: 1px solid #3b82f6;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 16px;
+    .privacy-badge {
+      background: linear-gradient(135deg, #dcfce7 0%, #d1fae5 100%);
+      border: 2px solid #10b981;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      margin-bottom: 20px;
     }
 
-    .info h3 {
-      font-size: 13px;
-      color: #1e40af;
-      margin-bottom: 6px;
+    .privacy-badge .icon {
+      font-size: 24px;
+      margin-bottom: 8px;
     }
 
-    .info ul {
-      margin: 0;
-      padding-left: 20px;
-    }
-
-    .info li {
-      font-size: 12px;
-      color: #1e40af;
-      margin: 4px 0;
-    }
-
-    .privacy {
-      background: #dcfce7;
-      border: 1px solid #10b981;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 16px;
-    }
-
-    .privacy h3 {
-      font-size: 13px;
+    .privacy-badge h3 {
+      font-size: 14px;
       color: #065f46;
       margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      font-weight: 700;
     }
 
-    .privacy p {
+    .privacy-badge p {
       font-size: 12px;
-      color: #065f46;
+      color: #047857;
       line-height: 1.5;
     }
 
     .footer {
+      background: #f9fafb;
+      padding: 20px;
       text-align: center;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .footer .branding {
+      font-size: 14px;
+      color: #374151;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .footer .branding strong {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .footer .compliance {
       font-size: 11px;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+
+    .footer .version {
+      font-size: 10px;
       color: #9ca3af;
     }
 
-    .footer a {
-      color: #3b82f6;
-      text-decoration: none;
-    }
-
-    .footer a:hover {
-      text-decoration: underline;
+    .divider {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 20px 0;
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>🛡️ AI Compliance Checker</h1>
+    <div class="header-icon">🛡️</div>
+    <h1>
+      AI Compliance Checker
+      <span class="beta">BETA</span>
+    </h1>
     <p>Lokaler Datenschutz für KI-Plattformen</p>
   </div>
 
-  <div class="status">
-    <div class="status-item">
-      <div class="status-icon active">✓</div>
+  <div class="content">
+    <div class="status">
+      <div class="status-icon">✓</div>
       <div class="status-text">
-        <h3>Aktiv und überwacht</h3>
+        <h3>Aktiv & Überwacht</h3>
         <p>Extension läuft im Hintergrund</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Unterstützte Plattformen</h2>
+      <div class="platforms">
+        <div class="platform-badge">💬 ChatGPT</div>
+        <div class="platform-badge">🤖 Claude</div>
+        <div class="platform-badge">✨ Gemini</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <h2>Funktionen</h2>
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-text">
+            <h4>Echtzeit-Analyse</h4>
+            <p>Live-Erkennung während des Tippens</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🎯</div>
+          <div class="feature-text">
+            <h4>Inline-Markierung</h4>
+            <p>Sensible Daten werden direkt im Text hervorgehoben</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📊</div>
+          <div class="feature-text">
+            <h4>Detaillierte Übersicht</h4>
+            <p>Klickbare Statistiken mit Tabellenansicht</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🚦</div>
+          <div class="feature-text">
+            <h4>3-Stufen-Warnsystem</h4>
+            <p>Grün (sicher), Orange (Warnung), Rot (kritisch)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="privacy-badge">
+      <div class="icon">🔒</div>
+      <h3>100% Datenschutz garantiert</h3>
+      <p>Alle Prüfungen erfolgen lokal in Ihrem Browser.<br>Keine Daten werden an Server gesendet.</p>
+    </div>
+
+    <div class="section">
+      <h2>Erkannte Datentypen</h2>
+      <div style="font-size: 12px; color: #6b7280; line-height: 1.8;">
+        • E-Mail-Adressen<br>
+        • Telefonnummern (CH/DE/International)<br>
+        • IBAN & Kreditkarten<br>
+        • AHV-Nummern (Schweiz)<br>
+        • IP-Adressen<br>
+        • Schweizer Postleitzahlen<br>
+        • Namen (kontextbasiert)<br>
+        • Passwörter & API-Keys<br>
+        • Vertrauliche Informationen
       </div>
     </div>
   </div>
 
-  <div class="info">
-    <h3>Unterstützte Plattformen:</h3>
-    <ul>
-      <li>ChatGPT (OpenAI)</li>
-      <li>Claude (Anthropic)</li>
-      <li>Gemini (Google)</li>
-    </ul>
-  </div>
-
-  <div class="privacy">
-    <h3>🔒 100% Datenschutz</h3>
-    <p>
-      Alle Prüfungen erfolgen lokal in Ihrem Browser.
-      Keine Daten werden an Server gesendet.
-    </p>
-  </div>
-
-  <div class="info">
-    <h3>Erkannte Datentypen:</h3>
-    <ul>
-      <li>E-Mail-Adressen</li>
-      <li>Telefonnummern</li>
-      <li>IBAN & Kreditkarten</li>
-      <li>AHV-Nummern (CH)</li>
-      <li>Passwörter & API-Keys</li>
-      <li>Namen & Adressen</li>
-      <li>Vertrauliche Informationen</li>
-    </ul>
-  </div>
-
   <div class="footer">
-    <p>DSGVO & DSG konform</p>
+    <div class="branding">
+      AI Compliance Checker by <strong>BEYONDER</strong>
+    </div>
+    <div class="compliance">
+      DSGVO & DSG konform • 100% lokal • Keine Telemetrie
+    </div>
+    <div class="version">
+      Version 1.0.0 BETA
+    </div>
   </div>
 
   <script src="popup.js"></script>

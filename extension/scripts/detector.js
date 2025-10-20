@@ -1,5 +1,6 @@
 /**
  * AI Compliance Checker - Detection Engine
+ * Beta by BEYONDER
  * Erkennt personenbezogene und sensible Daten in Text-Eingaben
  * 100% lokal, keine Server-Kommunikation
  */
@@ -8,6 +9,41 @@ class ComplianceDetector {
   constructor() {
     this.patterns = this.initializePatterns();
     this.translations = this.initializeTranslations();
+    this.nameBlacklist = this.initializeNameBlacklist();
+  }
+
+  /**
+   * Initialisiert Blacklist für häufige Wörter die keine Namen sind
+   */
+  initializeNameBlacklist() {
+    return new Set([
+      // Allgemeine Begriffe
+      'general', 'manager', 'director', 'officer', 'agent', 'assistant', 'consultant',
+      'specialist', 'coordinator', 'administrator', 'supervisor', 'representative',
+      'first', 'second', 'third', 'last', 'next', 'previous', 'current', 'former',
+      'senior', 'junior', 'chief', 'head', 'lead', 'principal', 'vice', 'deputy',
+
+      // Titel
+      'mister', 'misses', 'doctor', 'professor', 'lieutenant', 'captain', 'major',
+      'colonel', 'sergeant', 'private', 'master', 'miss',
+
+      // KI/Tech Begriffe
+      'artificial', 'intelligence', 'machine', 'learning', 'deep', 'neural', 'network',
+      'model', 'system', 'algorithm', 'data', 'science', 'computer', 'software',
+      'hardware', 'internet', 'digital', 'virtual', 'cyber', 'online',
+
+      // Häufige Adjektive
+      'great', 'good', 'bad', 'nice', 'beautiful', 'wonderful', 'excellent',
+      'perfect', 'terrible', 'awesome', 'amazing', 'incredible', 'fantastic',
+
+      // Monate/Tage
+      'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
+      'september', 'october', 'november', 'december', 'monday', 'tuesday',
+      'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+      'januar', 'februar', 'märz', 'april', 'mai', 'juni', 'juli', 'august',
+      'september', 'oktober', 'november', 'dezember', 'montag', 'dienstag',
+      'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'
+    ]);
   }
 
   /**
@@ -29,7 +65,7 @@ class ComplianceDetector {
         },
         {
           id: 'iban',
-          pattern: /\b[A-Z]{2}[0-9]{2}[A-Z0-9]{12,30}\b/g,
+          pattern: /\b[A-Z]{2}[0-9]{2}[\s]?[A-Z0-9]{4}[\s]?[A-Z0-9]{4}[\s]?[A-Z0-9]{4}[\s]?[A-Z0-9]{4}[\s]?[A-Z0-9]{0,2}\b/g,
           severity: 'critical',
           category: 'financial',
           nameDE: 'IBAN',
@@ -49,27 +85,27 @@ class ComplianceDetector {
         },
         {
           id: 'ssn_swiss',
-          pattern: /\b756\.\d{4}\.\d{4}\.\d{2}\b/g,
+          pattern: /\b756[\s.-]?\d{4}[\s.-]?\d{4}[\s.-]?\d{2}\b/g,
           severity: 'critical',
           category: 'pii',
           nameDE: 'AHV-Nummer (CH)',
-          nameEN: 'Swiss Social Security Number',
-          descDE: 'Schweizer Sozialversicherungsnummer - hochsensibel',
-          descEN: 'Swiss social security number - highly sensitive'
+          nameEN: 'Swiss Social Security Number (AHV)',
+          descDE: 'Schweizer Sozialversicherungsnummer - hochsensibel gemäss DSG',
+          descEN: 'Swiss social security number - highly sensitive under DSG'
         },
         {
           id: 'passport',
-          pattern: /\b[A-Z]{1,2}[0-9]{6,9}\b/g,
+          pattern: /\b(?:passport|pass|reisepass|ausweis)[\s:]+([A-Z]{1,2}\d{6,9})\b/gi,
           severity: 'critical',
           category: 'pii',
-          nameDE: 'Mögliche Passnummer',
-          nameEN: 'Possible Passport Number',
+          nameDE: 'Reisepass-/Ausweisnummer',
+          nameEN: 'Passport/ID Number',
           descDE: 'Ausweisnummern sind personenbezogene Daten',
           descEN: 'ID numbers are personal data'
         },
         {
           id: 'api_key',
-          pattern: /\b(?:api[_-]?key|apikey|access[_-]?token|secret[_-]?key)[\s:=]+['"]?([a-zA-Z0-9_\-]{20,})['"]?/gi,
+          pattern: /\b(?:api[_-]?key|apikey|access[_-]?token|secret[_-]?key|bearer)[\s:=]+['"]?([a-zA-Z0-9_\-]{20,})['"]?/gi,
           severity: 'critical',
           category: 'credentials',
           nameDE: 'API-Schlüssel / Token',
@@ -92,14 +128,34 @@ class ComplianceDetector {
       // WARNUNG - Orange Warnungen
       warning: [
         {
-          id: 'phone_intl',
-          pattern: /\b\+?[1-9]\d{0,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b/g,
+          id: 'phone_swiss',
+          pattern: /\b(?:\+41|0041|0)[\s.-]?(?:\(0\)[\s.-]?)?(?:7[6-9]|[2-9]\d)[\s.-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}\b/g,
           severity: 'warning',
           category: 'pii',
-          nameDE: 'Telefonnummer',
-          nameEN: 'Phone Number',
-          descDE: 'Telefonnummern können personenbezogene Daten sein',
-          descEN: 'Phone numbers may be personal data'
+          nameDE: 'Schweizer Telefonnummer',
+          nameEN: 'Swiss Phone Number',
+          descDE: 'Telefonnummern können zur Identifikation verwendet werden',
+          descEN: 'Phone numbers can be used for identification'
+        },
+        {
+          id: 'phone_german',
+          pattern: /\b(?:\+49|0049|0)[\s.-]?\d{2,5}[\s.-]?\d{3,}[\s.-]?\d{2,}\b/g,
+          severity: 'warning',
+          category: 'pii',
+          nameDE: 'Deutsche Telefonnummer',
+          nameEN: 'German Phone Number',
+          descDE: 'Telefonnummern können zur Identifikation verwendet werden',
+          descEN: 'Phone numbers can be used for identification'
+        },
+        {
+          id: 'phone_intl',
+          pattern: /\b\+\d{1,3}[\s.-]?\(?\d{1,4}\)?[\s.-]?\d{1,4}[\s.-]?\d{1,9}\b/g,
+          severity: 'warning',
+          category: 'pii',
+          nameDE: 'Internationale Telefonnummer',
+          nameEN: 'International Phone Number',
+          descDE: 'Telefonnummern können zur Identifikation verwendet werden',
+          descEN: 'Phone numbers can be used for identification'
         },
         {
           id: 'ip_address',
@@ -108,32 +164,51 @@ class ComplianceDetector {
           category: 'technical',
           nameDE: 'IP-Adresse',
           nameEN: 'IP Address',
-          descDE: 'IP-Adressen können zur Identifikation verwendet werden',
-          descEN: 'IP addresses can be used for identification'
+          descDE: 'IP-Adressen können zur Identifikation verwendet werden (DSGVO)',
+          descEN: 'IP addresses can be used for identification (GDPR)'
         },
         {
-          id: 'name_pattern',
-          pattern: /\b(?:Herr|Frau|Mr\.|Mrs\.|Ms\.)\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b/g,
+          id: 'zip_swiss',
+          pattern: /\b(?:CH-)?[1-9]\d{3}\b/g,
           severity: 'warning',
           category: 'pii',
-          nameDE: 'Möglicher vollständiger Name',
-          nameEN: 'Possible Full Name',
-          descDE: 'Namen mit Anrede können personenbezogene Daten sein',
-          descEN: 'Names with salutation may be personal data'
+          nameDE: 'Schweizer PLZ',
+          nameEN: 'Swiss ZIP Code',
+          descDE: 'Postleitzahlen können Teil einer Adresse sein',
+          descEN: 'ZIP codes may be part of an address'
+        },
+        {
+          id: 'name_context',
+          pattern: /(?:name|kontakt|contact|person|mitarbeiter|employee|kunde|customer|patient|student|benutzer|user)[\s:]+([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)+)/gi,
+          severity: 'warning',
+          category: 'pii',
+          nameDE: 'Name (kontextbasiert)',
+          nameEN: 'Name (context-based)',
+          descDE: 'Vollständige Namen sind personenbezogene Daten',
+          descEN: 'Full names are personal data',
+          customValidator: (match, detector) => {
+            const name = match[1];
+            const words = name.split(/\s+/);
+            // Prüfe ob Wörter in Blacklist sind
+            const isBlacklisted = words.some(word =>
+              detector.nameBlacklist.has(word.toLowerCase())
+            );
+            return !isBlacklisted;
+          }
         },
         {
           id: 'address',
-          pattern: /\b\d+\s+[A-Z][a-zäöüß]+(?:straße|strasse|str\.|weg|weg|gasse|platz|allee)\b/gi,
+          pattern: /\b\d+[\s,]+[A-ZÄÖÜ][a-zäöüß]+(?:straße|strasse|str\.|weg|gasse|platz|allee|avenue|street|road|way)\b/gi,
           severity: 'warning',
           category: 'pii',
-          nameDE: 'Mögliche Adresse',
-          nameEN: 'Possible Address',
+          nameDE: 'Adresse',
+          nameEN: 'Address',
           descDE: 'Adressen sind personenbezogene Daten',
           descEN: 'Addresses are personal data'
         },
         {
           id: 'date_of_birth',
-          pattern: /\b(?:geboren|born|geburtsdatum|date of birth|dob)[\s:]+(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})/gi,
+          pattern: /\b(?:geboren|born|geburtsdatum|date of birth|dob|geb\.)[\s:]+(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})/gi,
           severity: 'warning',
           category: 'pii',
           nameDE: 'Geburtsdatum',
@@ -143,7 +218,7 @@ class ComplianceDetector {
         },
         {
           id: 'company_confidential',
-          pattern: /\b(?:vertraulich|confidential|intern|internal|geheim|secret|streng\s+vertraulich|strictly\s+confidential)\b/gi,
+          pattern: /\b(?:vertraulich|confidential|intern|internal|geheim|secret|streng\s+vertraulich|strictly\s+confidential|classified)\b/gi,
           severity: 'warning',
           category: 'business',
           nameDE: 'Vertraulichkeits-Kennzeichnung',
@@ -153,7 +228,7 @@ class ComplianceDetector {
         },
         {
           id: 'salary',
-          pattern: /\b(?:gehalt|salary|lohn|wage)[\s:]+(?:CHF|EUR|USD|€|\$)?\s*[\d,.]+\b/gi,
+          pattern: /\b(?:gehalt|salary|lohn|wage|verdienst|einkommen)[\s:]+(?:CHF|EUR|USD|€|\$|Fr\.)?\s*[\d',\.]+\b/gi,
           severity: 'warning',
           category: 'business',
           nameDE: 'Gehaltsangabe',
@@ -182,7 +257,7 @@ class ComplianceDetector {
         },
         status: {
           safe: 'Keine sensiblen Daten erkannt',
-          warning: 'Verdächtige Daten erkannt',
+          warning: 'Hinweise auf sensible Daten',
           critical: 'Kritische Daten erkannt'
         }
       },
@@ -198,7 +273,7 @@ class ComplianceDetector {
         },
         status: {
           safe: 'No sensitive data detected',
-          warning: 'Suspicious data detected',
+          warning: 'Possible sensitive data detected',
           critical: 'Critical data detected'
         }
       }
@@ -231,7 +306,8 @@ class ComplianceDetector {
         start: m.start,
         end: m.end,
         severity: m.severity,
-        id: m.id
+        id: m.id,
+        text: m.match
       })));
     });
 
@@ -243,7 +319,8 @@ class ComplianceDetector {
         start: m.start,
         end: m.end,
         severity: m.severity,
-        id: m.id
+        id: m.id,
+        text: m.match
       })));
     });
 
@@ -258,7 +335,7 @@ class ComplianceDetector {
     return {
       status,
       detections: this.deduplicateDetections(detections),
-      highlightRanges: this.mergeOverlappingRanges(highlightRanges)
+      highlightRanges: this.sortRanges(highlightRanges)
     };
   }
 
@@ -267,13 +344,17 @@ class ComplianceDetector {
    */
   findMatches(text, patternDef, lang) {
     const matches = [];
-    const regex = new RegExp(patternDef.pattern);
+    const regex = new RegExp(patternDef.pattern.source, patternDef.pattern.flags);
     let match;
 
-    // Reset regex state
-    const globalRegex = new RegExp(patternDef.pattern.source, patternDef.pattern.flags);
+    while ((match = regex.exec(text)) !== null) {
+      // Wenn Pattern einen Custom Validator hat, prüfe ihn
+      if (patternDef.customValidator) {
+        if (!patternDef.customValidator(match, this)) {
+          continue; // Skip diesen Match
+        }
+      }
 
-    while ((match = globalRegex.exec(text)) !== null) {
       matches.push({
         id: patternDef.id,
         severity: patternDef.severity,
@@ -295,7 +376,7 @@ class ComplianceDetector {
   deduplicateDetections(detections) {
     const seen = new Set();
     return detections.filter(d => {
-      const key = `${d.id}-${d.start}-${d.end}`;
+      const key = `${d.start}-${d.end}`;
       if (seen.has(key)) {
         return false;
       }
@@ -305,32 +386,10 @@ class ComplianceDetector {
   }
 
   /**
-   * Merged überlappende Ranges für Highlighting
+   * Sortiert Ranges nach Start-Position
    */
-  mergeOverlappingRanges(ranges) {
-    if (ranges.length === 0) return [];
-
-    // Sortiere nach Start-Position
-    ranges.sort((a, b) => a.start - b.start);
-
-    const merged = [ranges[0]];
-
-    for (let i = 1; i < ranges.length; i++) {
-      const current = ranges[i];
-      const last = merged[merged.length - 1];
-
-      if (current.start <= last.end) {
-        // Überlappung - merge und behalte höheren Severity
-        last.end = Math.max(last.end, current.end);
-        if (current.severity === 'critical') {
-          last.severity = 'critical';
-        }
-      } else {
-        merged.push(current);
-      }
-    }
-
-    return merged;
+  sortRanges(ranges) {
+    return ranges.sort((a, b) => a.start - b.start);
   }
 
   /**

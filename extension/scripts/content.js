@@ -1,5 +1,6 @@
 /**
  * AI Compliance Checker - Content Script
+ * Beta by BEYONDER
  * Überwacht Texteingaben in Echtzeit auf KI-Plattformen
  */
 
@@ -8,8 +9,7 @@ class ComplianceMonitor {
     this.detector = new ComplianceDetector();
     this.currentLang = this.detectLanguage();
     this.monitoredElements = new Map();
-    this.statusIndicators = new Map();
-    this.tooltips = new Map();
+    this.statusIcons = new Map();
     this.isModalShown = false;
 
     // Debounce Timer für Performance
@@ -19,6 +19,9 @@ class ComplianceMonitor {
     // Platform-spezifische Selektoren
     this.platforms = this.detectPlatform();
 
+    // Current analysis results per element
+    this.currentAnalysis = new Map();
+
     this.init();
   }
 
@@ -26,7 +29,7 @@ class ComplianceMonitor {
    * Initialisiert den Monitor
    */
   init() {
-    console.log('[AI Compliance Checker] Initialized on', this.platforms.name);
+    console.log('[AI Compliance Checker by BEYONDER] Initialized on', this.platforms.name);
 
     // Warte auf DOM ready
     if (document.readyState === 'loading') {
@@ -60,10 +63,13 @@ class ComplianceMonitor {
           '#prompt-textarea',
           'textarea[data-id]',
           'textarea[placeholder*="Message"]',
-          'textarea[placeholder*="Nachricht"]'
+          'textarea[placeholder*="Nachricht"]',
+          'div[contenteditable="true"][role="textbox"]',
+          '.ProseMirror'
         ],
         submitSelectors: [
           'button[data-testid="send-button"]',
+          'button[data-testid="fruitjuice-send-button"]',
           'button[aria-label*="Send"]',
           'button[aria-label*="Senden"]'
         ]
@@ -74,6 +80,7 @@ class ComplianceMonitor {
         inputSelectors: [
           '.ql-editor[contenteditable="true"]',
           'div[contenteditable="true"][role="textbox"]',
+          'rich-textarea',
           'textarea'
         ],
         submitSelectors: [
@@ -124,56 +131,93 @@ class ComplianceMonitor {
   attachToElement(element) {
     this.monitoredElements.set(element, {
       lastAnalysis: null,
-      isContentEditable: element.contentEditable === 'true'
+      isContentEditable: element.contentEditable === 'true',
+      originalContent: null
     });
 
     // Event Listener
-    element.addEventListener('input', (e) => this.handleInput(element));
+    element.addEventListener('input', () => this.handleInput(element));
     element.addEventListener('keydown', (e) => this.handleKeyDown(element, e));
-    element.addEventListener('paste', (e) => this.handlePaste(element, e));
+    element.addEventListener('paste', () => this.handlePaste(element));
 
-    // Erstelle Status-Indikator
-    this.createStatusIndicator(element);
+    // Erstelle Status-Icon
+    this.createStatusIcon(element);
+
+    // Initial analysis
+    setTimeout(() => this.analyzeElement(element), 100);
 
     console.log('[AI Compliance Checker] Monitoring element:', element);
   }
 
   /**
-   * Erstellt visuellen Status-Indikator neben dem Eingabefeld
+   * Erstellt Status-Icon neben dem Eingabefeld
    */
-  createStatusIndicator(element) {
-    if (this.statusIndicators.has(element)) return;
+  createStatusIcon(element) {
+    if (this.statusIcons.has(element)) return;
 
-    const indicator = document.createElement('div');
-    indicator.className = 'aicc-status-indicator';
-    indicator.setAttribute('data-status', 'safe');
-    indicator.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 20 20">
-        <circle cx="10" cy="10" r="8" class="aicc-status-circle"/>
-        <path class="aicc-status-icon" d="M6 10l3 3 5-6" stroke="white" stroke-width="2" fill="none"/>
-      </svg>
+    // Create wrapper for icon
+    const iconWrapper = document.createElement('div');
+    iconWrapper.className = 'aicc-status-icon-wrapper';
+    iconWrapper.setAttribute('data-status', 'safe');
+
+    iconWrapper.innerHTML = `
+      <div class="aicc-status-icon" data-status="safe">
+        <svg width="24" height="24" viewBox="0 0 24 24" class="aicc-icon-svg">
+          <circle cx="12" cy="12" r="10" class="aicc-icon-circle"/>
+          <path d="M8 12l3 3 5-5" class="aicc-icon-check" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="aicc-badge" style="display: none;">0</div>
+      </div>
     `;
 
-    // Positioniere den Indikator
-    this.positionIndicator(element, indicator);
-    document.body.appendChild(indicator);
+    // Positioniere das Icon
+    this.positionIcon(element, iconWrapper);
+    document.body.appendChild(iconWrapper);
 
-    this.statusIndicators.set(element, indicator);
+    // Click handler für Icon
+    const icon = iconWrapper.querySelector('.aicc-status-icon');
+    icon.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.showOverlay(element);
+    });
+
+    this.statusIcons.set(element, iconWrapper);
 
     // Update Position bei Scroll/Resize
-    window.addEventListener('scroll', () => this.positionIndicator(element, indicator), true);
-    window.addEventListener('resize', () => this.positionIndicator(element, indicator));
+    const updatePosition = () => this.positionIcon(element, iconWrapper);
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+
+    // Hide when element is not visible
+    const checkVisibility = () => {
+      const rect = element.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) {
+        iconWrapper.style.display = 'none';
+      } else {
+        iconWrapper.style.display = 'block';
+        updatePosition();
+      }
+    };
+    setInterval(checkVisibility, 500);
   }
 
   /**
-   * Positioniert den Status-Indikator relativ zum Element
+   * Positioniert das Status-Icon
    */
-  positionIndicator(element, indicator) {
+  positionIcon(element, iconWrapper) {
     const rect = element.getBoundingClientRect();
-    indicator.style.position = 'fixed';
-    indicator.style.top = `${rect.top + 10}px`;
-    indicator.style.right = `${window.innerWidth - rect.right + 10}px`;
-    indicator.style.zIndex = '10000';
+
+    // Stelle sicher Element ist sichtbar
+    if (rect.width === 0 || rect.height === 0) {
+      iconWrapper.style.display = 'none';
+      return;
+    }
+
+    iconWrapper.style.display = 'block';
+    iconWrapper.style.position = 'fixed';
+    iconWrapper.style.top = `${rect.top + 8}px`;
+    iconWrapper.style.right = `${window.innerWidth - rect.right + 8}px`;
+    iconWrapper.style.zIndex = '999999';
   }
 
   /**
@@ -189,7 +233,7 @@ class ComplianceMonitor {
   /**
    * Handle Paste Event
    */
-  handlePaste(element, event) {
+  handlePaste(element) {
     setTimeout(() => {
       this.analyzeElement(element);
     }, 100);
@@ -200,14 +244,14 @@ class ComplianceMonitor {
    */
   handleKeyDown(element, event) {
     // Enter ohne Shift = Absenden
-    if (event.key === 'Enter' && !event.shiftKey) {
-      const info = this.monitoredElements.get(element);
-      if (info && info.lastAnalysis) {
-        if (info.lastAnalysis.status === 'critical' || info.lastAnalysis.status === 'warning') {
-          event.preventDefault();
-          event.stopPropagation();
-          this.showWarningModal(info.lastAnalysis, element);
-        }
+    if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+      const analysis = this.currentAnalysis.get(element);
+      if (analysis && (analysis.status === 'critical' || analysis.status === 'warning')) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        this.showWarningModal(analysis, element);
+        return false;
       }
     }
   }
@@ -220,18 +264,20 @@ class ComplianceMonitor {
     const analysis = this.detector.analyze(text, this.currentLang);
 
     // Speichere Analyse
+    this.currentAnalysis.set(element, analysis);
+
     const info = this.monitoredElements.get(element);
     if (info) {
       info.lastAnalysis = analysis;
     }
 
     // Update visuelles Feedback
-    this.updateStatusIndicator(element, analysis);
+    this.updateStatusIcon(element, analysis);
     this.highlightText(element, analysis);
   }
 
   /**
-   * Holt Text aus Element (textarea oder contenteditable)
+   * Holt Text aus Element
    */
   getElementText(element) {
     if (element.contentEditable === 'true') {
@@ -241,35 +287,48 @@ class ComplianceMonitor {
   }
 
   /**
-   * Updated den Status-Indikator
+   * Updated das Status-Icon
    */
-  updateStatusIndicator(element, analysis) {
-    const indicator = this.statusIndicators.get(element);
-    if (!indicator) return;
+  updateStatusIcon(element, analysis) {
+    const iconWrapper = this.statusIcons.get(element);
+    if (!iconWrapper) return;
 
-    indicator.setAttribute('data-status', analysis.status);
+    const icon = iconWrapper.querySelector('.aicc-status-icon');
+    const badge = iconWrapper.querySelector('.aicc-badge');
+    const svg = iconWrapper.querySelector('.aicc-icon-svg');
 
-    // Update Icon basierend auf Status
+    // Update Status
+    icon.setAttribute('data-status', analysis.status);
+    iconWrapper.setAttribute('data-status', analysis.status);
+
+    // Update Badge
+    if (analysis.detections.length > 0) {
+      badge.textContent = analysis.detections.length;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+
+    // Update Icon SVG basierend auf Status
     let iconPath;
-    let statusText;
-
     switch (analysis.status) {
       case 'safe':
-        iconPath = 'M6 10l3 3 5-6';
-        statusText = this.detector.t('status.safe', this.currentLang);
+        iconPath = 'M8 12l3 3 5-5';
         break;
       case 'warning':
-        iconPath = 'M10 6v6M10 14h.01';
-        statusText = this.detector.t('status.warning', this.currentLang);
+        iconPath = 'M12 8v4M12 16h.01';
         break;
       case 'critical':
-        iconPath = 'M6 6l8 8M6 14l8-8';
-        statusText = this.detector.t('status.critical', this.currentLang);
+        iconPath = 'M8 8l8 8M8 16l8-8';
         break;
     }
 
-    indicator.querySelector('.aicc-status-icon').setAttribute('d', iconPath);
-    indicator.title = `${statusText}\n${analysis.detections.length} ${this.currentLang === 'de' ? 'Erkennungen' : 'detections'}`;
+    const checkPath = svg.querySelector('.aicc-icon-check');
+    checkPath.setAttribute('d', iconPath);
+
+    // Tooltip
+    const statusText = this.detector.t(`status.${analysis.status}`, this.currentLang);
+    icon.title = `${statusText} (${analysis.detections.length})`;
   }
 
   /**
@@ -277,98 +336,212 @@ class ComplianceMonitor {
    */
   highlightText(element, analysis) {
     if (element.contentEditable !== 'true') {
-      // Für textarea können wir keine Inline-Highlights machen
-      // Stattdessen Tooltip beim Hovern zeigen
-      this.attachHoverTooltip(element, analysis);
+      // Für textarea können wir keine Inline-Highlights erstellen
+      // Nur Icon zeigen
       return;
     }
 
-    // Für contenteditable könnten wir Spans einfügen
-    // Das ist komplexer und kann die Cursor-Position beeinflussen
-    // Für v1 verwenden wir nur Tooltips
-    this.attachHoverTooltip(element, analysis);
+    // Für contenteditable Elemente
+    this.highlightContentEditable(element, analysis);
   }
 
   /**
-   * Fügt Hover-Tooltip zu Element hinzu
+   * Highlightet Text in contenteditable Element
    */
-  attachHoverTooltip(element, analysis) {
-    // Entferne alten Tooltip
-    if (this.tooltips.has(element)) {
-      const oldTooltip = this.tooltips.get(element);
-      if (oldTooltip && oldTooltip.parentNode) {
-        oldTooltip.parentNode.removeChild(oldTooltip);
-      }
-    }
-
-    if (analysis.detections.length === 0) return;
-
-    // Erstelle neuen Tooltip
-    const tooltip = document.createElement('div');
-    tooltip.className = 'aicc-tooltip';
-    tooltip.innerHTML = this.generateTooltipContent(analysis);
-
-    // Event Listener
-    element.addEventListener('mouseenter', () => {
-      if (analysis.detections.length > 0) {
-        const rect = element.getBoundingClientRect();
-        tooltip.style.position = 'fixed';
-        tooltip.style.top = `${rect.bottom + 10}px`;
-        tooltip.style.left = `${rect.left}px`;
-        tooltip.style.display = 'block';
-        document.body.appendChild(tooltip);
-      }
-    });
-
-    element.addEventListener('mouseleave', () => {
-      tooltip.style.display = 'none';
-      if (tooltip.parentNode) {
-        tooltip.parentNode.removeChild(tooltip);
-      }
-    });
-
-    this.tooltips.set(element, tooltip);
-  }
-
-  /**
-   * Generiert Tooltip-Inhalt
-   */
-  generateTooltipContent(analysis) {
-    if (analysis.detections.length === 0) {
-      return `<div class="aicc-tooltip-safe">✓ ${this.detector.t('status.safe', this.currentLang)}</div>`;
-    }
-
-    let html = '<div class="aicc-tooltip-header">';
-    html += analysis.status === 'critical'
-      ? `⛔ ${this.detector.t('status.critical', this.currentLang)}`
-      : `⚠️ ${this.detector.t('status.warning', this.currentLang)}`;
-    html += '</div>';
-
-    html += '<div class="aicc-tooltip-items">';
-
-    // Gruppiere nach Kategorie
-    const byCategory = {};
-    analysis.detections.forEach(d => {
-      if (!byCategory[d.category]) {
-        byCategory[d.category] = [];
-      }
-      byCategory[d.category].push(d);
-    });
-
-    Object.keys(byCategory).forEach(category => {
-      const items = byCategory[category];
-      html += `<div class="aicc-tooltip-category">`;
-      html += `<strong>${this.detector.t(`categories.${category}`, this.currentLang)}:</strong>`;
-      html += '<ul>';
-      items.forEach(item => {
-        html += `<li><span class="aicc-severity-${item.severity}">${item.name}</span>: ${item.description}</li>`;
+  highlightContentEditable(element, analysis) {
+    if (analysis.highlightRanges.length === 0) {
+      // Entferne alle highlights
+      const highlights = element.querySelectorAll('.aicc-highlight');
+      highlights.forEach(h => {
+        const text = h.textContent;
+        h.replaceWith(document.createTextNode(text));
       });
-      html += '</ul>';
-      html += '</div>';
+      element.normalize();
+      return;
+    }
+
+    // Hole aktuellen Text
+    const text = element.innerText || element.textContent;
+
+    // Speichere Cursor-Position
+    const selection = window.getSelection();
+    let cursorOffset = 0;
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      cursorOffset = range.startOffset;
+    }
+
+    // Erstelle neue HTML mit Highlights
+    let lastIndex = 0;
+    let html = '';
+
+    analysis.highlightRanges.forEach(range => {
+      // Text vor dem Highlight
+      html += this.escapeHtml(text.substring(lastIndex, range.start));
+
+      // Highlighted text
+      const highlightedText = text.substring(range.start, range.end);
+      const detection = analysis.detections.find(d => d.match === highlightedText);
+      const title = detection ? `${detection.name}: ${detection.description}` : '';
+
+      html += `<mark class="aicc-highlight aicc-highlight-${range.severity}" data-severity="${range.severity}" title="${this.escapeHtml(title)}">${this.escapeHtml(highlightedText)}</mark>`;
+
+      lastIndex = range.end;
     });
 
-    html += '</div>';
+    // Restlicher Text
+    html += this.escapeHtml(text.substring(lastIndex));
 
+    // Update DOM nur wenn nötig
+    const currentHtml = element.innerHTML;
+    const newHtml = html;
+
+    if (this.stripMarks(currentHtml) !== this.stripMarks(newHtml)) {
+      element.innerHTML = newHtml;
+
+      // Versuche Cursor wiederherzustellen
+      try {
+        const range = document.createRange();
+        const sel = window.getSelection();
+        const textNode = this.findTextNode(element, cursorOffset);
+        if (textNode) {
+          range.setStart(textNode.node, Math.min(textNode.offset, textNode.node.length));
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      } catch (e) {
+        // Cursor konnte nicht wiederhergestellt werden
+      }
+    }
+  }
+
+  /**
+   * Findet TextNode an bestimmter Position
+   */
+  findTextNode(element, targetOffset) {
+    let currentOffset = 0;
+    const walker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
+
+    let node;
+    while (node = walker.nextNode()) {
+      const nodeLength = node.textContent.length;
+      if (currentOffset + nodeLength >= targetOffset) {
+        return {
+          node: node,
+          offset: targetOffset - currentOffset
+        };
+      }
+      currentOffset += nodeLength;
+    }
+
+    return null;
+  }
+
+  /**
+   * Entfernt <mark> Tags für Vergleich
+   */
+  stripMarks(html) {
+    return html.replace(/<mark[^>]*>/g, '').replace(/<\/mark>/g, '');
+  }
+
+  /**
+   * Zeigt Overlay mit detaillierter Analyse
+   */
+  showOverlay(element) {
+    const analysis = this.currentAnalysis.get(element);
+    if (!analysis || analysis.detections.length === 0) {
+      return;
+    }
+
+    // Entferne existierendes Overlay
+    const existingOverlay = document.querySelector('.aicc-overlay');
+    if (existingOverlay) {
+      existingOverlay.remove();
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'aicc-overlay';
+    overlay.innerHTML = `
+      <div class="aicc-overlay-backdrop"></div>
+      <div class="aicc-overlay-content">
+        <div class="aicc-overlay-header">
+          <h2>
+            ${analysis.status === 'critical' ? '🔴' : '🟠'}
+            ${this.currentLang === 'de' ? 'Erkannte sensible Daten' : 'Detected Sensitive Data'}
+          </h2>
+          <button class="aicc-overlay-close">&times;</button>
+        </div>
+        <div class="aicc-overlay-body">
+          ${this.generateOverlayTable(analysis)}
+        </div>
+        <div class="aicc-overlay-footer">
+          <div class="aicc-overlay-branding">
+            <div class="aicc-branding-text">
+              <strong>AI Compliance Checker</strong> • Beta by <strong>BEYONDER</strong>
+            </div>
+            <div class="aicc-branding-subtext">
+              ${this.currentLang === 'de'
+                ? '100% lokal • DSGVO/DSG-konform • Keine Datenübertragung'
+                : '100% local • GDPR compliant • No data transmission'}
+            </div>
+          </div>
+          <button class="aicc-btn aicc-btn-primary aicc-overlay-ok">
+            ${this.currentLang === 'de' ? 'Verstanden' : 'Got it'}
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Event handlers
+    const close = () => overlay.remove();
+    overlay.querySelector('.aicc-overlay-close').addEventListener('click', close);
+    overlay.querySelector('.aicc-overlay-backdrop').addEventListener('click', close);
+    overlay.querySelector('.aicc-overlay-ok').addEventListener('click', close);
+
+    // Prevent close on content click
+    overlay.querySelector('.aicc-overlay-content').addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  /**
+   * Generiert Tabelle für Overlay
+   */
+  generateOverlayTable(analysis) {
+    let html = '<table class="aicc-detection-table">';
+    html += '<thead><tr>';
+    html += `<th>${this.currentLang === 'de' ? 'Typ' : 'Type'}</th>`;
+    html += `<th>${this.currentLang === 'de' ? 'Erkannter Wert' : 'Detected Value'}</th>`;
+    html += `<th>${this.currentLang === 'de' ? 'Beschreibung' : 'Description'}</th>`;
+    html += `<th>${this.currentLang === 'de' ? 'Risiko' : 'Risk'}</th>`;
+    html += '</tr></thead>';
+    html += '<tbody>';
+
+    // Sortiere nach Severity
+    const sorted = [...analysis.detections].sort((a, b) => {
+      if (a.severity === 'critical' && b.severity !== 'critical') return -1;
+      if (a.severity !== 'critical' && b.severity === 'critical') return 1;
+      return 0;
+    });
+
+    sorted.forEach(detection => {
+      html += '<tr>';
+      html += `<td><strong>${this.escapeHtml(detection.name)}</strong><br><small class="aicc-category">${this.detector.t(`categories.${detection.category}`, this.currentLang)}</small></td>`;
+      html += `<td><code>${this.escapeHtml(detection.match)}</code></td>`;
+      html += `<td>${this.escapeHtml(detection.description)}</td>`;
+      html += `<td><span class="aicc-severity-badge aicc-severity-${detection.severity}">${this.detector.t(detection.severity, this.currentLang)}</span></td>`;
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
     return html;
   }
 
@@ -386,37 +559,38 @@ class ComplianceMonitor {
       <div class="aicc-modal-content">
         <div class="aicc-modal-header">
           <h2>
-            ${analysis.status === 'critical' ? '⛔' : '⚠️'}
-            ${this.currentLang === 'de' ? 'Compliance-Warnung' : 'Compliance Warning'}
+            ${analysis.status === 'critical' ? '🛑' : '⚠️'}
+            ${this.currentLang === 'de' ? 'Achtung: Sensible Daten erkannt' : 'Warning: Sensitive Data Detected'}
           </h2>
           <button class="aicc-modal-close">&times;</button>
         </div>
         <div class="aicc-modal-body">
-          <p class="aicc-modal-intro">
-            ${this.currentLang === 'de'
-              ? 'Ihre Nachricht enthält möglicherweise sensible Daten. Bitte überprüfen Sie folgende Erkennungen:'
-              : 'Your message may contain sensitive data. Please review the following detections:'}
-          </p>
-          ${this.generateModalDetectionList(analysis)}
-          <div class="aicc-modal-warning">
-            <strong>${this.currentLang === 'de' ? 'Hinweis:' : 'Note:'}</strong>
-            ${this.currentLang === 'de'
-              ? 'Personenbezogene und sensible Daten sollten nicht an KI-Systeme übermittelt werden. Dies kann gegen Datenschutzbestimmungen (DSGVO/DSG) verstoßen.'
-              : 'Personal and sensitive data should not be transmitted to AI systems. This may violate data protection regulations (GDPR).'}
+          <div class="aicc-modal-warning-box ${analysis.status === 'critical' ? 'aicc-critical-box' : 'aicc-warning-box'}">
+            <strong>${this.currentLang === 'de' ? 'Warnung:' : 'Warning:'}</strong>
+            ${analysis.status === 'critical'
+              ? (this.currentLang === 'de'
+                ? 'Ihre Nachricht enthält kritische personenbezogene oder sensible Daten. Das Teilen dieser Informationen mit KI-Systemen kann gegen Datenschutzbestimmungen (DSGVO/DSG) verstoßen.'
+                : 'Your message contains critical personal or sensitive data. Sharing this information with AI systems may violate data protection regulations (GDPR).')
+              : (this.currentLang === 'de'
+                ? 'Ihre Nachricht könnte sensible Daten enthalten. Bitte überprüfen Sie die folgenden Erkennungen.'
+                : 'Your message may contain sensitive data. Please review the following detections.')}
           </div>
+          ${this.generateOverlayTable(analysis)}
         </div>
         <div class="aicc-modal-footer">
-          <button class="aicc-btn aicc-btn-secondary aicc-modal-cancel">
-            ${this.currentLang === 'de' ? 'Abbrechen' : 'Cancel'}
-          </button>
-          <button class="aicc-btn aicc-btn-primary aicc-modal-edit">
-            ${this.currentLang === 'de' ? 'Text bearbeiten' : 'Edit Text'}
-          </button>
-          ${analysis.status === 'warning' ? `
-            <button class="aicc-btn aicc-btn-warning aicc-modal-send">
-              ${this.currentLang === 'de' ? 'Trotzdem senden' : 'Send Anyway'}
+          <div class="aicc-modal-branding">
+            <strong>AI Compliance Checker</strong> • Beta by <strong>BEYONDER</strong>
+          </div>
+          <div class="aicc-modal-actions">
+            <button class="aicc-btn aicc-btn-secondary aicc-modal-cancel">
+              ${this.currentLang === 'de' ? 'Abbrechen & Bearbeiten' : 'Cancel & Edit'}
             </button>
-          ` : ''}
+            ${analysis.status === 'warning' ? `
+              <button class="aicc-btn aicc-btn-warning aicc-modal-send">
+                ${this.currentLang === 'de' ? 'Trotzdem fortfahren' : 'Continue Anyway'}
+              </button>
+            ` : ''}
+          </div>
         </div>
       </div>
     `;
@@ -431,8 +605,7 @@ class ComplianceMonitor {
 
     modal.querySelector('.aicc-modal-close').addEventListener('click', close);
     modal.querySelector('.aicc-modal-overlay').addEventListener('click', close);
-    modal.querySelector('.aicc-modal-cancel').addEventListener('click', close);
-    modal.querySelector('.aicc-modal-edit').addEventListener('click', () => {
+    modal.querySelector('.aicc-modal-cancel').addEventListener('click', () => {
       close();
       element.focus();
     });
@@ -441,7 +614,24 @@ class ComplianceMonitor {
     if (sendBtn) {
       sendBtn.addEventListener('click', () => {
         close();
-        this.submitForm(element);
+        // Simulate send
+        setTimeout(() => {
+          const submitButton = this.findSubmitButton(element);
+          if (submitButton) {
+            submitButton.click();
+          } else {
+            // Trigger Enter event
+            const event = new KeyboardEvent('keydown', {
+              key: 'Enter',
+              code: 'Enter',
+              keyCode: 13,
+              which: 13,
+              bubbles: true,
+              cancelable: true
+            });
+            element.dispatchEvent(event);
+          }
+        }, 100);
       });
     }
 
@@ -452,78 +642,18 @@ class ComplianceMonitor {
   }
 
   /**
-   * Generiert die Erkennungs-Liste für das Modal
-   */
-  generateModalDetectionList(analysis) {
-    let html = '<div class="aicc-detection-list">';
-
-    // Gruppiere nach Severity
-    const critical = analysis.detections.filter(d => d.severity === 'critical');
-    const warnings = analysis.detections.filter(d => d.severity === 'warning');
-
-    if (critical.length > 0) {
-      html += `<div class="aicc-detection-group aicc-detection-critical">`;
-      html += `<h3>⛔ ${this.detector.t('critical', this.currentLang)} (${critical.length})</h3>`;
-      html += '<ul>';
-      critical.forEach(d => {
-        html += `<li>
-          <strong>${d.name}</strong>: <code>${this.escapeHtml(d.match)}</code>
-          <br><small>${d.description}</small>
-        </li>`;
-      });
-      html += '</ul></div>';
-    }
-
-    if (warnings.length > 0) {
-      html += `<div class="aicc-detection-group aicc-detection-warning">`;
-      html += `<h3>⚠️ ${this.detector.t('warning', this.currentLang)} (${warnings.length})</h3>`;
-      html += '<ul>';
-      warnings.forEach(d => {
-        html += `<li>
-          <strong>${d.name}</strong>: <code>${this.escapeHtml(d.match)}</code>
-          <br><small>${d.description}</small>
-        </li>`;
-      });
-      html += '</ul></div>';
-    }
-
-    html += '</div>';
-    return html;
-  }
-
-  /**
-   * Versucht das Formular abzusenden (für "Send Anyway")
-   */
-  submitForm(element) {
-    // Finde Submit-Button
-    const submitButton = this.findSubmitButton(element);
-    if (submitButton) {
-      submitButton.click();
-    } else {
-      // Fallback: Enter-Event simulieren
-      const event = new KeyboardEvent('keydown', {
-        key: 'Enter',
-        code: 'Enter',
-        keyCode: 13,
-        which: 13,
-        bubbles: true
-      });
-      element.dispatchEvent(event);
-    }
-  }
-
-  /**
-   * Findet den Submit-Button für ein Element
+   * Findet den Submit-Button
    */
   findSubmitButton(element) {
-    // Suche in Eltern-Elementen
     let parent = element.parentElement;
-    while (parent) {
+    let attempts = 0;
+    while (parent && attempts < 10) {
       for (const selector of this.platforms.submitSelectors) {
         const button = parent.querySelector(selector);
         if (button) return button;
       }
       parent = parent.parentElement;
+      attempts++;
     }
     return null;
   }
@@ -533,27 +663,11 @@ class ComplianceMonitor {
    */
   observeDOM() {
     const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === 1) { // Element node
-            // Prüfe ob das Element selbst ein Input ist
-            this.platforms.inputSelectors.forEach(selector => {
-              if (node.matches && node.matches(selector)) {
-                if (!this.monitoredElements.has(node)) {
-                  this.attachToElement(node);
-                }
-              }
-              // Prüfe Kinder
-              const children = node.querySelectorAll(selector);
-              children.forEach(child => {
-                if (!this.monitoredElements.has(child)) {
-                  this.attachToElement(child);
-                }
-              });
-            });
-          }
-        });
-      });
+      // Debounce
+      clearTimeout(this.observerTimeout);
+      this.observerTimeout = setTimeout(() => {
+        this.findAndMonitorInputs();
+      }, 500);
     });
 
     observer.observe(document.body, {
