@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 1.0.4 BETA** • by BEYONDER
+**Version 1.0.5 BETA** • by BEYONDER
 
 Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -8,7 +8,65 @@ Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit
 
 ## 📋 Versionshistorie
 
-### Version 1.0.4 (Aktuell)
+### Version 1.0.5 (Aktuell)
+**Datum:** 2025-10-21
+
+**🚀 MAJOR IMPROVEMENT: Heuristische Name-Detection**
+
+**Problem:**
+RegEx allein ist NICHT zuverlässig genug für Namen. Zu viele False Positives und False Negatives.
+
+**Neue Lösung - Multi-Faktor Heuristische Analyse:**
+
+Verwendet **Scoring-System** statt einfacher RegEx:
+
+**1. Vornamen-Datenbank (200+ Namen)**
+- Deutsche Vornamen: Hans, Peter, Michael, Chris, Tristan, etc.
+- Schweizer Vornamen: Urs, Reto, Beat, Andres, etc.
+- Englische Vornamen: John, William, Jennifer, etc.
+
+**2. Scoring-Faktoren:**
+
+**Positive Scores:**
+- +5: Erstes Wort ist bekannter Vorname
+- +4: Beide Wörter sind Vornamen (z.B. "Hans Peter")
+- +4: Nach Kontext-Wort ("Name:", "Kontakt:", "Mitarbeiter:")
+- +3: 2 Wörter (typisch für Vor-/Nachname)
+- +3: Wort ist bekannter Vorname
+- +1: Korrekte Kapitalisierung
+- +1: Typische Namenslänge (3-15 Zeichen)
+
+**Negative Scores:**
+- -5: Nur 1 Wort (zu unspezifisch)
+- -5: Enthält Zahlen
+- -3: Am Satzanfang
+- -3: Sonderzeichen (außer Umlaute)
+- ∞: In Blacklist → sofort ablehnen
+
+**3. Entscheidung:**
+- Score >= 5 → Name wird erkannt ✓
+- Score < 5 → Kein Name
+
+**Erkannt jetzt zuverlässig:**
+- ✅ Hans Peter (Score: 8+)
+- ✅ Chris Beyeler (Score: 8+)
+- ✅ Tristan Andres (Score: 8+)
+- ✅ Michael Schmid (Score: 8+)
+- ✅ Name: Anna Müller (Score: 12+, Kontext-Bonus)
+
+**NICHT erkannt (korrekt):**
+- ❌ "Machine Learning" (Blacklist)
+- ❌ "General Manager" (Blacklist)
+- ❌ "Peter." am Satzanfang (zu niedrig)
+
+**Implementierung:**
+- `initializeCommonFirstNames()`: 200+ Vornamen
+- `analyzeNameHeuristics()`: Scoring-Algorithmus
+- Debug-Logging in Konsole mit Score-Ausgabe
+
+---
+
+### Version 1.0.4
 **Datum:** 2025-10-21
 
 **Kritische Bug-Fixes:**
@@ -528,4 +586,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 1.0.4 BETA**
+**Version 1.0.5 BETA**

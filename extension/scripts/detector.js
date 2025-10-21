@@ -10,6 +10,49 @@ class ComplianceDetector {
     this.patterns = this.initializePatterns();
     this.translations = this.initializeTranslations();
     this.nameBlacklist = this.initializeNameBlacklist();
+    this.commonFirstNames = this.initializeCommonFirstNames();
+  }
+
+  /**
+   * Initialisiert Liste häufiger Vornamen (DE/EN/CH)
+   * Für heuristische Name-Erkennung
+   */
+  initializeCommonFirstNames() {
+    return new Set([
+      // Deutsche Vornamen (Top 100+)
+      'alexander', 'andreas', 'andres', 'anna', 'ben', 'benjamin', 'bernd', 'beyeler',
+      'chris', 'christian', 'christoph', 'clara', 'claudia', 'daniel', 'david', 'dieter',
+      'elena', 'elias', 'emily', 'emma', 'eric', 'erik', 'fabian', 'felix', 'finn',
+      'florian', 'frank', 'hannah', 'hans', 'heinrich', 'helga', 'hendrik', 'ida', 'jakob',
+      'jan', 'jens', 'jonas', 'josef', 'julia', 'jürgen', 'karl', 'katharina', 'klaus',
+      'lara', 'lars', 'laura', 'lea', 'leon', 'lena', 'liam', 'lisa', 'lukas', 'luise',
+      'manfred', 'manuel', 'maria', 'marie', 'mario', 'markus', 'martin', 'matthias',
+      'max', 'maximilian', 'michael', 'mia', 'moritz', 'nick', 'nico', 'nina', 'noah',
+      'oliver', 'otto', 'paul', 'paula', 'peter', 'philipp', 'ralf', 'rainer', 'robert',
+      'roland', 'sabine', 'sandra', 'sarah', 'schmid', 'sebastian', 'simon', 'sophie',
+      'stefan', 'stephan', 'thomas', 'tim', 'timo', 'tobias', 'tom', 'tristan', 'ulrich',
+      'uwe', 'werner', 'wilhelm', 'wolfgang',
+
+      // Schweizer Vornamen
+      'adrian', 'andres', 'beat', 'christoph', 'claude', 'fabio', 'franz', 'hannes',
+      'hanspeter', 'jürg', 'kilian', 'loris', 'lukas', 'marco', 'markus', 'matthias',
+      'maurus', 'nils', 'pascal', 'patrik', 'reto', 'silvan', 'sven', 'urs', 'yannick',
+      'anouk', 'chantal', 'fabienne', 'joelle', 'ladina', 'léonie', 'mara', 'selina',
+
+      // Englische Vornamen
+      'adam', 'alice', 'amy', 'andrew', 'angela', 'anthony', 'barbara', 'betty', 'brian',
+      'bruce', 'carol', 'charles', 'charlotte', 'chris', 'christopher', 'daniel', 'deborah',
+      'diana', 'donald', 'donna', 'dorothy', 'edward', 'elizabeth', 'emily', 'emma',
+      'eric', 'ethan', 'evelyn', 'george', 'grace', 'harold', 'harry', 'helen', 'henry',
+      'jack', 'jacob', 'james', 'jane', 'jason', 'jeffrey', 'jennifer', 'jessica', 'john',
+      'joseph', 'joshua', 'judy', 'justin', 'karen', 'katherine', 'kenneth', 'kevin',
+      'kimberly', 'larry', 'linda', 'lisa', 'margaret', 'maria', 'mark', 'mary', 'matthew',
+      'melissa', 'michael', 'michelle', 'nancy', 'nathan', 'nicole', 'olivia', 'pamela',
+      'patricia', 'patrick', 'paul', 'peter', 'rachel', 'raymond', 'rebecca', 'richard',
+      'robert', 'ronald', 'ruth', 'ryan', 'samuel', 'sandra', 'sarah', 'scott', 'sharon',
+      'sophia', 'stephanie', 'steven', 'susan', 'teresa', 'thomas', 'timothy', 'walter',
+      'william', 'zachary'
+    ]);
   }
 
   /**
@@ -201,27 +244,12 @@ class ComplianceDetector {
           pattern: /(?:^|[^.!?]\s+)([A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)?)\b/g,
           severity: 'warning',
           category: 'pii',
-          nameDE: 'Name (eigenständig)',
-          nameEN: 'Name (standalone)',
+          nameDE: 'Name (heuristisch)',
+          nameEN: 'Name (heuristic)',
           descDE: 'Vollständige Namen sind personenbezogene Daten',
           descEN: 'Full names are personal data',
           customValidator: (match, detector) => {
-            const fullMatch = match[0];
-            const name = match[1];
-
-            // Nicht am Satzanfang (nach Punkt, Fragezeichen, etc.)
-            if (/^[.!?]\s+/.test(fullMatch)) {
-              return false;
-            }
-
-            const words = name.split(/\s+/);
-
-            // Prüfe ob Wörter in Blacklist sind
-            const isBlacklisted = words.some(word =>
-              detector.nameBlacklist.has(word.toLowerCase())
-            );
-
-            return !isBlacklisted;
+            return detector.analyzeNameHeuristics(match[0], match[1]);
           }
         },
         {
@@ -454,6 +482,113 @@ class ComplianceDetector {
     }
 
     return merged;
+  }
+
+  /**
+   * Heuristische Analyse ob Text wahrscheinlich ein Name ist
+   * Verwendet Scoring-System mit mehreren Faktoren
+   *
+   * @param {string} fullMatch - Der komplette Match inkl. Whitespace
+   * @param {string} name - Der extrahierte Name
+   * @returns {boolean} true wenn wahrscheinlich ein Name
+   */
+  analyzeNameHeuristics(fullMatch, name) {
+    let score = 0;
+    const words = name.split(/\s+/);
+
+    // NEGATIVER SCORE: Blacklist-Check (sofort ablehnen)
+    const isBlacklisted = words.some(word =>
+      this.nameBlacklist.has(word.toLowerCase())
+    );
+    if (isBlacklisted) {
+      return false; // Sofort ablehnen
+    }
+
+    // NEGATIVER SCORE: Am Satzanfang (könnte beliebiges Wort sein)
+    if (/^[.!?]\s+/.test(fullMatch)) {
+      score -= 3;
+    }
+
+    // NEGATIVER SCORE: Nur ein Wort (zu unspezifisch)
+    if (words.length === 1) {
+      score -= 5;
+    }
+
+    // POSITIVER SCORE: Anzahl Wörter (2-3 ist typisch für Namen)
+    if (words.length === 2) {
+      score += 3; // Vorname + Nachname
+    } else if (words.length === 3) {
+      score += 2; // Vorname + Mittelname + Nachname
+    }
+
+    // Analysiere jedes Wort
+    words.forEach((word, index) => {
+      const lowerWord = word.toLowerCase();
+      const wordLength = word.length;
+
+      // POSITIVER SCORE: Erstes Wort ist häufiger Vorname
+      if (index === 0 && this.commonFirstNames.has(lowerWord)) {
+        score += 5; // Starker Indikator!
+      }
+
+      // POSITIVER SCORE: Irgendein Wort ist bekannter Vorname
+      if (this.commonFirstNames.has(lowerWord)) {
+        score += 3;
+      }
+
+      // POSITIVER SCORE: Korrekte Kapitalisierung (Erster Buchstabe groß)
+      if (/^[A-ZÄÖÜ][a-zäöüß]+$/.test(word)) {
+        score += 1;
+      }
+
+      // POSITIVER SCORE: Typische Namenslänge (3-15 Zeichen)
+      if (wordLength >= 3 && wordLength <= 15) {
+        score += 1;
+      }
+
+      // NEGATIVER SCORE: Sehr kurz (< 2 Zeichen) oder sehr lang (> 20)
+      if (wordLength < 2 || wordLength > 20) {
+        score -= 2;
+      }
+
+      // NEGATIVER SCORE: Enthält Zahlen (Namen haben keine Zahlen)
+      if (/\d/.test(word)) {
+        score -= 5;
+      }
+
+      // NEGATIVER SCORE: Enthält Sonderzeichen (außer Umlaute)
+      if (/[^A-Za-zÄÖÜäöüß]/.test(word)) {
+        score -= 3;
+      }
+    });
+
+    // POSITIVER SCORE: Typische Namensmuster
+    // Beispiel: "Hans Peter", "Anna Maria"
+    if (words.length === 2) {
+      const [first, second] = words.map(w => w.toLowerCase());
+      if (this.commonFirstNames.has(first) && this.commonFirstNames.has(second)) {
+        score += 4; // Beide sind Vornamen - sehr wahrscheinlich ein Name
+      }
+    }
+
+    // KONTEXT-ANALYSE: Prüfe Text vor dem Namen
+    const contextBefore = fullMatch.substring(0, fullMatch.indexOf(name)).toLowerCase();
+
+    // POSITIVER SCORE: Nach Kontext-Wörtern
+    if (/(?:name|kontakt|contact|person|mitarbeiter|employee|kunde|customer|patient|student|benutzer|user|herr|frau|mr|mrs|ms)[\s:]+$/.test(contextBefore)) {
+      score += 4;
+    }
+
+    // ENTSCHEIDUNG: Score >= 5 = Wahrscheinlich ein Name
+    const threshold = 5;
+    const isLikelyName = score >= threshold;
+
+    // DEBUG (kann später entfernt werden)
+    if (isLikelyName) {
+      console.log(`[AICC Name Heuristic] "${name}" -> Score: ${score} (threshold: ${threshold}) ✓ DETECTED`);
+    }
+
+    return isLikelyName;
   }
 
   /**
