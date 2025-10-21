@@ -22,6 +22,9 @@ class ComplianceMonitor {
     // Current analysis results per element
     this.currentAnalysis = new Map();
 
+    // Overlay containers for virtual highlighting
+    this.overlayContainers = new Map();
+
     this.init();
   }
 
@@ -170,6 +173,18 @@ class ComplianceMonitor {
 
     // Überwache Submit-Button für dieses Element
     this.attachSubmitButtonHandler(element);
+
+    // Event Handler für Overlay-Repositioning
+    const updateOverlays = () => {
+      const analysis = this.currentAnalysis.get(element);
+      if (analysis && analysis.highlightRanges.length > 0) {
+        this.highlightText(element, analysis);
+      }
+    };
+
+    // Update Overlays bei Scroll/Resize
+    window.addEventListener('scroll', updateOverlays, true);
+    window.addEventListener('resize', updateOverlays);
 
     // Initial analysis
     setTimeout(() => this.analyzeElement(element), 100);
@@ -399,92 +414,148 @@ class ComplianceMonitor {
 
   /**
    * Markiert erkannte sensible Daten im Text
+   * NEUE IMPLEMENTIERUNG: Verwendet Overlay-Technik ohne DOM-Modification
    */
   highlightText(element, analysis) {
-    if (element.contentEditable !== 'true') {
-      // Für textarea können wir keine Inline-Highlights erstellen
+    // Erstelle oder hole Overlay-Container für dieses Element
+    let overlayContainer = this.overlayContainers.get(element);
+
+    if (!overlayContainer) {
+      overlayContainer = this.createOverlayContainer(element);
+      this.overlayContainers.set(element, overlayContainer);
+    }
+
+    // Clear existing overlays
+    overlayContainer.innerHTML = '';
+
+    if (analysis.highlightRanges.length === 0) {
       return;
     }
 
-    // Für contenteditable Elemente - verwende verbesserten Ansatz
-    this.highlightContentEditable(element, analysis);
+    // Erstelle Overlays für jede erkannte Stelle
+    this.createHighlightOverlays(element, analysis, overlayContainer);
   }
 
   /**
-   * Highlightet Text in contenteditable Element
-   * VERBESSERT: Erhält Zeilenumbrüche durch \n → <br> Konvertierung
+   * Erstellt einen Container für Highlight-Overlays
    */
-  highlightContentEditable(element, analysis) {
-    if (analysis.highlightRanges.length === 0) {
-      // Entferne alle highlights
-      const highlights = element.querySelectorAll('.aicc-highlight');
-      highlights.forEach(h => {
-        const text = h.textContent;
-        h.replaceWith(document.createTextNode(text));
-      });
-      element.normalize();
-      return;
+  createOverlayContainer(element) {
+    const container = document.createElement('div');
+    container.className = 'aicc-overlay-container';
+    container.style.cssText = `
+      position: absolute;
+      pointer-events: none;
+      z-index: 1;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    `;
+
+    // Finde das Parent-Element für relative Positionierung
+    const parent = element.parentElement;
+
+    // Stelle sicher, dass Parent position: relative hat
+    const parentPosition = window.getComputedStyle(parent).position;
+    if (parentPosition === 'static') {
+      parent.style.position = 'relative';
     }
 
-    // Hole aktuellen Text mit innerText (erhält \n für Zeilenumbrüche)
+    // Füge Container als Sibling hinzu (nicht als Child von element!)
+    parent.insertBefore(container, element);
+
+    return container;
+  }
+
+  /**
+   * Erstellt Overlay-Highlights basierend auf Range API
+   */
+  createHighlightOverlays(element, analysis, container) {
     const text = element.innerText || element.textContent || '';
 
-    // Speichere Cursor-Position
-    const selection = window.getSelection();
-    let cursorOffset = 0;
-    if (selection.rangeCount > 0) {
-      try {
-        const range = selection.getRangeAt(0);
-        cursorOffset = range.startOffset;
-      } catch (e) {
-        // Ignore cursor errors
-      }
+    // TreeWalker zum Durchlaufen aller TextNodes
+    const walker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+
+    let currentOffset = 0;
+    const textNodes = [];
+
+    // Sammle alle TextNodes mit ihren Offsets
+    let node;
+    while (node = walker.nextNode()) {
+      const nodeText = node.textContent;
+      textNodes.push({
+        node: node,
+        start: currentOffset,
+        end: currentOffset + nodeText.length,
+        text: nodeText
+      });
+      currentOffset += nodeText.length;
     }
 
-    // Erstelle neue HTML mit Highlights
-    let lastIndex = 0;
-    let html = '';
+    // Erstelle Overlays für jede Highlight-Range
+    analysis.highlightRanges.forEach(highlightRange => {
+      const { start, end, severity } = highlightRange;
 
-    analysis.highlightRanges.forEach(range => {
-      // Text vor dem Highlight (konvertiere \n zu <br>)
-      const beforeText = text.substring(lastIndex, range.start);
-      html += this.escapeHtml(beforeText).replace(/\n/g, '<br>');
-
-      // Highlighted text
-      const highlightedText = text.substring(range.start, range.end);
-      const detection = analysis.detections.find(d => d.match === highlightedText);
-      const title = detection ? `${detection.name}: ${detection.description}` : '';
-
-      html += `<mark class="aicc-highlight aicc-highlight-${range.severity}" data-severity="${range.severity}" title="${this.escapeHtml(title)}">${this.escapeHtml(highlightedText)}</mark>`;
-
-      lastIndex = range.end;
-    });
-
-    // Restlicher Text (konvertiere \n zu <br>)
-    const remainingText = text.substring(lastIndex);
-    html += this.escapeHtml(remainingText).replace(/\n/g, '<br>');
-
-    // Update DOM nur wenn nötig
-    const currentHtml = element.innerHTML;
-
-    if (this.stripMarks(currentHtml) !== this.stripMarks(html)) {
-      element.innerHTML = html;
-
-      // Versuche Cursor wiederherzustellen
-      try {
-        const range = document.createRange();
-        const sel = window.getSelection();
-        const textNode = this.findTextNode(element, cursorOffset);
-        if (textNode) {
-          range.setStart(textNode.node, Math.min(textNode.offset, textNode.node.length));
-          range.collapse(true);
-          sel.removeAllRanges();
-          sel.addRange(range);
+      // Finde TextNodes die diese Range enthalten
+      textNodes.forEach(({ node, start: nodeStart, end: nodeEnd }) => {
+        // Prüfe ob dieser TextNode die Range überlappt
+        if (nodeEnd <= start || nodeStart >= end) {
+          return; // Kein Overlap
         }
-      } catch (e) {
-        // Cursor konnte nicht wiederhergestellt werden - nicht kritisch
-      }
-    }
+
+        // Berechne lokale Offsets innerhalb des TextNodes
+        const localStart = Math.max(0, start - nodeStart);
+        const localEnd = Math.min(node.textContent.length, end - nodeStart);
+
+        // Erstelle Range für getBoundingClientRect
+        try {
+          const range = document.createRange();
+          range.setStart(node, localStart);
+          range.setEnd(node, localEnd);
+
+          const rects = range.getClientRects();
+
+          // Erstelle Overlay für jedes Rect (multi-line support)
+          for (let i = 0; i < rects.length; i++) {
+            const rect = rects[i];
+            this.createOverlayElement(container, rect, severity, element);
+          }
+        } catch (e) {
+          console.warn('[AICC] Could not create highlight range:', e);
+        }
+      });
+    });
+  }
+
+  /**
+   * Erstellt ein einzelnes Overlay-Element
+   */
+  createOverlayElement(container, rect, severity, element) {
+    const overlay = document.createElement('div');
+    overlay.className = `aicc-overlay aicc-overlay-${severity}`;
+
+    // Berechne Position relativ zum Element
+    const elementRect = element.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    const top = rect.top - containerRect.top;
+    const left = rect.left - containerRect.left;
+
+    overlay.style.cssText = `
+      position: absolute;
+      top: ${top}px;
+      left: ${left}px;
+      width: ${rect.width}px;
+      height: ${rect.height}px;
+      pointer-events: none;
+      border-radius: 2px;
+    `;
+
+    container.appendChild(overlay);
   }
 
   /**

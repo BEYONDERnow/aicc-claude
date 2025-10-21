@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 1.0.2 BETA** • by BEYONDER
+**Version 1.0.3 BETA** • by BEYONDER
 
 Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -8,7 +8,31 @@ Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit
 
 ## 📋 Versionshistorie
 
-### Version 1.0.2 (Aktuell)
+### Version 1.0.3 (Aktuell)
+**Datum:** 2025-10-21
+
+**Änderungen:**
+- ✅ **NEUE Highlighting-Technik: Virtual Overlays**
+  - Verwendet absolut positionierte Overlay-Elemente statt DOM-Modification
+  - **Keine Zerstörung der Formatierung mehr** - Text bleibt unverändert
+  - Funktioniert mit ProseMirror (ChatGPT), ContentEditable und allen Editoren
+  - Ähnlich wie LanguageTool Plus - professionelle Overlay-Technik
+- ✅ **Modal-Tabelle optimiert:**
+  - Spalte "Erkannter Wert" begrenzt auf max. 200px Breite
+  - Automatischer Zeilenumbruch bei langen Werten (word-break)
+  - Bessere Lesbarkeit, kein horizontales Scrollen mehr
+- 🔧 **Technische Verbesserungen:**
+  - Range API für präzise Text-Positionierung
+  - TreeWalker für effizientes DOM-Traversal
+  - Auto-Repositioning bei Scroll/Resize Events
+  - Multi-line Support für umgebrochene Highlights
+
+**Warum diese Änderung?**
+v1.0.2 hat durch `innerHTML`-Replacement die DOM-Struktur von ChatGPT zerstört, was zu zusätzlichen Zeilenumbrüchen führte. Die neue Overlay-Technik modifiziert den DOM NICHT - sie legt farbige Highlights ÜBER den Text, ähnlich wie professionelle Tools (LanguageTool, Grammarly).
+
+---
+
+### Version 1.0.2
 **Datum:** 2025-10-21
 
 **Änderungen:**
@@ -27,6 +51,8 @@ Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit
 3. **Klick auf Icon** → Overlay mit Übersicht (nur "Verstanden"-Button)
 4. **Enter oder Send-Button** → Modal mit Warnung
 5. **Enter oder "Warnung ignorieren"** → Nachricht wird gesendet
+
+**PROBLEM:** Diese Version zerstört die Formatierung durch DOM-Replacement (behoben in v1.0.3)
 
 ---
 
@@ -464,4 +490,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 1.0.2 BETA**
+**Version 1.0.3 BETA**

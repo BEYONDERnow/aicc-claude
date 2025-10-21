@@ -5,7 +5,38 @@
  */
 
 /* ===========================
-   Inline Text Highlighting
+   Virtual Overlay Highlighting (NEW)
+   Non-invasive highlighting without DOM modification
+   =========================== */
+
+.aicc-overlay-container {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+  overflow: visible;
+}
+
+.aicc-overlay {
+  position: absolute;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.aicc-overlay-critical {
+  background: rgba(239, 68, 68, 0.25);
+  border-bottom: 2px solid #ef4444;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.1);
+}
+
+.aicc-overlay-warning {
+  background: rgba(245, 158, 11, 0.2);
+  border-bottom: 2px solid #f59e0b;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.1);
+}
+
+/* ===========================
+   OLD: Inline Text Highlighting (Deprecated)
+   Kept for backwards compatibility
    =========================== */
 
 .aicc-highlight {
@@ -315,6 +346,13 @@
   color: #374151;
 }
 
+/* 2. Spalte: Erkannter Wert - Begrenzung der Breite */
+.aicc-detection-table td:nth-child(2) {
+  max-width: 200px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
 .aicc-detection-table code {
   background: #f3f4f6;
   padding: 4px 8px;
@@ -324,6 +362,10 @@
   color: #1f2937;
   font-weight: 500;
   border: 1px solid #e5e7eb;
+  display: inline-block;
+  max-width: 100%;
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .aicc-category {
