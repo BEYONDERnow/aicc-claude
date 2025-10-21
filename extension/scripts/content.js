@@ -65,13 +65,17 @@ class ComplianceMonitor {
           'textarea[placeholder*="Message"]',
           'textarea[placeholder*="Nachricht"]',
           'div[contenteditable="true"][role="textbox"]',
-          '.ProseMirror'
+          '.ProseMirror',
+          // Edit-Modus spezifische Selektoren
+          'textarea[placeholder*="Edit"]',
+          'div[contenteditable="true"]'
         ],
         submitSelectors: [
           'button[data-testid="send-button"]',
           'button[data-testid="fruitjuice-send-button"]',
           'button[aria-label*="Send"]',
-          'button[aria-label*="Senden"]'
+          'button[aria-label*="Senden"]',
+          'button[aria-label*="Save"]'
         ]
       };
     } else if (hostname.includes('gemini.google.com')) {
@@ -129,16 +133,37 @@ class ComplianceMonitor {
    * Hängt Event-Listener an ein Element
    */
   attachToElement(element) {
-    this.monitoredElements.set(element, {
+    const info = {
       lastAnalysis: null,
       isContentEditable: element.contentEditable === 'true',
-      originalContent: null
-    });
+      originalContent: null,
+      observer: null
+    };
+
+    this.monitoredElements.set(element, info);
 
     // Event Listener
     element.addEventListener('input', () => this.handleInput(element));
-    element.addEventListener('keydown', (e) => this.handleKeyDown(element, e));
+    // Wichtig: capture:true damit unser Handler vor ChatGPT's Handler greift
+    element.addEventListener('keydown', (e) => this.handleKeyDown(element, e), { capture: true });
     element.addEventListener('paste', () => this.handlePaste(element));
+
+    // Beobachte Änderungen am Element (z.B. wenn Text gelöscht wird nach Absenden)
+    const observer = new MutationObserver(() => {
+      // Verzögert neu analysieren
+      clearTimeout(this.analyzeTimer);
+      this.analyzeTimer = setTimeout(() => {
+        this.analyzeElement(element);
+      }, this.debounceDelay);
+    });
+    observer.observe(element, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+
+    // Speichere Observer
+    info.observer = observer;
 
     // Erstelle Status-Icon
     this.createStatusIcon(element);
@@ -335,14 +360,17 @@ class ComplianceMonitor {
    * Markiert erkannte sensible Daten im Text
    */
   highlightText(element, analysis) {
+    // DEAKTIVIERT: Inline-Highlighting zerstört Formatierung in contenteditable
+    // Stattdessen nutzen wir nur Icon + Overlay, was sicherer ist
+    // und keine Zeilenumbrüche/Formatierung zerstört
+    return;
+
+    /* Original code auskommentiert:
     if (element.contentEditable !== 'true') {
-      // Für textarea können wir keine Inline-Highlights erstellen
-      // Nur Icon zeigen
       return;
     }
-
-    // Für contenteditable Elemente
     this.highlightContentEditable(element, analysis);
+    */
   }
 
   /**
@@ -663,17 +691,22 @@ class ComplianceMonitor {
    */
   observeDOM() {
     const observer = new MutationObserver((mutations) => {
-      // Debounce
+      // Debounce - kürzeres Intervall für schnellere Erkennung von Edit-Feldern
       clearTimeout(this.observerTimeout);
       this.observerTimeout = setTimeout(() => {
         this.findAndMonitorInputs();
-      }, 500);
+      }, 200);
     });
 
     observer.observe(document.body, {
       childList: true,
       subtree: true
     });
+
+    // Zusätzlich: Prüfe regelmäßig auf neue Felder (Fallback)
+    setInterval(() => {
+      this.findAndMonitorInputs();
+    }, 2000);
   }
 
   /**
