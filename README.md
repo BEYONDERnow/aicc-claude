@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 1.0.3 BETA** • by BEYONDER
+**Version 1.0.4 BETA** • by BEYONDER
 
 Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -8,7 +8,45 @@ Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit
 
 ## 📋 Versionshistorie
 
-### Version 1.0.3 (Aktuell)
+### Version 1.0.4 (Aktuell)
+**Datum:** 2025-10-21
+
+**Kritische Bug-Fixes:**
+- 🐛 **CRITICAL: Browser-Absturz behoben**
+  - MutationObserver ignoriert jetzt Änderungen an Overlay-Containern (verhindert Endlosschleife)
+  - Debouncing (100ms) für Scroll/Resize-Handler
+  - Fehlerbehandlung bei Overlay-Erstellung
+  - Problem: Extension verursachte Tabs Crash durch infinite loop
+
+- 🐛 **Telefonnummer-Overlap behoben**
+  - Overlappende Detection-Ranges werden jetzt zusammengeführt
+  - Beispiel: "089 928 90 99" wird als EINE Range erkannt statt mehrere
+  - Implementierung: `sortRanges()` merged jetzt overlapping ranges
+
+- 🐛 **Hover-Tooltips funktionieren jetzt**
+  - Overlays haben `pointer-events: auto` + `cursor: help`
+  - Title-Attribute mit Detection-Info (Name + Beschreibung)
+  - Problem: User sah keine Info beim Hovern über Markierungen
+
+- 🐛 **Modal-Buttons jetzt klickbar**
+  - Highlight-Overlays werden ausgeblendet wenn Modal geöffnet ist
+  - CSS-Class `aicc-modal-open` auf `<body>` während Modal aktiv
+  - Problem: "X" und "Verstanden" Buttons nicht klickbar
+
+- 🐛 **Namen-Erkennung verbessert**
+  - Neues Pattern: `name_standalone` für Namen ohne Kontext
+  - Erkennt jetzt: "Hans Peter", "Chris Beyeler", "Michael Schmid"
+  - Mit Blacklist-Filtering gegen False Positives
+  - Problem: Keine Namen wurden erkannt
+
+**Technische Änderungen:**
+- Overlays umbenannt: `.aicc-overlay` → `.aicc-highlight-overlay` (Namenskonflikt behoben)
+- Range-Merging Algorithmus in `detector.js`
+- CSS Body-Class Management für Modal-Status
+
+---
+
+### Version 1.0.3
 **Datum:** 2025-10-21
 
 **Änderungen:**
@@ -490,4 +528,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 1.0.3 BETA**
+**Version 1.0.4 BETA**

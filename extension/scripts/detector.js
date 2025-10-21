@@ -197,6 +197,34 @@ class ComplianceDetector {
           }
         },
         {
+          id: 'name_standalone',
+          pattern: /(?:^|[^.!?]\s+)([A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)?)\b/g,
+          severity: 'warning',
+          category: 'pii',
+          nameDE: 'Name (eigenständig)',
+          nameEN: 'Name (standalone)',
+          descDE: 'Vollständige Namen sind personenbezogene Daten',
+          descEN: 'Full names are personal data',
+          customValidator: (match, detector) => {
+            const fullMatch = match[0];
+            const name = match[1];
+
+            // Nicht am Satzanfang (nach Punkt, Fragezeichen, etc.)
+            if (/^[.!?]\s+/.test(fullMatch)) {
+              return false;
+            }
+
+            const words = name.split(/\s+/);
+
+            // Prüfe ob Wörter in Blacklist sind
+            const isBlacklisted = words.some(word =>
+              detector.nameBlacklist.has(word.toLowerCase())
+            );
+
+            return !isBlacklisted;
+          }
+        },
+        {
           id: 'address',
           pattern: /\b\d+[\s,]+[A-ZÄÖÜ][a-zäöüß]+(?:straße|strasse|str\.|weg|gasse|platz|allee|avenue|street|road|way)\b/gi,
           severity: 'warning',
@@ -386,10 +414,46 @@ class ComplianceDetector {
   }
 
   /**
-   * Sortiert Ranges nach Start-Position
+   * Sortiert Ranges nach Start-Position und merged overlapping ranges
    */
   sortRanges(ranges) {
-    return ranges.sort((a, b) => a.start - b.start);
+    if (ranges.length === 0) {
+      return ranges;
+    }
+
+    // Sortiere nach Start-Position
+    const sorted = ranges.sort((a, b) => a.start - b.start);
+
+    // Merge overlapping ranges
+    const merged = [sorted[0]];
+
+    for (let i = 1; i < sorted.length; i++) {
+      const current = sorted[i];
+      const last = merged[merged.length - 1];
+
+      // Prüfe ob current und last überlappen oder aneinandergrenzen
+      if (current.start <= last.end) {
+        // Overlapping oder angrenzend - merge sie
+        // Wähle die höhere Severity
+        const severity = (last.severity === 'critical' || current.severity === 'critical')
+          ? 'critical'
+          : 'warning';
+
+        // Erweitere den letzten Range
+        merged[merged.length - 1] = {
+          start: Math.min(last.start, current.start),
+          end: Math.max(last.end, current.end),
+          severity: severity,
+          id: last.id, // Behalte ID des ersten
+          text: last.text // Behalte Text des ersten
+        };
+      } else {
+        // Kein Overlap - füge als neuen Range hinzu
+        merged.push(current);
+      }
+    }
+
+    return merged;
   }
 
   /**

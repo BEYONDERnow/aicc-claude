@@ -152,7 +152,28 @@ class ComplianceMonitor {
     element.addEventListener('paste', () => this.handlePaste(element));
 
     // Beobachte Änderungen am Element (z.B. wenn Text gelöscht wird nach Absenden)
-    const observer = new MutationObserver(() => {
+    const observer = new MutationObserver((mutations) => {
+      // WICHTIG: Ignoriere Änderungen an unseren eigenen Overlays!
+      const relevantMutation = mutations.some(mutation => {
+        // Prüfe ob die Änderung an unseren Overlay-Containern ist
+        if (mutation.target.classList && mutation.target.classList.contains('aicc-overlay-container')) {
+          return false;
+        }
+        // Prüfe ob ein hinzugefügter Node ein Overlay-Container ist
+        if (mutation.addedNodes.length > 0) {
+          for (let node of mutation.addedNodes) {
+            if (node.classList && node.classList.contains('aicc-overlay-container')) {
+              return false;
+            }
+          }
+        }
+        return true;
+      });
+
+      if (!relevantMutation) {
+        return; // Ignoriere diese Mutation
+      }
+
       // Verzögert neu analysieren
       clearTimeout(this.analyzeTimer);
       this.analyzeTimer = setTimeout(() => {
@@ -174,15 +195,19 @@ class ComplianceMonitor {
     // Überwache Submit-Button für dieses Element
     this.attachSubmitButtonHandler(element);
 
-    // Event Handler für Overlay-Repositioning
+    // Event Handler für Overlay-Repositioning (mit Debouncing!)
+    let overlayUpdateTimer = null;
     const updateOverlays = () => {
-      const analysis = this.currentAnalysis.get(element);
-      if (analysis && analysis.highlightRanges.length > 0) {
-        this.highlightText(element, analysis);
-      }
+      clearTimeout(overlayUpdateTimer);
+      overlayUpdateTimer = setTimeout(() => {
+        const analysis = this.currentAnalysis.get(element);
+        if (analysis && analysis.highlightRanges.length > 0) {
+          this.highlightText(element, analysis);
+        }
+      }, 100); // 100ms Debounce für Performance
     };
 
-    // Update Overlays bei Scroll/Resize
+    // Update Overlays bei Scroll/Resize (aber debounced!)
     window.addEventListener('scroll', updateOverlays, true);
     window.addEventListener('resize', updateOverlays);
 
@@ -420,12 +445,22 @@ class ComplianceMonitor {
     // Erstelle oder hole Overlay-Container für dieses Element
     let overlayContainer = this.overlayContainers.get(element);
 
+    // Prüfe ob Container noch im DOM ist
+    if (overlayContainer && !document.body.contains(overlayContainer)) {
+      overlayContainer = null;
+      this.overlayContainers.delete(element);
+    }
+
     if (!overlayContainer) {
       overlayContainer = this.createOverlayContainer(element);
+      if (!overlayContainer) {
+        // Konnte keinen Container erstellen
+        return;
+      }
       this.overlayContainers.set(element, overlayContainer);
     }
 
-    // Clear existing overlays
+    // Clear existing overlays (aber nur innerHTML, nicht den Container selbst)
     overlayContainer.innerHTML = '';
 
     if (analysis.highlightRanges.length === 0) {
@@ -440,31 +475,42 @@ class ComplianceMonitor {
    * Erstellt einen Container für Highlight-Overlays
    */
   createOverlayContainer(element) {
-    const container = document.createElement('div');
-    container.className = 'aicc-overlay-container';
-    container.style.cssText = `
-      position: absolute;
-      pointer-events: none;
-      z-index: 1;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    `;
+    try {
+      // Finde das Parent-Element für relative Positionierung
+      const parent = element.parentElement;
+      if (!parent) {
+        console.warn('[AICC] Element has no parent, cannot create overlay');
+        return null;
+      }
 
-    // Finde das Parent-Element für relative Positionierung
-    const parent = element.parentElement;
+      const container = document.createElement('div');
+      container.className = 'aicc-overlay-container';
+      container.setAttribute('data-aicc-overlay', 'true'); // Marker für MutationObserver
+      container.style.cssText = `
+        position: absolute;
+        pointer-events: none;
+        z-index: 1;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      `;
 
-    // Stelle sicher, dass Parent position: relative hat
-    const parentPosition = window.getComputedStyle(parent).position;
-    if (parentPosition === 'static') {
-      parent.style.position = 'relative';
+      // Stelle sicher, dass Parent position: relative hat
+      const parentPosition = window.getComputedStyle(parent).position;
+      if (parentPosition === 'static') {
+        parent.style.position = 'relative';
+      }
+
+      // Füge Container als Sibling hinzu (nicht als Child von element!)
+      parent.insertBefore(container, element);
+
+      return container;
+    } catch (e) {
+      console.error('[AICC] Error creating overlay container:', e);
+      return null;
     }
-
-    // Füge Container als Sibling hinzu (nicht als Child von element!)
-    parent.insertBefore(container, element);
-
-    return container;
   }
 
   /**
@@ -500,6 +546,13 @@ class ComplianceMonitor {
     analysis.highlightRanges.forEach(highlightRange => {
       const { start, end, severity } = highlightRange;
 
+      // Finde zugehörige Detection für Tooltip
+      const detection = analysis.detections.find(d =>
+        d.start === start && d.end === end
+      ) || analysis.detections.find(d =>
+        d.start >= start && d.end <= end
+      );
+
       // Finde TextNodes die diese Range enthalten
       textNodes.forEach(({ node, start: nodeStart, end: nodeEnd }) => {
         // Prüfe ob dieser TextNode die Range überlappt
@@ -522,7 +575,7 @@ class ComplianceMonitor {
           // Erstelle Overlay für jedes Rect (multi-line support)
           for (let i = 0; i < rects.length; i++) {
             const rect = rects[i];
-            this.createOverlayElement(container, rect, severity, element);
+            this.createOverlayElement(container, rect, severity, element, detection);
           }
         } catch (e) {
           console.warn('[AICC] Could not create highlight range:', e);
@@ -534,9 +587,16 @@ class ComplianceMonitor {
   /**
    * Erstellt ein einzelnes Overlay-Element
    */
-  createOverlayElement(container, rect, severity, element) {
+  createOverlayElement(container, rect, severity, element, detection) {
     const overlay = document.createElement('div');
-    overlay.className = `aicc-overlay aicc-overlay-${severity}`;
+    overlay.className = `aicc-highlight-overlay aicc-highlight-overlay-${severity}`;
+
+    // Tooltip-Text aus Detection-Info
+    if (detection) {
+      const tooltipText = `${detection.name}: ${detection.description}`;
+      overlay.setAttribute('title', tooltipText);
+      overlay.setAttribute('data-tooltip', tooltipText);
+    }
 
     // Berechne Position relativ zum Element
     const elementRect = element.getBoundingClientRect();
@@ -551,8 +611,9 @@ class ComplianceMonitor {
       left: ${left}px;
       width: ${rect.width}px;
       height: ${rect.height}px;
-      pointer-events: none;
+      pointer-events: auto;
       border-radius: 2px;
+      cursor: help;
     `;
 
     container.appendChild(overlay);
@@ -601,6 +662,9 @@ class ComplianceMonitor {
       return;
     }
 
+    // WICHTIG: Blende alle Highlight-Overlays aus während Info-Overlay offen ist
+    document.body.classList.add('aicc-modal-open');
+
     // Entferne existierendes Overlay
     const existingOverlay = document.querySelector('.aicc-overlay');
     if (existingOverlay) {
@@ -643,7 +707,11 @@ class ComplianceMonitor {
     document.body.appendChild(overlay);
 
     // Event handlers
-    const close = () => overlay.remove();
+    const close = () => {
+      overlay.remove();
+      // Zeige Highlight-Overlays wieder an
+      document.body.classList.remove('aicc-modal-open');
+    };
     overlay.querySelector('.aicc-overlay-close').addEventListener('click', close);
     overlay.querySelector('.aicc-overlay-backdrop').addEventListener('click', close);
     overlay.querySelector('.aicc-overlay-ok').addEventListener('click', close);
@@ -697,6 +765,9 @@ class ComplianceMonitor {
     if (this.isModalShown) return;
     this.isModalShown = true;
 
+    // WICHTIG: Blende alle Highlight-Overlays aus während Modal offen ist
+    document.body.classList.add('aicc-modal-open');
+
     const modal = document.createElement('div');
     modal.className = 'aicc-modal';
     modal.innerHTML = `
@@ -744,6 +815,8 @@ class ComplianceMonitor {
     const close = () => {
       modal.remove();
       this.isModalShown = false;
+      // Zeige Highlight-Overlays wieder an
+      document.body.classList.remove('aicc-modal-open');
     };
 
     modal.querySelector('.aicc-modal-close').addEventListener('click', close);
