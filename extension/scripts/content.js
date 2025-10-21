@@ -401,21 +401,18 @@ class ComplianceMonitor {
    * Markiert erkannte sensible Daten im Text
    */
   highlightText(element, analysis) {
-    // DEAKTIVIERT: Inline-Highlighting zerstört Formatierung in contenteditable
-    // Stattdessen nutzen wir nur Icon + Overlay, was sicherer ist
-    // und keine Zeilenumbrüche/Formatierung zerstört
-    return;
-
-    /* Original code auskommentiert:
     if (element.contentEditable !== 'true') {
+      // Für textarea können wir keine Inline-Highlights erstellen
       return;
     }
+
+    // Für contenteditable Elemente - verwende verbesserten Ansatz
     this.highlightContentEditable(element, analysis);
-    */
   }
 
   /**
    * Highlightet Text in contenteditable Element
+   * VERBESSERT: Erhält Zeilenumbrüche durch \n → <br> Konvertierung
    */
   highlightContentEditable(element, analysis) {
     if (analysis.highlightRanges.length === 0) {
@@ -429,15 +426,19 @@ class ComplianceMonitor {
       return;
     }
 
-    // Hole aktuellen Text
-    const text = element.innerText || element.textContent;
+    // Hole aktuellen Text mit innerText (erhält \n für Zeilenumbrüche)
+    const text = element.innerText || element.textContent || '';
 
     // Speichere Cursor-Position
     const selection = window.getSelection();
     let cursorOffset = 0;
     if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      cursorOffset = range.startOffset;
+      try {
+        const range = selection.getRangeAt(0);
+        cursorOffset = range.startOffset;
+      } catch (e) {
+        // Ignore cursor errors
+      }
     }
 
     // Erstelle neue HTML mit Highlights
@@ -445,8 +446,9 @@ class ComplianceMonitor {
     let html = '';
 
     analysis.highlightRanges.forEach(range => {
-      // Text vor dem Highlight
-      html += this.escapeHtml(text.substring(lastIndex, range.start));
+      // Text vor dem Highlight (konvertiere \n zu <br>)
+      const beforeText = text.substring(lastIndex, range.start);
+      html += this.escapeHtml(beforeText).replace(/\n/g, '<br>');
 
       // Highlighted text
       const highlightedText = text.substring(range.start, range.end);
@@ -458,15 +460,15 @@ class ComplianceMonitor {
       lastIndex = range.end;
     });
 
-    // Restlicher Text
-    html += this.escapeHtml(text.substring(lastIndex));
+    // Restlicher Text (konvertiere \n zu <br>)
+    const remainingText = text.substring(lastIndex);
+    html += this.escapeHtml(remainingText).replace(/\n/g, '<br>');
 
     // Update DOM nur wenn nötig
     const currentHtml = element.innerHTML;
-    const newHtml = html;
 
-    if (this.stripMarks(currentHtml) !== this.stripMarks(newHtml)) {
-      element.innerHTML = newHtml;
+    if (this.stripMarks(currentHtml) !== this.stripMarks(html)) {
+      element.innerHTML = html;
 
       // Versuche Cursor wiederherzustellen
       try {
@@ -480,7 +482,7 @@ class ComplianceMonitor {
           sel.addRange(range);
         }
       } catch (e) {
-        // Cursor konnte nicht wiederhergestellt werden
+        // Cursor konnte nicht wiederhergestellt werden - nicht kritisch
       }
     }
   }
@@ -657,8 +659,8 @@ class ComplianceMonitor {
             <button class="aicc-btn aicc-btn-secondary aicc-modal-cancel">
               ${this.currentLang === 'de' ? 'Abbrechen & Bearbeiten' : 'Cancel & Edit'}
             </button>
-            <button class="aicc-btn aicc-btn-warning aicc-modal-send">
-              ${this.currentLang === 'de' ? 'Trotzdem fortfahren' : 'Continue Anyway'}
+            <button class="aicc-btn aicc-btn-warning aicc-modal-send" autofocus>
+              ${this.currentLang === 'de' ? 'Warnung ignorieren & abschicken' : 'Ignore Warning & Send'}
             </button>
           </div>
         </div>
@@ -678,6 +680,18 @@ class ComplianceMonitor {
     modal.querySelector('.aicc-modal-cancel').addEventListener('click', () => {
       close();
       element.focus();
+    });
+
+    // Enter-Taste im Modal abfangen
+    modal.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        // Klicke den Send-Button
+        const sendBtn = modal.querySelector('.aicc-modal-send');
+        if (sendBtn) {
+          sendBtn.click();
+        }
+      }
     });
 
     const sendBtn = modal.querySelector('.aicc-modal-send');

@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 1.0.1 BETA** • by BEYONDER
+**Version 1.0.2 BETA** • by BEYONDER
 
 Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -8,7 +8,29 @@ Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit
 
 ## 📋 Versionshistorie
 
-### Version 1.0.1 (Aktuell)
+### Version 1.0.2 (Aktuell)
+**Datum:** 2025-10-21
+
+**Änderungen:**
+- ✅ **Inline-Highlighting reaktiviert:** Sensible Daten werden direkt im Text markiert (rot/orange)
+- ✅ **Verbesserte Zeilenumbruch-Behandlung:** \n → <br> Konvertierung erhält Formatierung
+- ✅ **Klarere Button-Beschriftung:** "Warnung ignorieren & abschicken" statt "Trotzdem fortfahren"
+- ✅ **Enter-Taste im Modal:** Enter löst jetzt Submit-Aktion aus
+- ✅ **Autofocus:** Submit-Button erhält automatisch Focus für schnellere Bedienung
+- 🔧 **Verbessertes Verhalten:**
+  - Overlay (Icon-Klick): Nur Information, KEIN Absenden möglich
+  - Modal (Submit-Versuch): Warnung mit Möglichkeit zu ignorieren
+
+**User Flow:**
+1. Kritische Daten eingeben → Text wird **inline markiert** (rot/orange)
+2. Icon wird rot und zeigt **Counter-Badge**
+3. **Klick auf Icon** → Overlay mit Übersicht (nur "Verstanden"-Button)
+4. **Enter oder Send-Button** → Modal mit Warnung
+5. **Enter oder "Warnung ignorieren"** → Nachricht wird gesendet
+
+---
+
+### Version 1.0.1
 **Datum:** 2025-10-21
 
 **Änderungen:**
@@ -442,4 +464,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 1.0.1 BETA**
+**Version 1.0.2 BETA**
