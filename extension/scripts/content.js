@@ -168,10 +168,51 @@ class ComplianceMonitor {
     // Erstelle Status-Icon
     this.createStatusIcon(element);
 
+    // Überwache Submit-Button für dieses Element
+    this.attachSubmitButtonHandler(element);
+
     // Initial analysis
     setTimeout(() => this.analyzeElement(element), 100);
 
     console.log('[AI Compliance Checker] Monitoring element:', element);
+  }
+
+  /**
+   * Hängt Click-Handler an Submit-Buttons an
+   */
+  attachSubmitButtonHandler(element) {
+    // Finde Submit-Button für dieses Element
+    const submitButton = this.findSubmitButton(element);
+
+    if (submitButton && !submitButton.hasAttribute('data-aicc-monitored')) {
+      // Markiere Button als überwacht
+      submitButton.setAttribute('data-aicc-monitored', 'true');
+
+      // Füge Click-Handler hinzu (capture phase!)
+      submitButton.addEventListener('click', (e) => {
+        const analysis = this.currentAnalysis.get(element);
+
+        // Wenn Warnungen oder kritische Daten erkannt wurden
+        if (analysis && (analysis.status === 'critical' || analysis.status === 'warning')) {
+          // Blockiere den originalen Click
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+
+          // Zeige Modal
+          this.showWarningModal(analysis, element, submitButton);
+
+          return false;
+        }
+      }, { capture: true });
+
+      console.log('[AI Compliance Checker] Monitoring submit button:', submitButton);
+    }
+
+    // Fallback: Wenn Button noch nicht existiert, versuche später nochmal
+    if (!submitButton) {
+      setTimeout(() => this.attachSubmitButtonHandler(element), 500);
+    }
   }
 
   /**
@@ -575,8 +616,11 @@ class ComplianceMonitor {
 
   /**
    * Zeigt Warning Modal vor dem Absenden
+   * @param {Object} analysis - Analyse-Ergebnis
+   * @param {HTMLElement} element - Das Textfeld
+   * @param {HTMLElement} submitButton - Optional: Der Submit-Button (falls vom Button geklickt)
    */
-  showWarningModal(analysis, element) {
+  showWarningModal(analysis, element, submitButton = null) {
     if (this.isModalShown) return;
     this.isModalShown = true;
 
@@ -642,23 +686,51 @@ class ComplianceMonitor {
     if (sendBtn) {
       sendBtn.addEventListener('click', () => {
         close();
-        // Simulate send
+
+        // Warte kurz, dann simuliere das Absenden
         setTimeout(() => {
-          const submitButton = this.findSubmitButton(element);
+          // Temporär: Analysestatus auf "safe" setzen, damit unser Handler nicht nochmal greift
+          const tempAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
+          this.currentAnalysis.set(element, tempAnalysis);
+
+          // Wenn Submit-Button übergeben wurde, klicke darauf
           if (submitButton) {
+            // Entferne temporär unser Monitoring-Attribut
+            const wasMonitored = submitButton.getAttribute('data-aicc-monitored');
+            submitButton.removeAttribute('data-aicc-monitored');
+
+            // Klicke Button
             submitButton.click();
+
+            // Stelle Monitoring wieder her (nach kurzer Verzögerung)
+            setTimeout(() => {
+              if (wasMonitored) {
+                submitButton.setAttribute('data-aicc-monitored', 'true');
+              }
+            }, 500);
           } else {
-            // Trigger Enter event
-            const event = new KeyboardEvent('keydown', {
-              key: 'Enter',
-              code: 'Enter',
-              keyCode: 13,
-              which: 13,
-              bubbles: true,
-              cancelable: true
-            });
-            element.dispatchEvent(event);
+            // Fallback: Suche Submit-Button oder simuliere Enter
+            const foundButton = this.findSubmitButton(element);
+            if (foundButton) {
+              foundButton.click();
+            } else {
+              // Trigger Enter event
+              const event = new KeyboardEvent('keydown', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                which: 13,
+                bubbles: true,
+                cancelable: true
+              });
+              element.dispatchEvent(event);
+            }
           }
+
+          // Nach 1 Sekunde: Analysiere neu (für nächste Nachricht)
+          setTimeout(() => {
+            this.analyzeElement(element);
+          }, 1000);
         }, 100);
       });
     }
