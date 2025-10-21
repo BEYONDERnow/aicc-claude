@@ -1,8 +1,48 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Beta by BEYONDER**
+**Version 1.0.1 BETA** • by BEYONDER
 
 Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
+
+---
+
+## 📋 Versionshistorie
+
+### Version 1.0.1 (Aktuell)
+**Datum:** 2025-10-21
+
+**Änderungen:**
+- ✅ **Modal bei Button-Click:** Submit-Button-Klicks werden jetzt abgefangen und zeigen das Modal
+- ✅ **"Trotzdem fortfahren"-Button:** Immer verfügbar im Modal (bei Warnungen UND kritischen Daten)
+- ✅ **Verbesserte Submit-Logik:** Button-Monitoring mit Retry-Mechanismus
+- 🔧 **Bug-Fix:** Formatierung bleibt erhalten (Inline-Highlighting deaktiviert)
+- 🔧 **Bug-Fix:** Icon-Größe angepasst (28px safe, 36px warning/critical)
+- 🔧 **Bug-Fix:** Modal erscheint zuverlässig bei Enter-Taste (capture phase)
+- 🔧 **Bug-Fix:** Icon aktualisiert nach Absenden (MutationObserver)
+- 🔧 **Bug-Fix:** Edit-Modus wird erkannt (erweiterte Selektoren + Intervall-Check)
+
+**Technische Verbesserungen:**
+- Event-Handling mit capture phase
+- Temporärer Status-Override verhindert Endlos-Loops
+- Attribut-basiertes Button-Tracking
+- Automatische Re-Analyse nach Änderungen
+
+---
+
+### Version 1.0.0
+**Datum:** 2025-10-21
+
+**Initiales Release:**
+- ✅ Echtzeit-Erkennung von sensiblen Daten
+- ✅ Status-Icon mit Counter-Badge
+- ✅ Klickbares Overlay mit Tabellenansicht
+- ✅ Modal-Warnung vor Absenden
+- ✅ Kontext-basierte Namenserkennung
+- ✅ Mehrsprachigkeit (DE/EN)
+- ✅ ChatGPT, Claude, Gemini Support
+- ✅ BEYONDER Branding
+- ✅ Modernes UX-Design mit Gradients
+- ✅ Dark-Mode Support
 
 ---
 
@@ -402,4 +442,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 1.0.0 BETA**
+**Version 1.0.1 BETA**

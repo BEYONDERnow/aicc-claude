@@ -657,11 +657,9 @@ class ComplianceMonitor {
             <button class="aicc-btn aicc-btn-secondary aicc-modal-cancel">
               ${this.currentLang === 'de' ? 'Abbrechen & Bearbeiten' : 'Cancel & Edit'}
             </button>
-            ${analysis.status === 'warning' ? `
-              <button class="aicc-btn aicc-btn-warning aicc-modal-send">
-                ${this.currentLang === 'de' ? 'Trotzdem fortfahren' : 'Continue Anyway'}
-              </button>
-            ` : ''}
+            <button class="aicc-btn aicc-btn-warning aicc-modal-send">
+              ${this.currentLang === 'de' ? 'Trotzdem fortfahren' : 'Continue Anyway'}
+            </button>
           </div>
         </div>
       </div>
