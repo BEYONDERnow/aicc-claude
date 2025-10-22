@@ -19,39 +19,151 @@ class ComplianceDetector {
    */
   initializeCommonFirstNames() {
     return new Set([
-      // Deutsche Vornamen (Top 100+)
-      'alexander', 'andreas', 'andres', 'anna', 'ben', 'benjamin', 'bernd', 'beyeler',
-      'chris', 'christian', 'christoph', 'clara', 'claudia', 'daniel', 'david', 'dieter',
-      'elena', 'elias', 'emily', 'emma', 'eric', 'erik', 'fabian', 'felix', 'finn',
-      'florian', 'frank', 'hannah', 'hans', 'heinrich', 'helga', 'hendrik', 'ida', 'jakob',
-      'jan', 'jens', 'jonas', 'josef', 'julia', 'jürgen', 'karl', 'katharina', 'klaus',
-      'lara', 'lars', 'laura', 'lea', 'leon', 'lena', 'liam', 'lisa', 'lukas', 'luise',
-      'manfred', 'manuel', 'maria', 'marie', 'mario', 'markus', 'martin', 'matthias',
-      'max', 'maximilian', 'michael', 'mia', 'moritz', 'nick', 'nico', 'nina', 'noah',
-      'oliver', 'otto', 'paul', 'paula', 'peter', 'philipp', 'ralf', 'rainer', 'robert',
-      'roland', 'sabine', 'sandra', 'sarah', 'schmid', 'sebastian', 'simon', 'sophie',
-      'stefan', 'stephan', 'thomas', 'tim', 'timo', 'tobias', 'tom', 'tristan', 'ulrich',
-      'uwe', 'werner', 'wilhelm', 'wolfgang',
+      // ========== DEUTSCHLAND (Top 200) ==========
+      'alexander', 'andreas', 'andrea', 'anna', 'anne', 'antje', 'anja', 'axel',
+      'ben', 'benjamin', 'bernd', 'bianca', 'birgit', 'brigitte',
+      'carla', 'carmen', 'chris', 'christian', 'christiane', 'christina', 'christine', 'christoph',
+      'clara', 'claudia', 'claus', 'cornelia',
+      'daniel', 'daniela', 'david', 'dennis', 'diana', 'dieter', 'dirk', 'dominik', 'doris',
+      'elena', 'elias', 'elke', 'emily', 'emma', 'eric', 'erik', 'ernst', 'eva',
+      'fabian', 'felix', 'finn', 'florian', 'frank', 'franziska', 'friedrich', 'fritz',
+      'gabriele', 'georg', 'gerd', 'gerhard', 'gisela', 'gudrun', 'günter', 'grit',
+      'hanna', 'hannah', 'hans', 'harald', 'heike', 'heiko', 'heinrich', 'heinz', 'helga',
+      'helge', 'helmut', 'hendrik', 'henning', 'herbert', 'hermann', 'holger', 'horst',
+      'ida', 'ilse', 'ines', 'inga', 'inge', 'ingrid', 'irene', 'iris', 'isabelle',
+      'jakob', 'jan', 'jana', 'jens', 'jessica', 'joachim', 'jochen', 'johannes', 'jonas',
+      'jonathan', 'jörg', 'josef', 'julia', 'juliane', 'jürgen', 'jutta',
+      'kai', 'karin', 'karl', 'karla', 'katharina', 'kathrin', 'katja', 'klaus', 'konstantin',
+      'kristin', 'kurt',
+      'lara', 'lars', 'laura', 'lea', 'lena', 'leon', 'leonard', 'liam', 'lisa', 'lotte',
+      'lukas', 'luise', 'lutz',
+      'manfred', 'manuel', 'manuela', 'marcel', 'marco', 'margarete', 'maria', 'marie',
+      'marion', 'mario', 'markus', 'marlene', 'martin', 'martina', 'matthias', 'max',
+      'maximilian', 'melanie', 'michael', 'michaela', 'mia', 'miriam', 'monika', 'moritz',
+      'nadine', 'natalie', 'nick', 'nico', 'nicole', 'nils', 'nina', 'noah', 'norbert',
+      'oliver', 'olaf', 'otto',
+      'patrick', 'paul', 'paula', 'peter', 'petra', 'philipp', 'ralf', 'rainer', 'ralf',
+      'reiner', 'reinhard', 'renate', 'richard', 'robert', 'roland', 'rolf', 'rudolf', 'ruth',
+      'sabine', 'sabrina', 'sandra', 'sara', 'sarah', 'sebastian', 'silke', 'simon', 'simone',
+      'sonja', 'sophie', 'stefan', 'stefanie', 'stephan', 'stephanie', 'susanne', 'sven',
+      'theo', 'thomas', 'thorsten', 'till', 'tim', 'timo', 'tina', 'tobias', 'tom',
+      'torsten', 'tristan',
+      'ulrich', 'ulrike', 'ursula', 'ute', 'uwe',
+      'valentin', 'vanessa', 'vera', 'veronika', 'volker',
+      'walter', 'werner', 'wilhelm', 'wilfried', 'willi', 'wolfgang',
 
-      // Schweizer Vornamen
-      'adrian', 'andres', 'beat', 'christoph', 'claude', 'fabio', 'franz', 'hannes',
-      'hanspeter', 'jürg', 'kilian', 'loris', 'lukas', 'marco', 'markus', 'matthias',
-      'maurus', 'nils', 'pascal', 'patrik', 'reto', 'silvan', 'sven', 'urs', 'yannick',
-      'anouk', 'chantal', 'fabienne', 'joelle', 'ladina', 'léonie', 'mara', 'selina',
+      // ========== SCHWEIZ (Top 100) ==========
+      'adrian', 'aldo', 'alessio', 'andres', 'andrin', 'anita', 'annina', 'annik',
+      'beat', 'beda', 'beni', 'benoît', 'beyeler',
+      'céline', 'christoph', 'claude', 'claudio',
+      'damian', 'damien', 'dario', 'davide', 'diego', 'dominic', 'dominique',
+      'eliane', 'elio', 'emilie', 'enzo', 'estelle',
+      'fabio', 'fabian', 'fabienne', 'flavio', 'florence', 'florent', 'flurin', 'françois', 'franz',
+      'gianluca', 'gian', 'gino', 'giulia', 'giuliano',
+      'hannes', 'hanspeter', 'hans', 'heidi',
+      'isabelle', 'ivan',
+      'jan', 'janine', 'jean', 'jérôme', 'joanna', 'joël', 'joelle', 'jonas', 'jonathan',
+      'jürg', 'julian',
+      'karin', 'kevin', 'kilian',
+      'ladina', 'lara', 'lena', 'léa', 'léonie', 'lian', 'linus', 'loic', 'loris', 'luca',
+      'lukas', 'lynn',
+      'manuela', 'mara', 'marc', 'marcel', 'marco', 'margrit', 'marie', 'mario', 'markus',
+      'martin', 'mathieu', 'matteo', 'matthias', 'maurus', 'melanie', 'michelle', 'mirco',
+      'nadine', 'nathan', 'nico', 'nicolas', 'niklaus', 'nils', 'noémie', 'noah',
+      'olivier', 'oskar',
+      'pascal', 'patrick', 'patrik', 'paul', 'peter', 'philippe', 'pierre',
+      'raffael', 'raphael', 'rené', 'reto', 'roger', 'roman', 'ruedi', 'rolf',
+      'samuel', 'sandra', 'sara', 'sebastian', 'selina', 'sepp', 'seraina', 'silvan',
+      'simone', 'simon', 'sophie', 'stefan', 'stephan', 'sven', 'sylvia',
+      'tanja', 'tatjana', 'thomas', 'till', 'tim', 'timo', 'tobias', 'tom',
+      'urs', 'ursula',
+      'valentin', 'vera', 'verena', 'viktor',
+      'walter', 'werner',
+      'yannick', 'yves',
+      'zoe',
 
-      // Englische Vornamen
-      'adam', 'alice', 'amy', 'andrew', 'angela', 'anthony', 'barbara', 'betty', 'brian',
-      'bruce', 'carol', 'charles', 'charlotte', 'chris', 'christopher', 'daniel', 'deborah',
-      'diana', 'donald', 'donna', 'dorothy', 'edward', 'elizabeth', 'emily', 'emma',
-      'eric', 'ethan', 'evelyn', 'george', 'grace', 'harold', 'harry', 'helen', 'henry',
-      'jack', 'jacob', 'james', 'jane', 'jason', 'jeffrey', 'jennifer', 'jessica', 'john',
-      'joseph', 'joshua', 'judy', 'justin', 'karen', 'katherine', 'kenneth', 'kevin',
-      'kimberly', 'larry', 'linda', 'lisa', 'margaret', 'maria', 'mark', 'mary', 'matthew',
-      'melissa', 'michael', 'michelle', 'nancy', 'nathan', 'nicole', 'olivia', 'pamela',
-      'patricia', 'patrick', 'paul', 'peter', 'rachel', 'raymond', 'rebecca', 'richard',
-      'robert', 'ronald', 'ruth', 'ryan', 'samuel', 'sandra', 'sarah', 'scott', 'sharon',
-      'sophia', 'stephanie', 'steven', 'susan', 'teresa', 'thomas', 'timothy', 'walter',
-      'william', 'zachary'
+      // ========== ÖSTERREICH (Top 80) ==========
+      'adolf', 'agnes', 'albert', 'alois', 'andreas', 'angelika', 'anna', 'anton',
+      'barbara', 'bernhard', 'brigitte',
+      'christian', 'christoph', 'christine',
+      'daniel', 'david', 'dietmar',
+      'elisabeth', 'elfriede', 'elias', 'erich', 'ernst', 'eva',
+      'florian', 'franz', 'friedrich', 'fritz',
+      'georg', 'gerhard', 'gottfried', 'günter', 'günther',
+      'hans', 'harald', 'heidi', 'heinrich', 'helmut', 'herbert', 'hermann', 'hildegard',
+      'ingrid', 'irene',
+      'jakob', 'johann', 'johannes', 'josef', 'julian',
+      'karl', 'katharina', 'klaus', 'konrad', 'kurt',
+      'leopold', 'lukas',
+      'manfred', 'margarete', 'maria', 'marianne', 'markus', 'martin', 'matthias', 'max',
+      'maximilian', 'michael', 'monika',
+      'niklas', 'nikolaus',
+      'otto',
+      'paul', 'peter', 'petra', 'philipp',
+      'reinhard', 'richard', 'robert', 'roland', 'rudolf', 'ruth',
+      'sabine', 'sebastian', 'stefan', 'susanne',
+      'thomas', 'tobias',
+      'ursula',
+      'walter', 'werner', 'wolfgang',
+
+      // ========== ITALIEN (Top 100) ==========
+      'adriano', 'alberto', 'aldo', 'alessandro', 'alessandra', 'alessia', 'alessandro', 'alfredo',
+      'andrea', 'angela', 'angelo', 'anna', 'antonella', 'antonia', 'antonio',
+      'barbara', 'beatrice', 'benedetta', 'bruno',
+      'camilla', 'carla', 'carlo', 'carmela', 'carolina', 'caterina', 'cecilia', 'chiara',
+      'claudio', 'cristiana', 'cristina',
+      'daniela', 'daniele', 'dario', 'davide', 'diego', 'domenico', 'donatella',
+      'elena', 'eleonora', 'elisa', 'elisabetta', 'emanuele', 'emilia', 'enrico', 'enzo',
+      'fabio', 'fabrizio', 'federico', 'fernanda', 'filippo', 'francesca', 'francesco', 'franco',
+      'gabriele', 'gabriella', 'giacomo', 'giancarlo', 'gianluca', 'gianmarco', 'gianni',
+      'giorgio', 'giovanna', 'giovanni', 'giulia', 'giuliana', 'giuliano', 'giuseppe', 'giuseppina',
+      'grazia', 'guido',
+      'ida', 'irene', 'isabella', 'ivana', 'ivo',
+      'laura', 'leonardo', 'lidia', 'lorenzo', 'luca', 'lucia', 'luciano', 'luigi', 'luisa',
+      'manuela', 'marcello', 'marco', 'margherita', 'maria', 'marina', 'mario', 'marta',
+      'martina', 'massimiliano', 'massimo', 'matteo', 'mattia', 'maurizio', 'mauro', 'michele',
+      'miriam', 'monica',
+      'nicola', 'nicoletta', 'nino',
+      'paola', 'paolo', 'patrizia', 'piero', 'pietro',
+      'raffaele', 'renato', 'riccardo', 'rita', 'roberta', 'roberto', 'rocco', 'rosa',
+      'rosanna', 'rosaria', 'salvatore', 'sandra', 'sara', 'sergio', 'silvia', 'simona',
+      'simone', 'sofia', 'stefania', 'stefano',
+      'teresa', 'tommaso',
+      'umberto',
+      'valeria', 'valerio', 'vanessa', 'vincenzo', 'vittoria', 'vittorio',
+
+      // ========== FRANKREICH (Top 100) ==========
+      'adèle', 'adrien', 'alain', 'albert', 'alexandre', 'alexis', 'alice', 'amélie',
+      'andré', 'andrée', 'antoine', 'arnaud', 'arthur', 'audrey',
+      'baptiste', 'barbara', 'benoît', 'bernard', 'bertrand', 'brigitte', 'bruno',
+      'camille', 'catherine', 'cécile', 'céline', 'charles', 'charlotte', 'chloé',
+      'christian', 'christiane', 'christine', 'christophe', 'claire', 'claude', 'clément',
+      'corinne',
+      'daniel', 'danielle', 'david', 'denis', 'denise', 'didier', 'dominique',
+      'édith', 'élise', 'émile', 'émilie', 'emmanuel', 'éric', 'étienne', 'éva',
+      'fabien', 'fabienne', 'florence', 'francis', 'françoise', 'françois', 'franck', 'frédéric',
+      'gérard', 'gilles', 'grégory', 'guillaume', 'guy',
+      'hélène', 'henri', 'hervé', 'hubert',
+      'isabelle',
+      'jacqueline', 'jacques', 'jean', 'jeanne', 'jérôme', 'joël', 'joséphine', 'julien',
+      'juliette',
+      'laurent', 'léa', 'léon', 'louis', 'louise', 'luc', 'lucas', 'lucie',
+      'madeleine', 'manon', 'marc', 'marcel', 'marguerite', 'marie', 'marine', 'marion',
+      'martin', 'martine', 'mathieu', 'mathilde', 'maxime', 'michel', 'michèle', 'monique',
+      'nathalie', 'nicolas', 'nicole', 'noémie',
+      'océane', 'odette', 'olivier',
+      'pascal', 'patricia', 'patrick', 'paul', 'pauline', 'philippe', 'pierre',
+      'quentin',
+      'raphaël', 'raymond', 'régine', 'rené', 'richard', 'robert', 'romain', 'rosalie', 'rose',
+      'sandrine', 'sébastien', 'serge', 'simone', 'simon', 'solène', 'sophie', 'stéphane',
+      'stéphanie', 'sylvain', 'sylvie',
+      'théo', 'thérèse', 'thierry', 'thomas',
+      'valérie', 'valentin', 'valentine', 'véronique', 'victor', 'vincent', 'virginie',
+      'yves', 'yvette', 'yvonne',
+
+      // Zusätzliche häufige Nachnamen als Vornamen (Doppelnamen)
+      'müller', 'schmidt', 'schmid', 'schneider', 'fischer', 'weber', 'meyer', 'wagner',
+      'becker', 'schulz', 'hoffmann', 'koch', 'beyeler', 'huber', 'mayer', 'lehmann'
     ]);
   }
 
@@ -241,7 +353,8 @@ class ComplianceDetector {
         },
         {
           id: 'name_standalone',
-          pattern: /(?:^|[^.!?]\s+)([A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)?)\b/g,
+          // NUR 2 Wörter - verhindert Overlap-Problem bei "Hans Peter Tristan Andres"
+          pattern: /(?:^|[^.!?]\s+)([A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+)\b/g,
           severity: 'warning',
           category: 'pii',
           nameDE: 'Name (heuristisch)',
@@ -562,25 +675,51 @@ class ComplianceDetector {
       }
     });
 
-    // POSITIVER SCORE: Typische Namensmuster
-    // Beispiel: "Hans Peter", "Anna Maria"
-    if (words.length === 2) {
-      const [first, second] = words.map(w => w.toLowerCase());
-      if (this.commonFirstNames.has(first) && this.commonFirstNames.has(second)) {
-        score += 4; // Beide sind Vornamen - sehr wahrscheinlich ein Name
-      }
-    }
-
     // KONTEXT-ANALYSE: Prüfe Text vor dem Namen
     const contextBefore = fullMatch.substring(0, fullMatch.indexOf(name)).toLowerCase();
+    const hasContext = /(?:name|kontakt|contact|person|mitarbeiter|employee|kunde|customer|patient|student|benutzer|user|herr|frau|mr|mrs|ms)[\s:]+$/.test(contextBefore);
 
     // POSITIVER SCORE: Nach Kontext-Wörtern
-    if (/(?:name|kontakt|contact|person|mitarbeiter|employee|kunde|customer|patient|student|benutzer|user|herr|frau|mr|mrs|ms)[\s:]+$/.test(contextBefore)) {
+    if (hasContext) {
       score += 4;
     }
 
-    // ENTSCHEIDUNG: Score >= 5 = Wahrscheinlich ein Name
-    const threshold = 5;
+    // SPEZIAL-REGEL: Beide Wörter sind Vornamen
+    if (words.length === 2) {
+      const [first, second] = words.map(w => w.toLowerCase());
+      const bothAreFirstNames = this.commonFirstNames.has(first) && this.commonFirstNames.has(second);
+
+      if (bothAreFirstNames) {
+        if (hasContext) {
+          // MIT Kontext: Klar ein Doppelname wie "Name: Hans Peter"
+          score += 5;
+        } else {
+          // OHNE Kontext: Könnte Overlap sein
+          // Prüfe ob am Textanfang (= okay) oder mitten im Text (= verdächtig)
+          const isAtStart = fullMatch.trimStart() === fullMatch; // Kein Whitespace davor
+
+          if (isAtStart) {
+            // Am Textanfang: Wahrscheinlich echter Name
+            score += 2;
+          } else {
+            // Mitten im Text ohne Kontext: SEHR verdächtig (Overlap!)
+            score -= 8; // STARKE PENALTY - verhindert "Peter Tristan" Overlaps!
+          }
+        }
+      }
+    }
+
+    // ENTSCHEIDUNG:
+    // - Normaler Threshold: 5
+    // - Beide Vornamen ohne Kontext: Threshold 10 (SEHR streng, verhindert Overlaps!)
+    let threshold = 5;
+    if (words.length === 2) {
+      const [first, second] = words.map(w => w.toLowerCase());
+      if (this.commonFirstNames.has(first) && this.commonFirstNames.has(second) && !hasContext) {
+        threshold = 10; // SEHR streng für potentielle Overlaps wie "Peter Tristan"
+      }
+    }
+
     const isLikelyName = score >= threshold;
 
     // DEBUG (kann später entfernt werden)

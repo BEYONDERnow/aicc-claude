@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 1.0.5 BETA** • by BEYONDER
+**Version 1.0.6 BETA** • by BEYONDER
 
 Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -8,7 +8,55 @@ Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit
 
 ## 📋 Versionshistorie
 
-### Version 1.0.5 (Aktuell)
+### Version 1.0.6 (Aktuell)
+**Datum:** 2025-10-21
+
+**🌍 MASSIVE DATABASE EXPANSION + Overlap-Fix**
+
+**Problem gelöst:**
+Input: "Hans Peter Tristan Andres"
+Falsch erkannt (v1.0.5): "Hans Peter Tristan", "s Chris Beyeler Michael"
+→ Overlap-Problem durch 3-Wort-Pattern!
+
+**Lösung:**
+
+**1. Namen-Datenbank MASSIV erweitert: 200 → 700+ Namen**
+- 🇩🇪 Deutschland: 200+ Namen (Alexander, Andreas, Brigitte, Claudia, etc.)
+- 🇨🇭 Schweiz: 100+ Namen (Urs, Reto, Fabienne, Ladina, etc.)
+- 🇦🇹 Österreich: 80+ Namen (Leopold, Gottfried, Hildegard, etc.)
+- 🇮🇹 Italien: 100+ Namen (Giuseppe, Francesca, Matteo, etc.)
+- 🇫🇷 Frankreich: 100+ Namen (François, Céline, Raphaël, etc.)
+- Häufige Nachnamen: Müller, Schmidt, Beyeler, etc.
+
+**2. RegEx-Pattern gefixed:**
+- Alte Version: Erlaubte 2-3 Wörter → Overlap!
+- Neue Version: **NUR 2 Wörter** → Kein Overlap mehr
+- Pattern: `/([A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+)\b/g`
+
+**3. Anti-Overlap-Heuristik:**
+```javascript
+// NEUE Regel: Beide Vornamen ohne Kontext mitten im Text?
+if (beide_sind_Vornamen && !hatKontext && !amTextanfang) {
+  score -= 8; // STARKE PENALTY!
+  threshold = 10; // Strenger Threshold
+}
+```
+
+**Beispiele:**
+
+| Input | v1.0.5 | v1.0.6 ✓ |
+|-------|--------|----------|
+| Hans Peter Tristan Andres | ❌ "Hans Peter Tristan", "s Chris..." | ✅ "Hans Peter", "Tristan Andres" |
+| Name: Hans Peter | ✅ Erkannt | ✅ Erkannt (Score +9, Kontext-Bonus) |
+| Peter Tristan (Overlap) | ❌ Fälschlich erkannt | ✅ NICHT erkannt (Penalty -8) |
+| Giuseppe Verdi | ❌ Nicht erkannt | ✅ Erkannt (IT-Namen) |
+| François Dubois | ❌ Nicht erkannt | ✅ Erkannt (FR-Namen) |
+
+**Erkannt jetzt zuverlässig:** ~700+ Namen aus 5 Ländern!
+
+---
+
+### Version 1.0.5
 **Datum:** 2025-10-21
 
 **🚀 MAJOR IMPROVEMENT: Heuristische Name-Detection**
