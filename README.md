@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 1.0.8 BETA** • by BEYONDER
+**Version 1.0.9 BETA** • by BEYONDER
 
 Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -8,7 +8,109 @@ Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit
 
 ## 📋 Versionshistorie
 
-### Version 1.0.8 (Aktuell)
+### Version 1.0.9 (Aktuell)
+**Datum:** 2025-10-22
+
+**🎨 BEYONDER DESIGN SYSTEM - Komplettes Redesign**
+
+**Motivation:**
+Komplett neues visuelles Design im BEYONDER-Stil (beyonder.ch) mit professioneller Typografie und Farbpalette.
+
+**🎨 BEYONDER Farbpalette:**
+
+**Primary Colors:**
+- Dark Orange: `#FF9220`
+- Gold Orange: `#FCC001`
+- Midnight Blue: `#101E35`
+- Deep Sky Blue: `#46BFED`
+- Aquamarine: `#33D099`
+- Deep Pink: `#E33A74`
+
+**Status Colors:**
+- OK: `#71D033` (grün)
+- INFO: `#467CED` (blau)
+- WARNING: `#FCC001` (gold)
+- ERROR: `#E33A4E` (rot)
+
+**Gradients:**
+- Gradient Main: `#33d099 → #00939a → #005575 → #101e35`
+- Gradient Highlight: `#e33a74 → #FF9220 → #fcc001`
+
+**🔤 Typography:**
+
+**Lokale Fonts (100% offline & DSGVO-konform):**
+- **Headings:** Poppins (Regular 400, SemiBold 600, Bold 700)
+- **Body:** Montserrat (Regular 400, Medium 500, SemiBold 600)
+
+**Installation:** Siehe `FONTS_INSTALLATION.md` (2 Minuten Setup)
+
+**✨ Redesigned Components:**
+
+**1. Popup (Extension Icon)**
+- Header: BEYONDER Gradient Main mit subtiler Puls-Animation
+- BETA Badge: Gradient Highlight mit Box-Shadow
+- Status-Box: Gradient-Hintergründe (OK grün, WARNING gold, ERROR rot)
+- Platform-Badges: Hover-Effekt mit Gradient Highlight
+- Features: Icons mit Gradient-Text
+- Privacy-Badge: Aquamarine Border & Gradient-Background
+- Footer: Midnight Blue mit Gradient-Text für "BEYONDER"
+
+**2. Status Icon (Floating)**
+- OK: `#71D033` (statt generisches Grün)
+- WARNING: `#FCC001` mit goldener Pulsierung
+- CRITICAL: `#E33A4E` mit roter Pulsierung
+- Badge Counter: Midnight Blue `#101E35` Hintergrund
+- Box-Shadow: BEYONDER Midnight statt Schwarz
+
+**3. Modal & Overlay**
+- Header: BEYONDER Gradient Main
+- Subtle Pulse Animation im Header
+- Buttons: Gradient Highlight für Primary
+- Warning Box: Gold-Gradient Hintergrund
+- Critical Box: Rot-Gradient Hintergrund
+- Table Header: BEYONDER Gradient Main
+- Scrollbar: BEYONDER Grey Farben
+
+**4. Highlight Overlays**
+- WARNING: `rgba(252, 192, 1, 0.15)` + `#FCC001` Border
+- CRITICAL: `rgba(227, 58, 78, 0.20)` + `#E33A4E` Border
+
+**📁 Neue Dateien:**
+- `extension/styles/fonts.css` - @font-face Definitionen für Poppins & Montserrat
+- `extension/fonts/Poppins/` - Ordner für Poppins TTFs (vom User zu füllen)
+- `extension/fonts/Montserrat/` - Ordner für Montserrat TTFs (vom User zu füllen)
+- `FONTS_INSTALLATION.md` - Schritt-für-Schritt Anleitung
+
+**🎯 Geänderte Dateien:**
+- `extension/popup.html` - Komplettes Redesign mit BEYONDER-Style (460 Zeilen, embedded CSS)
+- `extension/styles/content.css` - BEYONDER Farben & Fonts (821 Zeilen)
+- `.gitignore` - Fonts ignoriert (siehe FONTS_INSTALLATION.md)
+
+**🚀 Features:**
+- ✅ CSS Variables für BEYONDER Farben
+- ✅ Responsive Design (Mobile-optimiert)
+- ✅ Animationen (Pulse, Fade, Slide, Scale)
+- ✅ BEYONDER Gradient-Effekte überall
+- ✅ Poppins für Headings, Montserrat für Body
+- ✅ Custom Scrollbar im BEYONDER-Style
+- ✅ Accessibility (reduced-motion Support)
+- ✅ 100% offline Fonts (DSGVO-konform)
+
+**Vorher vs. Nachher:**
+
+| Element | v1.0.8 | v1.0.9 |
+|---------|--------|--------|
+| Header Gradient | Generic Lila | BEYONDER Gradient Main |
+| Fonts | System Fonts | Poppins + Montserrat |
+| Status OK | #10b981 | #71D033 |
+| Status WARNING | #f59e0b | #FCC001 |
+| Status ERROR | #ef4444 | #E33A4E |
+| Buttons | Generisch | BEYONDER Gradient Highlight |
+| Branding | Minimal | "BEYONDER" prominent mit Gradient |
+
+---
+
+### Version 1.0.8
 **Datum:** 2025-10-22
 
 **🐛 CRITICAL BUGFIX: Zeilenumbrüche verschwinden beim Bearbeiten**
@@ -800,4 +902,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 1.0.5 BETA**
+**Version 1.0.9 BETA**

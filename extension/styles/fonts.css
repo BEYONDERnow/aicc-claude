@@ -1,0 +1,62 @@
+/**
+ * AI Compliance Checker - BEYONDER Fonts
+ * Lokale Font-Definitionen für 100% offline & privacy
+ */
+
+/* ========== POPPINS ========== */
+
+/* Poppins Regular (400) */
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/Poppins/Poppins-Regular.ttf') format('truetype');
+}
+
+/* Poppins SemiBold (600) */
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../fonts/Poppins/Poppins-SemiBold.ttf') format('truetype');
+}
+
+/* Poppins Bold (700) */
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/Poppins/Poppins-Bold.ttf') format('truetype');
+}
+
+/* ========== MONTSERRAT ========== */
+
+/* Montserrat Regular (400) */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/Montserrat/Montserrat-Regular.ttf') format('truetype');
+}
+
+/* Montserrat Medium (500) */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../fonts/Montserrat/Montserrat-Medium.ttf') format('truetype');
+}
+
+/* Montserrat SemiBold (600) */
+@font-face {
+  font-family: 'Montserrat';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../fonts/Montserrat/Montserrat-SemiBold.ttf') format('truetype');
+}
