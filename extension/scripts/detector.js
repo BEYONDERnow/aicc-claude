@@ -332,38 +332,19 @@ class ComplianceDetector {
           descDE: 'Postleitzahlen können Teil einer Adresse sein',
           descEN: 'ZIP codes may be part of an address'
         },
-        {
-          id: 'name_context',
-          pattern: /(?:name|kontakt|contact|person|mitarbeiter|employee|kunde|customer|patient|student|benutzer|user)[\s:]+([A-ZÄÖÜ][a-zäöüß]+(?:\s+[A-ZÄÖÜ][a-zäöüß]+)+)/gi,
-          severity: 'warning',
-          category: 'pii',
-          nameDE: 'Name (kontextbasiert)',
-          nameEN: 'Name (context-based)',
-          descDE: 'Vollständige Namen sind personenbezogene Daten',
-          descEN: 'Full names are personal data',
-          customValidator: (match, detector) => {
-            const name = match[1];
-            const words = name.split(/\s+/);
-            // Prüfe ob Wörter in Blacklist sind
-            const isBlacklisted = words.some(word =>
-              detector.nameBlacklist.has(word.toLowerCase())
-            );
-            return !isBlacklisted;
-          }
-        },
+        // NOTE: name_context ist jetzt in der Hybrid-Detection integriert und wird hier DEAKTIVIERT
+        // um Doppel-Erkennungen zu vermeiden
         {
           id: 'name_standalone',
-          // NUR 2 Wörter - verhindert Overlap-Problem bei "Hans Peter Tristan Andres"
-          pattern: /(?:^|[^.!?]\s+)([A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+)\b/g,
+          // HYBRID NAME DETECTION - wird in findMatches() speziell behandelt
+          pattern: null, // Kein Pattern - nutzt custom Detection
           severity: 'warning',
           category: 'pii',
-          nameDE: 'Name (heuristisch)',
-          nameEN: 'Name (heuristic)',
+          nameDE: 'Name (hybrid)',
+          nameEN: 'Name (hybrid)',
           descDE: 'Vollständige Namen sind personenbezogene Daten',
           descEN: 'Full names are personal data',
-          customValidator: (match, detector) => {
-            return detector.analyzeNameHeuristics(match[0], match[1]);
-          }
+          customDetector: true // Marker für spezielle Behandlung
         },
         {
           id: 'address',
@@ -512,6 +493,11 @@ class ComplianceDetector {
    * Findet alle Matches für ein Pattern im Text
    */
   findMatches(text, patternDef, lang) {
+    // Spezial-Behandlung für Custom Detectors (z.B. Hybrid Name Detection)
+    if (patternDef.customDetector) {
+      return this.detectNamesHybrid(text, patternDef, lang);
+    }
+
     const matches = [];
     const regex = new RegExp(patternDef.pattern.source, patternDef.pattern.flags);
     let match;
@@ -595,6 +581,247 @@ class ComplianceDetector {
     }
 
     return merged;
+  }
+
+  /**
+   * HYBRID NAME DETECTION
+   * Sliding-Window-Ansatz ohne Regex-Overlaps
+   * Erkennt sowohl GROß als auch klein (mit Lexicon)
+   */
+  detectNamesHybrid(text, patternDef, lang) {
+    const candidates = [];
+
+    // Schritt 1: Extrahiere ALLE Wörter mit Positionen
+    const allWords = [];
+    const wordRegex = /\b([A-ZÄÖÜa-zäöüß][a-zäöüß]{1,})\b/g;
+    let match;
+
+    while ((match = wordRegex.exec(text)) !== null) {
+      const word = match[1];
+      const wordLower = word.toLowerCase();
+
+      // Skip Blacklist
+      if (this.nameBlacklist.has(wordLower)) continue;
+
+      allWords.push({
+        text: word,
+        lower: wordLower,
+        start: match.index,
+        end: match.index + word.length,
+        isCapitalized: /^[A-ZÄÖÜ]/.test(word),
+        isInLexicon: this.commonFirstNames.has(wordLower)
+      });
+    }
+
+    // Schritt 2: Sliding Window - teste 2-Wort und 3-Wort Kombinationen
+    for (let i = 0; i < allWords.length; i++) {
+      // 2-Wort-Kombination
+      if (i + 1 < allWords.length) {
+        const w1 = allWords[i];
+        const w2 = allWords[i + 1];
+
+        // Prüfe ob Wörter direkt aufeinander folgen (max 1 Space)
+        if (w2.start - w1.end <= 1) {
+          this.addNameCandidate(candidates, text, [w1, w2]);
+        }
+      }
+
+      // 3-Wort-Kombination
+      if (i + 2 < allWords.length) {
+        const w1 = allWords[i];
+        const w2 = allWords[i + 1];
+        const w3 = allWords[i + 2];
+
+        // Alle 3 Wörter müssen aufeinander folgen
+        if (w2.start - w1.end <= 1 && w3.start - w2.end <= 1) {
+          this.addNameCandidate(candidates, text, [w1, w2, w3]);
+        }
+      }
+    }
+
+    // Schritt 3: Kontext-basierte Erkennung für kleingeschriebene Namen
+    const contextPattern = /(?:name|kontakt|contact|person|mitarbeiter|employee|kunde|customer)[\s:]+([a-zäöüß]+(?:\s+[a-zäöüß]+){1,2})\b/gi;
+
+    while ((match = contextPattern.exec(text)) !== null) {
+      const name = match[1];
+      const startPos = match.index + match[0].indexOf(name);
+      const endPos = startPos + name.length;
+      const words = name.split(/\s+/);
+
+      // Blacklist
+      if (words.some(w => this.nameBlacklist.has(w))) continue;
+
+      // Mindestens ein bekannter Vorname
+      if (words.some(w => this.commonFirstNames.has(w))) {
+        candidates.push({
+          text: name,
+          start: startPos,
+          end: endPos,
+          score: 20, // SEHR hoch wegen Kontext!
+          source: 'context-lowercase'
+        });
+      }
+    }
+
+    // Schritt 4: Wähle beste non-overlapping Kandidaten
+    const selected = this.selectBestNonOverlappingNames(candidates);
+
+    // Konvertiere zu Match-Format
+    return selected.map(candidate => ({
+      id: patternDef.id,
+      severity: patternDef.severity,
+      category: patternDef.category,
+      name: lang === 'de' ? patternDef.nameDE : patternDef.nameEN,
+      description: lang === 'de' ? patternDef.descDE : patternDef.descEN,
+      match: candidate.text,
+      start: candidate.start,
+      end: candidate.end
+    }));
+  }
+
+  /**
+   * Fügt einen Namen-Kandidaten hinzu mit Scoring
+   */
+  addNameCandidate(candidates, text, words) {
+    const first = words[0];
+    const last = words[words.length - 1];
+    const startPos = first.start;
+    const endPos = last.end;
+    const fullText = text.substring(startPos, endPos);
+
+    // Prüfe Kontext
+    const contextStart = Math.max(0, startPos - 50);
+    const contextBefore = text.substring(contextStart, startPos).toLowerCase();
+    const hasContext = /(?:name|kontakt|contact|person|mitarbeiter|employee|kunde|customer|patient|student|benutzer|user|herr|frau|mr|mrs|ms)[\s:]+$/.test(contextBefore);
+
+    // Scoring
+    const score = this.scoreNameCandidateV2(words, hasContext, startPos === 0);
+
+    if (score.total >= score.threshold) {
+      candidates.push({
+        text: fullText,
+        start: startPos,
+        end: endPos,
+        score: score.total,
+        source: score.source
+      });
+    }
+  }
+
+  /**
+   * Scoring V2 - arbeitet mit Word-Objekten statt Strings
+   */
+  scoreNameCandidateV2(words, hasContext, isAtStart) {
+    let score = 0;
+    let source = '';
+
+    // Anzahl bekannte Vornamen
+    const knownCount = words.filter(w => w.isInLexicon).length;
+    const allCapitalized = words.every(w => w.isCapitalized);
+    const allLowercase = words.every(w => !w.isCapitalized);
+
+    // === SCORING ===
+
+    // Kontext
+    if (hasContext) {
+      score += 10;
+      source = 'context';
+    }
+
+    // Lexicon
+    if (knownCount === words.length) {
+      score += 8;
+      source = source || 'lexicon-full';
+    } else if (knownCount > 0) {
+      score += 5;
+      source = source || 'lexicon-partial';
+    }
+
+    // Erstes Wort ist Vorname
+    if (words[0].isInLexicon) {
+      score += 3;
+    }
+
+    // Kapitalisierung
+    if (allCapitalized) {
+      score += 3;
+    } else if (allLowercase && hasContext) {
+      score += 2;
+    } else if (allLowercase && !hasContext) {
+      score -= 5;
+    }
+
+    // Wortanzahl
+    if (words.length === 2) {
+      score += 2;
+    } else if (words.length === 3) {
+      // 3-Wort-Namen sind selten und brauchen Kontext!
+      if (knownCount === 3 && hasContext) {
+        score += 3; // Bonus NUR mit Kontext: "Name: Hans Peter Müller"
+      } else {
+        score -= 8; // STARKE PENALTY ohne Kontext - verhindert "Hans Peter Tristan"
+      }
+    }
+
+    // Position
+    if (isAtStart && allCapitalized) {
+      score += 2;
+    }
+
+    // Wortlängen
+    words.forEach(w => {
+      const len = w.text.length;
+      if (len >= 3 && len <= 15) score += 1;
+      if (len < 2 || len > 20) score -= 3;
+      if (/\d/.test(w.text)) score -= 10;
+    });
+
+    // === THRESHOLD ===
+    let threshold = 8;
+
+    // Strenger bei kleingeschrieben ohne Kontext
+    if (allLowercase && !hasContext) {
+      threshold = 15;
+    }
+
+    // Strenger bei "beide Vornamen ohne Kontext mitten im Text"
+    if (words.length === 2 && knownCount === 2 && !hasContext && !isAtStart) {
+      score -= 5;
+      threshold = 12;
+    }
+
+    return {
+      total: score,
+      threshold: threshold,
+      source: source || 'heuristic'
+    };
+  }
+
+  /**
+   * Wählt beste non-overlapping Namen-Kandidaten
+   * Verwendet Greedy-Algorithmus: Höchster Score zuerst, skippe Overlaps
+   */
+  selectBestNonOverlappingNames(candidates) {
+    if (candidates.length === 0) return [];
+
+    // Sortiere nach Score (höchste zuerst)
+    const sorted = candidates.sort((a, b) => b.score - a.score);
+
+    const selected = [];
+
+    for (const candidate of sorted) {
+      // Prüfe ob dieser Kandidat mit bereits ausgewählten überlappt
+      const hasOverlap = selected.some(s => {
+        return !(candidate.end <= s.start || candidate.start >= s.end);
+      });
+
+      if (!hasOverlap) {
+        selected.push(candidate);
+      }
+    }
+
+    // Sortiere Ergebnis nach Position im Text
+    return selected.sort((a, b) => a.start - b.start);
   }
 
   /**
