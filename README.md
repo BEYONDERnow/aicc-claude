@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 1.0.7 BETA** • by BEYONDER
+**Version 1.0.8 BETA** • by BEYONDER
 
 Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -8,7 +8,48 @@ Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit
 
 ## 📋 Versionshistorie
 
-### Version 1.0.7 (Aktuell)
+### Version 1.0.8 (Aktuell)
+**Datum:** 2025-10-22
+
+**🐛 CRITICAL BUGFIX: Zeilenumbrüche verschwinden beim Bearbeiten**
+
+**Problem:**
+User-Feedback: _"Wenn jedoch ein Text eingegeben wurde mit Zeilenumbrüchen und ich diesen bearbeite, verschwinden die Zeilenumbrüche."_
+
+**Root Cause:**
+Die Highlight-Overlays hatten `pointer-events: auto`, was:
+- Maus-Events blockierte
+- Das contenteditable-Verhalten von ChatGPT/Claude/Gemini störte
+- Beim Bearbeiten die Formatierung (inkl. Zeilenumbrüche) zerstörte
+
+**Fix:**
+```css
+/* ALT (v1.0.7): */
+.aicc-highlight-overlay {
+  pointer-events: auto;  ← Blockiert contenteditable!
+  cursor: help;
+}
+
+/* NEU (v1.0.8): */
+.aicc-highlight-overlay {
+  pointer-events: none;  ← Blockiert NICHTS mehr!
+}
+```
+
+**Wichtig:** Tooltips (title-Attribute) funktionieren auch mit `pointer-events: none`!
+
+**Geänderte Dateien:**
+- `extension/scripts/content.js` (Zeile 614)
+- `extension/styles/content.css` (Zeile 20-22)
+
+**Getestet:**
+✅ Zeilenumbrüche bleiben beim Bearbeiten erhalten
+✅ Tooltips funktionieren weiterhin
+✅ Keine Interferenz mit contenteditable
+
+---
+
+### Version 1.0.7
 **Datum:** 2025-10-22
 
 **🚀 HYBRID NAME DETECTION - Revolutionäre Sliding-Window-Architektur**

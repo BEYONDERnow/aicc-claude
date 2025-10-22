@@ -18,9 +18,8 @@
 
 .aicc-highlight-overlay {
   position: absolute;
-  pointer-events: auto;
+  pointer-events: none;
   transition: opacity 0.2s ease;
-  cursor: help;
 }
 
 .aicc-highlight-overlay-critical {

@@ -611,9 +611,8 @@ class ComplianceMonitor {
       left: ${left}px;
       width: ${rect.width}px;
       height: ${rect.height}px;
-      pointer-events: auto;
+      pointer-events: none;
       border-radius: 2px;
-      cursor: help;
     `;
 
     container.appendChild(overlay);
