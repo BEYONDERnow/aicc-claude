@@ -2,17 +2,18 @@
 
 ## Benötigte Fonts
 
-Die Extension benötigt **6 TTF-Dateien**:
+Die Extension benötigt **5 TTF-Dateien**:
 
 ### Poppins (3 Dateien)
 - `Poppins-Regular.ttf` (Weight 400)
 - `Poppins-SemiBold.ttf` (Weight 600)
 - `Poppins-Bold.ttf` (Weight 700)
 
-### Montserrat (3 Dateien)
-- `Montserrat-Regular.ttf` (Weight 400)
-- `Montserrat-Medium.ttf` (Weight 500)
-- `Montserrat-SemiBold.ttf` (Weight 600)
+### Montserrat (2 Variable Fonts)
+- `Montserrat-VariableFont_wght.ttf` (Weights 100-900)
+- `Montserrat-Italic-VariableFont_wght.ttf` (Italic, Weights 100-900)
+
+**Vorteil Variable Fonts:** Eine Datei enthält alle Gewichte (100-900)!
 
 ---
 
@@ -37,10 +38,9 @@ Die Extension benötigt **6 TTF-Dateien**:
    - Suche nach "Montserrat"
    - Klicke "Download family"
    - Entpacke die ZIP
-   - Kopiere diese 3 Dateien nach `extension/fonts/Montserrat/`:
-     - `Montserrat-Regular.ttf`
-     - `Montserrat-Medium.ttf`
-     - `Montserrat-SemiBold.ttf`
+   - Kopiere diese 2 Dateien nach `extension/fonts/Montserrat/`:
+     - `Montserrat-VariableFont_wght.ttf` (aus dem Hauptordner)
+     - `Montserrat-Italic-VariableFont_wght.ttf` (aus dem Hauptordner)
 
 **Option B: Direkte Links**
 
@@ -62,9 +62,8 @@ extension/
 │   │   ├── Poppins-SemiBold.ttf
 │   │   └── Poppins-Bold.ttf
 │   └── Montserrat/
-│       ├── Montserrat-Regular.ttf
-│       ├── Montserrat-Medium.ttf
-│       └── Montserrat-SemiBold.ttf
+│       ├── Montserrat-VariableFont_wght.ttf
+│       └── Montserrat-Italic-VariableFont_wght.ttf
 ├── icons/
 ├── scripts/
 ├── styles/
@@ -91,13 +90,13 @@ extension/
 ✅ Poppins-Regular.ttf
 ✅ Poppins-SemiBold.ttf
 ✅ Poppins-Bold.ttf
-✅ Montserrat-Regular.ttf
-✅ Montserrat-Medium.ttf
-✅ Montserrat-SemiBold.ttf
+✅ Montserrat-VariableFont_wght.ttf
+✅ Montserrat-Italic-VariableFont_wght.ttf
 
 ❌ poppins-regular.ttf (kleingeschrieben)
 ❌ Poppins Regular.ttf (mit Leerzeichen)
 ❌ Poppins-SemiBold.otf (falsche Endung)
+❌ Montserrat-Regular.ttf (alte Version, nicht Variable Font)
 ```
 
 **Prüfe die Ordnerstruktur:**
@@ -107,7 +106,7 @@ ls Poppins/
 # Sollte ausgeben: Poppins-Regular.ttf  Poppins-SemiBold.ttf  Poppins-Bold.ttf
 
 ls Montserrat/
-# Sollte ausgeben: Montserrat-Regular.ttf  Montserrat-Medium.ttf  Montserrat-SemiBold.ttf
+# Sollte ausgeben: Montserrat-VariableFont_wght.ttf  Montserrat-Italic-VariableFont_wght.ttf
 ```
 
 **Chrome DevTools Console:**
