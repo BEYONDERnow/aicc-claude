@@ -54,7 +54,7 @@ class ComplianceDetector {
 
       // ========== SCHWEIZ (Top 100) ==========
       'adrian', 'aldo', 'alessio', 'andres', 'andrin', 'anita', 'annina', 'annik',
-      'beat', 'beda', 'beni', 'benoît', 'beyeler',
+      'beat', 'beda', 'beni', 'benoît',
       'céline', 'christoph', 'claude', 'claudio',
       'damian', 'damien', 'dario', 'davide', 'diego', 'dominic', 'dominique',
       'eliane', 'elio', 'emilie', 'enzo', 'estelle',
@@ -172,32 +172,98 @@ class ComplianceDetector {
    */
   initializeNameBlacklist() {
     return new Set([
-      // Allgemeine Begriffe
+      // Allgemeine Begriffe (EN)
       'general', 'manager', 'director', 'officer', 'agent', 'assistant', 'consultant',
       'specialist', 'coordinator', 'administrator', 'supervisor', 'representative',
       'first', 'second', 'third', 'last', 'next', 'previous', 'current', 'former',
       'senior', 'junior', 'chief', 'head', 'lead', 'principal', 'vice', 'deputy',
 
-      // Titel
+      // Titel (EN/DE)
       'mister', 'misses', 'doctor', 'professor', 'lieutenant', 'captain', 'major',
       'colonel', 'sergeant', 'private', 'master', 'miss',
 
-      // KI/Tech Begriffe
+      // KI/Tech Begriffe (EN/DE)
       'artificial', 'intelligence', 'machine', 'learning', 'deep', 'neural', 'network',
       'model', 'system', 'algorithm', 'data', 'science', 'computer', 'software',
       'hardware', 'internet', 'digital', 'virtual', 'cyber', 'online',
+      'digitaler', 'digitale', 'digitales',
 
-      // Häufige Adjektive
+      // Häufige Adjektive (EN)
       'great', 'good', 'bad', 'nice', 'beautiful', 'wonderful', 'excellent',
       'perfect', 'terrible', 'awesome', 'amazing', 'incredible', 'fantastic',
 
-      // Monate/Tage
+      // Monate/Tage (EN/DE)
       'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
       'september', 'october', 'november', 'december', 'monday', 'tuesday',
       'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
       'januar', 'februar', 'märz', 'april', 'mai', 'juni', 'juli', 'august',
       'september', 'oktober', 'november', 'dezember', 'montag', 'dienstag',
-      'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'
+      'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag',
+
+      // ========== DEUTSCHE ERWEITERUNG (+150 Wörter) ==========
+
+      // Artikel (DE)
+      'der', 'die', 'das', 'den', 'dem', 'des',
+      'ein', 'eine', 'einer', 'einem', 'einen', 'eines',
+
+      // Präpositionen (DE)
+      'mit', 'aus', 'bei', 'nach', 'von', 'zu', 'vor', 'über', 'unter', 'zwischen',
+      'durch', 'für', 'gegen', 'ohne', 'um', 'an', 'auf', 'hinter', 'neben',
+      'in', 'binnen', 'seit', 'während', 'wegen',
+
+      // Konjunktionen (DE)
+      'und', 'oder', 'aber', 'denn', 'sondern', 'doch', 'jedoch', 'als', 'wenn',
+      'weil', 'da', 'obwohl', 'damit', 'dass', 'falls', 'bevor', 'nachdem',
+
+      // Pronomen (DE)
+      'ich', 'du', 'er', 'sie', 'es', 'wir', 'ihr', 'mein', 'dein', 'sein', 'ihr',
+      'unser', 'euer', 'dieser', 'jener', 'welcher', 'alle', 'einige', 'manche',
+      'keine', 'jeder', 'jede', 'jedes', 'solche', 'andere',
+      'ihrer', 'seine', 'ihre',
+
+      // Verben (DE - häufige)
+      'werden', 'sollten', 'beginnt', 'wurde', 'waren', 'haben', 'hatte', 'hätte',
+      'sein', 'gewesen', 'machen', 'gehen', 'kommen', 'sagen', 'können', 'müssen',
+      'dürfen', 'wollen', 'sollen', 'mögen',
+
+      // Adjektive (DE)
+      'bewährte', 'praxisnah', 'neue', 'alten', 'große', 'kleine', 'gute', 'beste',
+      'letzte', 'erste', 'nächste', 'weitere', 'eigene', 'verschiedene', 'mehrere',
+
+      // Substantive (DE - häufig)
+      'zukunft', 'vergangenheit', 'gegenwart', 'zeit', 'jahr', 'monat', 'woche', 'tag',
+      'stunde', 'minute', 'anfang', 'ende', 'mitte',
+      'haus', 'raum', 'tür', 'fenster', 'tisch', 'stuhl',
+      'mann', 'frau', 'kind', 'leute', 'menschen', 'person', 'gruppe', 'team',
+      'firma', 'unternehmen', 'betrieb', 'gesellschaft', 'organisation',
+      'arbeit', 'job', 'stelle', 'position', 'aufgabe', 'projekt',
+      'geld', 'preis', 'kosten', 'wert', 'summe', 'betrag',
+      'wochen',
+
+      // Business-Begriffe (EN/DE)
+      'management', 'relationship', 'customer', 'business', 'strategy', 'marketing',
+      'sales', 'service', 'support', 'product', 'solution', 'platform',
+      'journey', 'experience', 'engagement', 'retention', 'acquisition',
+      'performance', 'efficiency', 'productivity', 'quality', 'innovation',
+      'transformation', 'optimization', 'automation', 'integration',
+      'kommunikationsmuster', 'kommunikation', 'muster', 'prozess', 'prozesse',
+      'strategie', 'konzept', 'methode', 'ansatz', 'lösung', 'system',
+      'konkurrenten', 'konkurrenz', 'wettbewerb', 'markt',
+
+      // Tech/KI-Begriffe (EN/DE)
+      'prompts', 'prompt', 'hook', 'hooks', 'api', 'code', 'function', 'class',
+      'variable', 'parameter', 'argument', 'return', 'value', 'type',
+      'string', 'number', 'boolean', 'array', 'object', 'null', 'undefined',
+
+      // Zeitangaben
+      'heute', 'morgen', 'gestern', 'jetzt', 'bald', 'später', 'vorher', 'nachher',
+      'immer', 'nie', 'manchmal', 'oft', 'selten', 'usually', 'sometimes', 'never',
+
+      // Zahlen als Wörter
+      'null', 'eins', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht',
+      'neun', 'zehn', 'elf', 'zwölf', 'hundert', 'tausend', 'million',
+      'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+      'ten', 'eleven', 'twelve', 'hundred', 'thousand', 'million'
     ]);
   }
 
@@ -681,6 +747,8 @@ class ComplianceDetector {
 
   /**
    * Fügt einen Namen-Kandidaten hinzu mit Scoring
+   *
+   * VERSION 1.0.10 - Artikel-Check hinzugefügt
    */
   addNameCandidate(candidates, text, words) {
     const first = words[0];
@@ -689,10 +757,19 @@ class ComplianceDetector {
     const endPos = last.end;
     const fullText = text.substring(startPos, endPos);
 
-    // Prüfe Kontext
+    // Prüfe Kontext VORHER
     const contextStart = Math.max(0, startPos - 50);
     const contextBefore = text.substring(contextStart, startPos).toLowerCase();
     const hasContext = /(?:name|kontakt|contact|person|mitarbeiter|employee|kunde|customer|patient|student|benutzer|user|herr|frau|mr|mrs|ms)[\s:]+$/.test(contextBefore);
+
+    // === NEUE REGEL: Deutsche Artikel-Check ===
+    // "Die Zukunft", "der Hook", "aus Ihrer", etc. → SOFORT ABLEHNEN
+    const hasArticleBefore = /\b(?:der|die|das|den|dem|des|ein|eine|einer|einem|einen|eines)\s+$/i.test(contextBefore);
+
+    if (hasArticleBefore && !hasContext) {
+      // Artikel ohne Name-Kontext → KEIN Name!
+      return; // Kandidat wird NICHT hinzugefügt
+    }
 
     // Scoring
     const score = this.scoreNameCandidateV2(words, hasContext, startPos === 0);
@@ -710,6 +787,11 @@ class ComplianceDetector {
 
   /**
    * Scoring V2 - arbeitet mit Word-Objekten statt Strings
+   *
+   * VERSION 1.0.10 - Smart Fix für False Positives:
+   * - Lexicon-Pflicht: Mind. 1 Wort muss im Lexicon sein (ohne Kontext)
+   * - 2-Stufen-Threshold: Mit Lexicon 10, ohne Lexicon 18
+   * - Base Threshold erhöht: 8 → 10
    */
   scoreNameCandidateV2(words, hasContext, isAtStart) {
     let score = 0;
@@ -719,6 +801,16 @@ class ComplianceDetector {
     const knownCount = words.filter(w => w.isInLexicon).length;
     const allCapitalized = words.every(w => w.isCapitalized);
     const allLowercase = words.every(w => !w.isCapitalized);
+
+    // === NEUE REGEL: Ohne Kontext MUSS mind. 1 Wort im Lexicon sein! ===
+    if (!hasContext && knownCount === 0) {
+      // SOFORT ABLEHNEN - verhindert "Relationship Management", "Die Zukunft", etc.
+      return {
+        total: 0,
+        threshold: 18,
+        source: 'rejected-no-lexicon'
+      };
+    }
 
     // === SCORING ===
 
@@ -776,8 +868,16 @@ class ComplianceDetector {
       if (/\d/.test(w.text)) score -= 10;
     });
 
-    // === THRESHOLD ===
-    let threshold = 8;
+    // === THRESHOLD (2-Stufen-System) ===
+    let threshold;
+
+    if (knownCount > 0) {
+      // Mit Lexicon-Match: Threshold 10 (erhöht von 8)
+      threshold = 10;
+    } else {
+      // Ohne Lexicon-Match: Threshold 18 (fast unmöglich ohne Kontext)
+      threshold = 18;
+    }
 
     // Strenger bei kleingeschrieben ohne Kontext
     if (allLowercase && !hasContext) {
