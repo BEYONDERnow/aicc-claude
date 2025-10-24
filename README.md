@@ -1,508 +1,74 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 1.0.9 BETA** • by BEYONDER
+**Version 2.1.0** • by BEYONDER
 
-Ein lokaler Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
+Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
+
+**NEU in v2.x**: 🤖 **Transformer.js Integration** mit Named Entity Recognition (NER) für intelligente Namenserkennung!
 
 ---
 
 ## 📋 Versionshistorie
 
-### Version 1.0.9 (Aktuell)
-**Datum:** 2025-10-22
+> **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-**🎨 BEYONDER DESIGN SYSTEM - Komplettes Redesign**
+### Version 2.1.0 (Aktuell) - 2025-10-24
 
-**Motivation:**
-Komplett neues visuelles Design im BEYONDER-Stil (beyonder.ch) mit professioneller Typografie und Farbpalette.
+**🔧 Kritische Fixes: IP/Telefon-Disambiguation, Name List Recognition, Model Loading**
 
-**🎨 BEYONDER Farbpalette:**
+#### 🎯 Highlights
 
-**Primary Colors:**
-- Dark Orange: `#FF9220`
-- Gold Orange: `#FCC001`
-- Midnight Blue: `#101E35`
-- Deep Sky Blue: `#46BFED`
-- Aquamarine: `#33D099`
-- Deep Pink: `#E33A74`
+**Problem 1 - IP/Telefon-Disambiguation** ✅ GELÖST
+- Zeichenfolge `046.645.424.684` wurde fälschlicherweise als IP UND Telefon erkannt
+- **Fix**: IP-Validierung mit Oktett-Check (0-255), Punkte aus Telefon-Patterns entfernt
 
-**Status Colors:**
-- OK: `#71D033` (grün)
-- INFO: `#467CED` (blau)
-- WARNING: `#FCC001` (gold)
-- ERROR: `#E33A4E` (rot)
+**Problem 2 - Name List Recognition** ✅ GELÖST
+- `"Hans Peter Tristan Andres Chris Beyeler Michael Schmid"` → nur "Hans" erkannt
+- **Fix**: NER Confidence 0.7→0.6, Scoring überarbeitet, Sliding Window 2→5 Wörter
 
-**Gradients:**
-- Gradient Main: `#33d099 → #00939a → #005575 → #101e35`
-- Gradient Highlight: `#e33a74 → #FF9220 → #fcc001`
+**Problem 3 - Model Loading Warning** ✅ GELÖST
+- Console-Warnung `"Unable to determine content-length"`
+- **Fix**: Fallback für fehlende Content-Length Header (zeigt MB statt %)
 
-**🔤 Typography:**
-
-**Lokale Fonts (100% offline & DSGVO-konform):**
-- **Headings:** Poppins (Regular 400, SemiBold 600, Bold 700)
-- **Body:** Montserrat (Regular 400, Medium 500, SemiBold 600)
-
-**Installation:** Siehe `FONTS_INSTALLATION.md` (2 Minuten Setup)
-
-**✨ Redesigned Components:**
-
-**1. Popup (Extension Icon)**
-- Header: BEYONDER Gradient Main mit subtiler Puls-Animation
-- BETA Badge: Gradient Highlight mit Box-Shadow
-- Status-Box: Gradient-Hintergründe (OK grün, WARNING gold, ERROR rot)
-- Platform-Badges: Hover-Effekt mit Gradient Highlight
-- Features: Icons mit Gradient-Text
-- Privacy-Badge: Aquamarine Border & Gradient-Background
-- Footer: Midnight Blue mit Gradient-Text für "BEYONDER"
-
-**2. Status Icon (Floating)**
-- OK: `#71D033` (statt generisches Grün)
-- WARNING: `#FCC001` mit goldener Pulsierung
-- CRITICAL: `#E33A4E` mit roter Pulsierung
-- Badge Counter: Midnight Blue `#101E35` Hintergrund
-- Box-Shadow: BEYONDER Midnight statt Schwarz
-
-**3. Modal & Overlay**
-- Header: BEYONDER Gradient Main
-- Subtle Pulse Animation im Header
-- Buttons: Gradient Highlight für Primary
-- Warning Box: Gold-Gradient Hintergrund
-- Critical Box: Rot-Gradient Hintergrund
-- Table Header: BEYONDER Gradient Main
-- Scrollbar: BEYONDER Grey Farben
-
-**4. Highlight Overlays**
-- WARNING: `rgba(252, 192, 1, 0.15)` + `#FCC001` Border
-- CRITICAL: `rgba(227, 58, 78, 0.20)` + `#E33A4E` Border
-
-**📁 Neue Dateien:**
-- `extension/styles/fonts.css` - @font-face Definitionen für Poppins & Montserrat
-- `extension/fonts/Poppins/` - Ordner für Poppins TTFs (vom User zu füllen)
-- `extension/fonts/Montserrat/` - Ordner für Montserrat TTFs (vom User zu füllen)
-- `FONTS_INSTALLATION.md` - Schritt-für-Schritt Anleitung
-
-**🎯 Geänderte Dateien:**
-- `extension/popup.html` - Komplettes Redesign mit BEYONDER-Style (460 Zeilen, embedded CSS)
-- `extension/styles/content.css` - BEYONDER Farben & Fonts (821 Zeilen)
-- `.gitignore` - Fonts ignoriert (siehe FONTS_INSTALLATION.md)
-
-**🚀 Features:**
-- ✅ CSS Variables für BEYONDER Farben
-- ✅ Responsive Design (Mobile-optimiert)
-- ✅ Animationen (Pulse, Fade, Slide, Scale)
-- ✅ BEYONDER Gradient-Effekte überall
-- ✅ Poppins für Headings, Montserrat für Body
-- ✅ Custom Scrollbar im BEYONDER-Style
-- ✅ Accessibility (reduced-motion Support)
-- ✅ 100% offline Fonts (DSGVO-konform)
-
-**Vorher vs. Nachher:**
-
-| Element | v1.0.8 | v1.0.9 |
-|---------|--------|--------|
-| Header Gradient | Generic Lila | BEYONDER Gradient Main |
-| Fonts | System Fonts | Poppins + Montserrat |
-| Status OK | #10b981 | #71D033 |
-| Status WARNING | #f59e0b | #FCC001 |
-| Status ERROR | #ef4444 | #E33A4E |
-| Buttons | Generisch | BEYONDER Gradient Highlight |
-| Branding | Minimal | "BEYONDER" prominent mit Gradient |
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#210---2025-10-24)
 
 ---
 
-### Version 1.0.8
-**Datum:** 2025-10-22
+### Version 2.0.0 - 2025-10-24
 
-**🐛 CRITICAL BUGFIX: Zeilenumbrüche verschwinden beim Bearbeiten**
+**🤖 KI-gestützte Erkennung mit Transformer.js**
 
-**Problem:**
-User-Feedback: _"Wenn jedoch ein Text eingegeben wurde mit Zeilenumbrüchen und ich diesen bearbeite, verschwinden die Zeilenumbrüche."_
+#### 🚀 Revolutionäre Features
 
-**Root Cause:**
-Die Highlight-Overlays hatten `pointer-events: auto`, was:
-- Maus-Events blockierte
-- Das contenteditable-Verhalten von ChatGPT/Claude/Gemini störte
-- Beim Bearbeiten die Formatierung (inkl. Zeilenumbrüche) zerstörte
+**1. Named Entity Recognition (NER)**
+- **Model**: Xenova/bert-base-NER (mehrsprachig: DE/EN/FR/IT)
+- **100% lokal**: ~40MB, Browser-gecached, keine Server-Kommunikation
+- **Lazy Loading**: Model wird nur bei Bedarf geladen
 
-**Fix:**
-```css
-/* ALT (v1.0.7): */
-.aicc-highlight-overlay {
-  pointer-events: auto;  ← Blockiert contenteditable!
-  cursor: help;
-}
+**2. Hybrid Detection System**
+- Phase 1: Kritische Daten (Regex)
+- Phase 2: KI-basierte Namenserkennung + PLZ-Filterung mit DATE-Erkennung
+- Automatischer Fallback zu Regex wenn NER nicht verfügbar
 
-/* NEU (v1.0.8): */
-.aicc-highlight-overlay {
-  pointer-events: none;  ← Blockiert NICHTS mehr!
-}
-```
+**3. Intelligente PLZ vs. Jahrgang-Unterscheidung**
+- Schweizer PLZ 1980 wird nicht als Jahrgang erkannt
+- NER erkennt DATE-Entities und filtert sie aus PLZ-Matches
 
-**Wichtig:** Tooltips (title-Attribute) funktionieren auch mit `pointer-events: none`!
-
-**Geänderte Dateien:**
-- `extension/scripts/content.js` (Zeile 614)
-- `extension/styles/content.css` (Zeile 20-22)
-
-**Getestet:**
-✅ Zeilenumbrüche bleiben beim Bearbeiten erhalten
-✅ Tooltips funktionieren weiterhin
-✅ Keine Interferenz mit contenteditable
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#200---2025-10-24)
 
 ---
 
-### Version 1.0.7
-**Datum:** 2025-10-22
-
-**🚀 HYBRID NAME DETECTION - Revolutionäre Sliding-Window-Architektur**
-
-**Problem in v1.0.6:**
-User-Feedback: _"Die Namenserkennung ist nicht gut genug. 'Hans Peter Tristan' und 's Chris Beyeler Michael' wird erkannt. Macht es Sinn, wenn man Vor- und Nachnamen getrennt erkennen würde?"_
-
-**Root Cause:** Regex-Pattern erstellt Overlaps trotz Anti-Overlap-Heuristiken.
-
-**Neue Lösung:**
-
-**1. Sliding-Window-Algorithmus (Komplett neues System!)**
-
-Statt Regex mit Overlaps:
-```javascript
-// ALT (v1.0.6): Regex iteriert sequenziell → Overlaps
-pattern: /([A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+)\b/g
-
-// NEU (v1.0.7): Wort-basiertes Sliding Window
-Step 1: Extrahiere ALLE Wörter mit Positionen
-  → ["Hans"@0, "Peter"@5, "Tristan"@11, "Andres"@19, ...]
-
-Step 2: Teste alle 2-Wort und 3-Wort Kombinationen
-  → "Hans Peter", "Peter Tristan", "Tristan Andres", etc.
-
-Step 3: Score jeden Kandidaten (Lexicon + Kontext + Heuristik)
-
-Step 4: Greedy Non-Overlapping Selection
-  → Wähle Kandidat mit höchstem Score
-  → Entferne alle überlappenden Kandidaten
-  → Wiederhole
-```
-
-**2. Multi-Strategie-Detection**
-
-**Strategie A: Lexicon-basiert**
-- Nutzt 700+ Namen-Datenbank aus v1.0.6
-- Beide Wörter im Lexicon → Score +8
-- Erstes Wort im Lexicon → Score +3
-
-**Strategie B: Kontext-basiert (🆕 Kleinschreibung!)**
-```javascript
-Pattern: "Name: hans peter müller" → ✅ ERKANNT!
-Pattern: "Kontakt: giuseppe verdi" → ✅ ERKANNT!
-
-Score: +20 (sehr hoch wegen explizitem Kontext)
-```
-
-**Strategie C: Heuristik-basiert**
-- Kapitalisierung, Wortlänge, Position
-- Blacklist verhindert "Machine Learning"
-
-**3. Anti-Overlap-Logik**
-
-```javascript
-// 3-Wort-Namen brauchen KONTEXT!
-if (words.length === 3 && !hasContext) {
-  score -= 8; // STARKE PENALTY
-}
-
-// Beispiel: "Hans Peter Tristan" ohne "Name:" davor
-// → Score zu niedrig, wird nicht erkannt
-// → Stattdessen: "Hans Peter" (Score: hoch) + "Tristan Andres" (Score: hoch)
-```
-
-**4. Intelligentes Scoring**
-
-| Faktor | Score | Beispiel |
-|--------|-------|----------|
-| Kontext-Wort | +10 | "Name: Hans Peter" |
-| Beide im Lexicon | +8 | "Hans Peter" |
-| Großschreibung | +3 | Standard |
-| 2 Wörter | +2 | Vor+Nachname |
-| 3 Wörter OHNE Kontext | -8 | Overlap-Penalty |
-| Kleinschreibung OHNE Kontext | -5 | Verdächtig |
-| Zahlen | -10 | "User123" |
-
-**Thresholds:**
-- Normal: ≥ 8
-- Kleinschreibung ohne Kontext: ≥ 15 (sehr streng!)
-- 3 Wörter ohne Kontext: ≥ 12
-
-**Test-Ergebnisse (8/10 bestanden)**
-
-| Test | v1.0.6 | v1.0.7 | Status |
-|------|--------|--------|---------|
-| Hans Peter Tristan Andres Chris Beyeler Michael Schmid | ❌ Overlaps | ✅ 4 Namen | ✅ **FIXED** |
-| hans peter (ohne Kontext) | ❌ Erkannt | ✅ Nicht erkannt | ✅ |
-| Name: Hans Peter Müller | ✅ | ✅ | ✅ |
-| **Kontakt: hans peter müller** | ❌ | ✅ Erkannt | 🆕 **NEU!** |
-| Giuseppe Verdi | ❌ | ✅ | ✅ **FIXED** |
-| Urs Beyeler und Reto Schmid | ✅ | ✅ | ✅ |
-| Machine Learning | ✅ | ✅ | ✅ |
-| Hans Peter schreibt | ❌ "Hans Peter schreibt" | ✅ "Hans Peter" | ✅ **FIXED** |
-
-**Performance:** +60% Accuracy vs v1.0.6
-
-**Code-Änderungen:**
-
-Neue Methoden:
-- `detectNamesHybrid()` - Hauptlogik (170 Zeilen)
-- `addNameCandidate()` - Kandidaten-Scoring
-- `scoreNameCandidateV2()` - Scoring mit Word-Objekten
-- `selectBestNonOverlappingNames()` - Greedy-Algorithmus
-
-Entfernt/Deaktiviert:
-- `name_context` Pattern (in Hybrid integriert, Doppel-Erkennungen vermieden)
-- Alte `scoreNameCandidate()` (durch V2 ersetzt)
-- Regex-basierte `name_standalone` Pattern = `null` (nutzt jetzt `customDetector: true`)
-
-**Breaking Changes:**
-- `name_standalone` verwendet kein Pattern mehr → `customDetector: true`
-- `name_context` Pattern komplett entfernt aus warnings array
-
-**Vorteile:**
-✅ Keine Overlaps mehr (garantiert durch Greedy-Selection)
-✅ Erkennt kleingeschriebene Namen MIT Kontext
-✅ Intelligente 2-Wort vs 3-Wort Entscheidung
-✅ Nutzt 700+ Namen-Datenbank aus v1.0.6
-✅ Kein externes Dependency (Compromise.js nicht nötig!)
-✅ Sliding-Window ist fundamental besser als Regex
-
----
-
-### Version 1.0.6
-**Datum:** 2025-10-21
-
-**🌍 MASSIVE DATABASE EXPANSION + Overlap-Fix**
-
-**Problem gelöst:**
-Input: "Hans Peter Tristan Andres"
-Falsch erkannt (v1.0.5): "Hans Peter Tristan", "s Chris Beyeler Michael"
-→ Overlap-Problem durch 3-Wort-Pattern!
-
-**Lösung:**
-
-**1. Namen-Datenbank MASSIV erweitert: 200 → 700+ Namen**
-- 🇩🇪 Deutschland: 200+ Namen (Alexander, Andreas, Brigitte, Claudia, etc.)
-- 🇨🇭 Schweiz: 100+ Namen (Urs, Reto, Fabienne, Ladina, etc.)
-- 🇦🇹 Österreich: 80+ Namen (Leopold, Gottfried, Hildegard, etc.)
-- 🇮🇹 Italien: 100+ Namen (Giuseppe, Francesca, Matteo, etc.)
-- 🇫🇷 Frankreich: 100+ Namen (François, Céline, Raphaël, etc.)
-- Häufige Nachnamen: Müller, Schmidt, Beyeler, etc.
-
-**2. RegEx-Pattern gefixed:**
-- Alte Version: Erlaubte 2-3 Wörter → Overlap!
-- Neue Version: **NUR 2 Wörter** → Kein Overlap mehr
-- Pattern: `/([A-ZÄÖÜ][a-zäöüß]+\s+[A-ZÄÖÜ][a-zäöüß]+)\b/g`
-
-**3. Anti-Overlap-Heuristik:**
-```javascript
-// NEUE Regel: Beide Vornamen ohne Kontext mitten im Text?
-if (beide_sind_Vornamen && !hatKontext && !amTextanfang) {
-  score -= 8; // STARKE PENALTY!
-  threshold = 10; // Strenger Threshold
-}
-```
-
-**Beispiele:**
-
-| Input | v1.0.5 | v1.0.6 ✓ |
-|-------|--------|----------|
-| Hans Peter Tristan Andres | ❌ "Hans Peter Tristan", "s Chris..." | ✅ "Hans Peter", "Tristan Andres" |
-| Name: Hans Peter | ✅ Erkannt | ✅ Erkannt (Score +9, Kontext-Bonus) |
-| Peter Tristan (Overlap) | ❌ Fälschlich erkannt | ✅ NICHT erkannt (Penalty -8) |
-| Giuseppe Verdi | ❌ Nicht erkannt | ✅ Erkannt (IT-Namen) |
-| François Dubois | ❌ Nicht erkannt | ✅ Erkannt (FR-Namen) |
-
-**Erkannt jetzt zuverlässig:** ~700+ Namen aus 5 Ländern!
-
----
-
-### Version 1.0.5
-**Datum:** 2025-10-21
-
-**🚀 MAJOR IMPROVEMENT: Heuristische Name-Detection**
-
-**Problem:**
-RegEx allein ist NICHT zuverlässig genug für Namen. Zu viele False Positives und False Negatives.
-
-**Neue Lösung - Multi-Faktor Heuristische Analyse:**
-
-Verwendet **Scoring-System** statt einfacher RegEx:
-
-**1. Vornamen-Datenbank (200+ Namen)**
-- Deutsche Vornamen: Hans, Peter, Michael, Chris, Tristan, etc.
-- Schweizer Vornamen: Urs, Reto, Beat, Andres, etc.
-- Englische Vornamen: John, William, Jennifer, etc.
-
-**2. Scoring-Faktoren:**
-
-**Positive Scores:**
-- +5: Erstes Wort ist bekannter Vorname
-- +4: Beide Wörter sind Vornamen (z.B. "Hans Peter")
-- +4: Nach Kontext-Wort ("Name:", "Kontakt:", "Mitarbeiter:")
-- +3: 2 Wörter (typisch für Vor-/Nachname)
-- +3: Wort ist bekannter Vorname
-- +1: Korrekte Kapitalisierung
-- +1: Typische Namenslänge (3-15 Zeichen)
-
-**Negative Scores:**
-- -5: Nur 1 Wort (zu unspezifisch)
-- -5: Enthält Zahlen
-- -3: Am Satzanfang
-- -3: Sonderzeichen (außer Umlaute)
-- ∞: In Blacklist → sofort ablehnen
-
-**3. Entscheidung:**
-- Score >= 5 → Name wird erkannt ✓
-- Score < 5 → Kein Name
-
-**Erkannt jetzt zuverlässig:**
-- ✅ Hans Peter (Score: 8+)
-- ✅ Chris Beyeler (Score: 8+)
-- ✅ Tristan Andres (Score: 8+)
-- ✅ Michael Schmid (Score: 8+)
-- ✅ Name: Anna Müller (Score: 12+, Kontext-Bonus)
-
-**NICHT erkannt (korrekt):**
-- ❌ "Machine Learning" (Blacklist)
-- ❌ "General Manager" (Blacklist)
-- ❌ "Peter." am Satzanfang (zu niedrig)
-
-**Implementierung:**
-- `initializeCommonFirstNames()`: 200+ Vornamen
-- `analyzeNameHeuristics()`: Scoring-Algorithmus
-- Debug-Logging in Konsole mit Score-Ausgabe
-
----
-
-### Version 1.0.4
-**Datum:** 2025-10-21
-
-**Kritische Bug-Fixes:**
-- 🐛 **CRITICAL: Browser-Absturz behoben**
-  - MutationObserver ignoriert jetzt Änderungen an Overlay-Containern (verhindert Endlosschleife)
-  - Debouncing (100ms) für Scroll/Resize-Handler
-  - Fehlerbehandlung bei Overlay-Erstellung
-  - Problem: Extension verursachte Tabs Crash durch infinite loop
-
-- 🐛 **Telefonnummer-Overlap behoben**
-  - Overlappende Detection-Ranges werden jetzt zusammengeführt
-  - Beispiel: "089 928 90 99" wird als EINE Range erkannt statt mehrere
-  - Implementierung: `sortRanges()` merged jetzt overlapping ranges
-
-- 🐛 **Hover-Tooltips funktionieren jetzt**
-  - Overlays haben `pointer-events: auto` + `cursor: help`
-  - Title-Attribute mit Detection-Info (Name + Beschreibung)
-  - Problem: User sah keine Info beim Hovern über Markierungen
-
-- 🐛 **Modal-Buttons jetzt klickbar**
-  - Highlight-Overlays werden ausgeblendet wenn Modal geöffnet ist
-  - CSS-Class `aicc-modal-open` auf `<body>` während Modal aktiv
-  - Problem: "X" und "Verstanden" Buttons nicht klickbar
-
-- 🐛 **Namen-Erkennung verbessert**
-  - Neues Pattern: `name_standalone` für Namen ohne Kontext
-  - Erkennt jetzt: "Hans Peter", "Chris Beyeler", "Michael Schmid"
-  - Mit Blacklist-Filtering gegen False Positives
-  - Problem: Keine Namen wurden erkannt
-
-**Technische Änderungen:**
-- Overlays umbenannt: `.aicc-overlay` → `.aicc-highlight-overlay` (Namenskonflikt behoben)
-- Range-Merging Algorithmus in `detector.js`
-- CSS Body-Class Management für Modal-Status
-
----
-
-### Version 1.0.3
-**Datum:** 2025-10-21
-
-**Änderungen:**
-- ✅ **NEUE Highlighting-Technik: Virtual Overlays**
-  - Verwendet absolut positionierte Overlay-Elemente statt DOM-Modification
-  - **Keine Zerstörung der Formatierung mehr** - Text bleibt unverändert
-  - Funktioniert mit ProseMirror (ChatGPT), ContentEditable und allen Editoren
-  - Ähnlich wie LanguageTool Plus - professionelle Overlay-Technik
-- ✅ **Modal-Tabelle optimiert:**
-  - Spalte "Erkannter Wert" begrenzt auf max. 200px Breite
-  - Automatischer Zeilenumbruch bei langen Werten (word-break)
-  - Bessere Lesbarkeit, kein horizontales Scrollen mehr
-- 🔧 **Technische Verbesserungen:**
-  - Range API für präzise Text-Positionierung
-  - TreeWalker für effizientes DOM-Traversal
-  - Auto-Repositioning bei Scroll/Resize Events
-  - Multi-line Support für umgebrochene Highlights
-
-**Warum diese Änderung?**
-v1.0.2 hat durch `innerHTML`-Replacement die DOM-Struktur von ChatGPT zerstört, was zu zusätzlichen Zeilenumbrüchen führte. Die neue Overlay-Technik modifiziert den DOM NICHT - sie legt farbige Highlights ÜBER den Text, ähnlich wie professionelle Tools (LanguageTool, Grammarly).
-
----
-
-### Version 1.0.2
-**Datum:** 2025-10-21
-
-**Änderungen:**
-- ✅ **Inline-Highlighting reaktiviert:** Sensible Daten werden direkt im Text markiert (rot/orange)
-- ✅ **Verbesserte Zeilenumbruch-Behandlung:** \n → <br> Konvertierung erhält Formatierung
-- ✅ **Klarere Button-Beschriftung:** "Warnung ignorieren & abschicken" statt "Trotzdem fortfahren"
-- ✅ **Enter-Taste im Modal:** Enter löst jetzt Submit-Aktion aus
-- ✅ **Autofocus:** Submit-Button erhält automatisch Focus für schnellere Bedienung
-- 🔧 **Verbessertes Verhalten:**
-  - Overlay (Icon-Klick): Nur Information, KEIN Absenden möglich
-  - Modal (Submit-Versuch): Warnung mit Möglichkeit zu ignorieren
-
-**User Flow:**
-1. Kritische Daten eingeben → Text wird **inline markiert** (rot/orange)
-2. Icon wird rot und zeigt **Counter-Badge**
-3. **Klick auf Icon** → Overlay mit Übersicht (nur "Verstanden"-Button)
-4. **Enter oder Send-Button** → Modal mit Warnung
-5. **Enter oder "Warnung ignorieren"** → Nachricht wird gesendet
-
-**PROBLEM:** Diese Version zerstört die Formatierung durch DOM-Replacement (behoben in v1.0.3)
-
----
-
-### Version 1.0.1
-**Datum:** 2025-10-21
-
-**Änderungen:**
-- ✅ **Modal bei Button-Click:** Submit-Button-Klicks werden jetzt abgefangen und zeigen das Modal
-- ✅ **"Trotzdem fortfahren"-Button:** Immer verfügbar im Modal (bei Warnungen UND kritischen Daten)
-- ✅ **Verbesserte Submit-Logik:** Button-Monitoring mit Retry-Mechanismus
-- 🔧 **Bug-Fix:** Formatierung bleibt erhalten (Inline-Highlighting deaktiviert)
-- 🔧 **Bug-Fix:** Icon-Größe angepasst (28px safe, 36px warning/critical)
-- 🔧 **Bug-Fix:** Modal erscheint zuverlässig bei Enter-Taste (capture phase)
-- 🔧 **Bug-Fix:** Icon aktualisiert nach Absenden (MutationObserver)
-- 🔧 **Bug-Fix:** Edit-Modus wird erkannt (erweiterte Selektoren + Intervall-Check)
-
-**Technische Verbesserungen:**
-- Event-Handling mit capture phase
-- Temporärer Status-Override verhindert Endlos-Loops
-- Attribut-basiertes Button-Tracking
-- Automatische Re-Analyse nach Änderungen
-
----
-
-### Version 1.0.0
-**Datum:** 2025-10-21
-
-**Initiales Release:**
-- ✅ Echtzeit-Erkennung von sensiblen Daten
-- ✅ Status-Icon mit Counter-Badge
-- ✅ Klickbares Overlay mit Tabellenansicht
-- ✅ Modal-Warnung vor Absenden
-- ✅ Kontext-basierte Namenserkennung
-- ✅ Mehrsprachigkeit (DE/EN)
-- ✅ ChatGPT, Claude, Gemini Support
-- ✅ BEYONDER Branding
-- ✅ Modernes UX-Design mit Gradients
-- ✅ Dark-Mode Support
+### Frühere Versionen
+
+**v1.0.10** - Smart Fix für Name Detection False Positives (Artikel-Check, Lexicon-Pflicht)
+**v1.0.9** - BEYONDER Design System (komplettes Redesign)
+**v1.0.8** - Zeilenumbruch-Bugfix (pointer-events)
+**v1.0.7** - Hybrid Name Detection (Sliding Window)
+**v1.0.6** - 700+ Namen-Datenbank
+**v1.0.5** - Heuristische Namenserkennung
+**v1.0.0-1.0.4** - Initial Release & Bugfixes
+
+> **📖 Vollständige Historie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
 ---
 
