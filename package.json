@@ -1,6 +1,6 @@
 {
   "name": "ai-compliance-checker",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "AI-powered compliance checker for ChatGPT, Claude, Gemini with local NER",
   "type": "module",
   "scripts": {

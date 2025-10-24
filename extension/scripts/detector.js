@@ -360,7 +360,7 @@ class ComplianceDetector {
       warning: [
         {
           id: 'phone_swiss',
-          pattern: /\b(?:\+41|0041|0)[\s-]?(?:\(0\)[\s-]?)?(?:7[6-9]|[2-9]\d)[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}\b/g,
+          pattern: /(?<=^|\s)(?:\+41|0041|0)[\s-]?(?:\(0\)[\s-]?)?(?:7[6-9]|[2-9]\d)[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}\b/gm,
           severity: 'warning',
           category: 'pii',
           nameDE: 'Schweizer Telefonnummer',
@@ -370,7 +370,7 @@ class ComplianceDetector {
         },
         {
           id: 'phone_german',
-          pattern: /\b(?:\+49|0049|0)[\s-]?\d{2,5}[\s-]?\d{3,}[\s-]?\d{2,}\b/g,
+          pattern: /(?<=^|\s)(?:\+49|0049|0)[\s-]?\d{2,5}[\s-]?\d{3,}[\s-]?\d{2,}\b/gm,
           severity: 'warning',
           category: 'pii',
           nameDE: 'Deutsche Telefonnummer',
@@ -380,7 +380,7 @@ class ComplianceDetector {
         },
         {
           id: 'phone_intl',
-          pattern: /\b\+\d{1,3}[\s-]?\(?\d{1,4}\)?[\s-]?\d{1,4}[\s-]?\d{1,9}\b/g,
+          pattern: /(?<=^|\s)\+\d{1,3}[\s-]?\(?\d{1,4}\)?[\s-]?\d{1,4}[\s-]?\d{1,9}\b/gm,
           severity: 'warning',
           category: 'pii',
           nameDE: 'Internationale Telefonnummer',
@@ -551,9 +551,10 @@ class ComplianceDetector {
 
     // 2a) Sammle Dates mit NER für PLZ-Unterscheidung
     let detectedDates = [];
+    let entities = { persons: [], dates: [], locations: [] }; // Initialisiere entities
     if (this.nerEnabled) {
       try {
-        const entities = await this.nerDetector.detectAll(text);
+        entities = await this.nerDetector.detectAll(text);
         detectedDates = entities.dates || [];
 
         // 2b) Namen mit NER (ersetzt detectNamesHybrid!)
@@ -593,10 +594,16 @@ class ComplianceDetector {
 
     // 2c) Andere Warning-Patterns (außer Namen & PLZ)
     this.patterns.warning.forEach(patternDef => {
-      // Namen überspringen wenn NER aktiv ist
+      // Namen: Verwende Regex als Fallback wenn NER keine Namen gefunden hat
       if (patternDef.id === 'name_standalone' && this.nerAvailable) {
-        console.log('[AI Compliance] Überspringe Regex-Namen, NER ist aktiv');
-        return;
+        // Prüfe ob NER Namen gefunden hat
+        const nerFoundNames = entities.persons && entities.persons.length > 0;
+        if (nerFoundNames) {
+          console.log('[AI Compliance] Überspringe Regex-Namen, NER hat Namen erkannt');
+          return;
+        }
+        // Falls NER keine Namen fand, nutze Regex-Fallback
+        console.log('[AI Compliance] NER fand keine Namen, nutze Regex-Fallback');
       }
 
       // PLZ mit Date-Filterung

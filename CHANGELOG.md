@@ -7,6 +7,68 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.1.1] - 2025-10-24
+
+### 🔧 Fixed - Critical Bugs in Production
+
+#### Problem 1: Telefonnummern mit +41 nicht erkannt
+**Symptom**: Schweizer Telefonnummern im Format `+41 79 328 70 70` und `+41 (0)79 328 70 70` wurden nicht erkannt.
+
+**Root Cause**: Word boundary `\b` vor `+` funktioniert nicht, da `+` kein Wortzeichen ist.
+
+**Fix**:
+- Lookbehind `(?<=^|\s)` statt `\b` am Anfang der Telefon-Patterns
+- Multiline-Flag `m` hinzugefügt für korrekte Zeilenumbruch-Behandlung
+- Betroffen: `phone_swiss`, `phone_german`, `phone_intl`
+
+**Ergebnis**: Alle `+41` Nummern werden nun erkannt ✅
+
+---
+
+#### Problem 2: Overlay-Markierungen falsch positioniert
+**Symptom**:
+- Markierungen abgeschnitten: "s@gmail.com" statt "chris@gmail.com"
+- Falsche Positionen: "046" statt nichts, "5.424.684" statt nichts
+
+**Root Cause**: `innerText` und DOM-TextNodes behandeln Zeilenumbrüche unterschiedlich:
+- `innerText` fügt `\n` für `<br>` ein
+- TreeWalker zählt `<br>` nicht mit
+- → Offsets stimmen nicht überein
+
+**Fix**:
+- Konsistent `textContent` statt `innerText` verwenden
+- Dateien: `extension/scripts/content.js` (Zeilen 393, 524)
+
+**Ergebnis**: Markierungen werden korrekt positioniert ✅
+
+---
+
+#### Problem 3: Namen nicht erkannt trotz Lexicon
+**Symptom**: "Hans Peter" und "Tristan Andres" wurden nicht erkannt, obwohl alle Namen im Lexicon vorhanden sind.
+
+**Root Cause**: Wenn NER (Transformer.js) geladen ist, wurde Regex-Fallback IMMER übersprungen - auch wenn NER keine Namen findet.
+
+**Fix**:
+- Regex-Fallback nur überspringen wenn NER tatsächlich Namen gefunden hat
+- `entities` in outer scope definieren für Verfügbarkeit
+- Datei: `extension/scripts/detector.js` (Zeilen 554, 597-606)
+
+**Ergebnis**: Namen werden nun auch erkannt wenn NER nichts findet ✅
+
+---
+
+### 📝 Changed Files
+
+- `extension/scripts/detector.js` (14 Zeilen)
+  - Telefon-Patterns: Lookbehind statt `\b`
+  - NER-Fallback-Logik verbessert
+- `extension/scripts/content.js` (4 Zeilen)
+  - `textContent` statt `innerText`
+- `package.json` - Version 2.1.0 → 2.1.1
+- `extension/manifest.json` - Version 2.1.0 → 2.1.1
+
+---
+
 ## [2.1.0] - 2025-10-24
 
 ### 🔧 Fixed

@@ -388,7 +388,9 @@ class ComplianceMonitor {
    */
   getElementText(element) {
     if (element.contentEditable === 'true') {
-      return element.innerText || element.textContent || '';
+      // Verwende textContent für konsistente Offset-Berechnung
+      // (innerText normalisiert Zeilenumbrüche anders als DOM-Struktur)
+      return element.textContent || '';
     }
     return element.value || '';
   }
@@ -518,7 +520,8 @@ class ComplianceMonitor {
    * Erstellt Overlay-Highlights basierend auf Range API
    */
   createHighlightOverlays(element, analysis, container) {
-    const text = element.innerText || element.textContent || '';
+    // Verwende textContent (konsistent mit getElementText)
+    const text = element.textContent || '';
 
     // TreeWalker zum Durchlaufen aller TextNodes
     const walker = document.createTreeWalker(
