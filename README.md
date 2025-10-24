@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.1.0** • by BEYONDER
+**Version 2.1.1** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -12,7 +12,29 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.1.0 (Aktuell) - 2025-10-24
+### Version 2.1.1 (Aktuell) - 2025-10-24
+
+**🐛 Kritische Bugfixes: Phone Detection, Overlay Positioning, NER Fallback**
+
+#### 🎯 Highlights
+
+**Problem 1 - Phone +41 Detection** ✅ GELÖST
+- Internationale Schweizer Nummern mit `+41` wurden nicht erkannt
+- **Fix**: Word boundary `\b` durch Lookbehind `(?<=^|\s)` ersetzt, multiline flag hinzugefügt
+
+**Problem 2 - Overlay Positioning** ✅ GELÖST
+- Markierungen erschienen an falschen Positionen (z.B. "s@gmail.com" statt "chris@gmail.com")
+- **Fix**: Konsistente Verwendung von `textContent` statt `innerText` für Offset-Berechnung
+
+**Problem 3 - NER Fallback** ✅ GELÖST
+- Namen im Lexikon wurden nicht erkannt ("Tristan Andres", "Peter")
+- **Fix**: Regex-Fallback aktiviert wenn NER keine Namen findet
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#211---2025-10-24)
+
+---
+
+### Version 2.1.0 - 2025-10-24
 
 **🔧 Kritische Fixes: IP/Telefon-Disambiguation, Name List Recognition, Model Loading**
 
