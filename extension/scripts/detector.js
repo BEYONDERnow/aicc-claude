@@ -1,9 +1,12 @@
 /**
  * AI Compliance Checker - Detection Engine
- * Beta by BEYONDER
+ * Version 2.0.0 - KI-gestützte Erkennung mit Transformer.js
+ * by BEYONDER
  * Erkennt personenbezogene und sensible Daten in Text-Eingaben
  * 100% lokal, keine Server-Kommunikation
  */
+
+import { NERDetector } from './ner-detector.js';
 
 class ComplianceDetector {
   constructor() {
@@ -11,6 +14,13 @@ class ComplianceDetector {
     this.translations = this.initializeTranslations();
     this.nameBlacklist = this.initializeNameBlacklist();
     this.commonFirstNames = this.initializeCommonFirstNames();
+
+    // VERSION 2.0.0: NER-Detector für intelligente Namenserkennung
+    this.nerDetector = new NERDetector();
+    this.nerAvailable = false;
+    this.nerEnabled = true; // Kann deaktiviert werden für Fallback
+
+    console.log('[AI Compliance Checker] v2.0.0 - KI-gestützte Erkennung aktiv');
   }
 
   /**
@@ -498,11 +508,13 @@ class ComplianceDetector {
 
   /**
    * Analysiert Text und gibt alle Erkennungen zurück
+   * VERSION 2.0.0: Async mit KI-gestützter Erkennung (Transformer.js)
+   *
    * @param {string} text - Der zu analysierende Text
    * @param {string} lang - Sprache ('de' oder 'en')
-   * @returns {Object} Analyse-Ergebnis mit Erkennungen und Status
+   * @returns {Promise<Object>} Analyse-Ergebnis mit Erkennungen und Status
    */
-  analyze(text, lang = 'de') {
+  async analyze(text, lang = 'de') {
     if (!text || text.trim().length === 0) {
       return {
         status: 'safe',
@@ -514,7 +526,7 @@ class ComplianceDetector {
     const detections = [];
     const highlightRanges = [];
 
-    // Prüfe alle kritischen Pattern
+    // === PHASE 1: KRITISCHE DATEN (Regex - schnell & zuverlässig) ===
     this.patterns.critical.forEach(patternDef => {
       const matches = this.findMatches(text, patternDef, lang);
       detections.push(...matches);
@@ -527,18 +539,119 @@ class ComplianceDetector {
       })));
     });
 
-    // Prüfe alle Warn-Pattern
+    // === PHASE 2: WARN-PATTERN (Mix aus Regex & NER) ===
+
+    // 2a) Sammle Dates mit NER für PLZ-Unterscheidung
+    let detectedDates = [];
+    if (this.nerEnabled) {
+      try {
+        const entities = await this.nerDetector.detectAll(text);
+        detectedDates = entities.dates || [];
+
+        // 2b) Namen mit NER (ersetzt detectNamesHybrid!)
+        if (entities.persons && entities.persons.length > 0) {
+          console.log('[AI Compliance] NER Namen erkannt:', entities.persons.map(p => p.text));
+
+          entities.persons.forEach(person => {
+            detections.push({
+              id: 'name_ner',
+              severity: 'warning',
+              category: 'pii',
+              name: lang === 'de' ? 'Name (KI)' : 'Name (AI)',
+              description: lang === 'de'
+                ? `Vollständige Namen sind personenbezogene Daten (erkannt mit KI, Konfidenz: ${Math.round(person.score * 100)}%)`
+                : `Full names are personal data (detected with AI, confidence: ${Math.round(person.score * 100)}%)`,
+              match: person.text,
+              start: person.start,
+              end: person.end
+            });
+
+            highlightRanges.push({
+              start: person.start,
+              end: person.end,
+              severity: 'warning',
+              id: 'name_ner',
+              text: person.text
+            });
+          });
+
+          this.nerAvailable = true;
+        }
+      } catch (error) {
+        console.warn('[AI Compliance] NER nicht verfügbar, verwende Fallback:', error.message);
+        this.nerAvailable = false;
+      }
+    }
+
+    // 2c) Andere Warning-Patterns (außer Namen & PLZ)
     this.patterns.warning.forEach(patternDef => {
-      const matches = this.findMatches(text, patternDef, lang);
-      detections.push(...matches);
-      highlightRanges.push(...matches.map(m => ({
-        start: m.start,
-        end: m.end,
-        severity: m.severity,
-        id: m.id,
-        text: m.match
-      })));
+      // Namen überspringen wenn NER aktiv ist
+      if (patternDef.id === 'name_standalone' && this.nerAvailable) {
+        console.log('[AI Compliance] Überspringe Regex-Namen, NER ist aktiv');
+        return;
+      }
+
+      // PLZ mit Date-Filterung
+      if (patternDef.id === 'zip_swiss') {
+        const zipMatches = this.findMatches(text, patternDef, lang);
+
+        // Filtere Zahlen die als DATE erkannt wurden (Jahrgänge!)
+        const validZips = zipMatches.filter(zip => {
+          const zipText = zip.match.toString();
+
+          // Prüfe ob diese Zahl in den erkannten Dates vorkommt
+          const isDate = detectedDates.some(date => {
+            return date.text.includes(zipText) ||
+                   (date.start <= zip.start && date.end >= zip.end);
+          });
+
+          if (isDate) {
+            console.log(`[AI Compliance] ${zipText} ist ein Datum, KEINE PLZ`);
+            return false;
+          }
+
+          return true;
+        });
+
+        detections.push(...validZips);
+        highlightRanges.push(...validZips.map(m => ({
+          start: m.start,
+          end: m.end,
+          severity: m.severity,
+          id: m.id,
+          text: m.match
+        })));
+      } else {
+        // Alle anderen Patterns normal
+        const matches = this.findMatches(text, patternDef, lang);
+        detections.push(...matches);
+        highlightRanges.push(...matches.map(m => ({
+          start: m.start,
+          end: m.end,
+          severity: m.severity,
+          id: m.id,
+          text: m.match
+        })));
+      }
     });
+
+    // FALLBACK: Wenn NER nicht verfügbar, nutze alte Hybrid-Detection
+    if (!this.nerAvailable && this.nerEnabled) {
+      console.log('[AI Compliance] Fallback: Nutze Regex-basierte Namenserkennung');
+
+      const namePattern = this.patterns.warning.find(p => p.id === 'name_standalone');
+      if (namePattern) {
+        const nameMatches = this.findMatches(text, namePattern, lang);
+        detections.push(...nameMatches);
+        highlightRanges.push(...nameMatches.map(m => ({
+          start: m.start,
+          end: m.end,
+          severity: m.severity,
+          id: m.id,
+          text: m.match
+        })));
+      }
+    }
 
     // Bestimme Gesamt-Status
     let status = 'safe';
@@ -1076,7 +1189,10 @@ class ComplianceDetector {
   }
 }
 
-// Export für Content Script
+// Export für ES Modules (wird von Rollup gebündelt)
+export { ComplianceDetector };
+
+// Fallback für globales window-Object
 if (typeof window !== 'undefined') {
   window.ComplianceDetector = ComplianceDetector;
 }

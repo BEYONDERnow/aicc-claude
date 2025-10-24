@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Compliance Checker",
-  "version": "1.0.10",
+  "version": "2.0.0",
   "description": "Lokaler Compliance-Checker für KI-Plattformen - prüft Eingaben auf personenbezogene und sensible Daten",
   "permissions": [
     "storage"
@@ -21,7 +21,7 @@
         "https://claude.ai/*"
       ],
       "js": [
-        "scripts/detector.js",
+        "dist/detector.bundle.js",
         "scripts/content.js"
       ],
       "css": [

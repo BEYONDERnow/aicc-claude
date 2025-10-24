@@ -13,8 +13,7 @@ node_modules/
 npm-debug.log
 package-lock.json
 
-# Build artifacts
-dist/
+# Build artifacts (aber NICHT extension/dist - das brauchen wir!)
 build/
 
 # Extension packaging

@@ -364,10 +364,11 @@ class ComplianceMonitor {
 
   /**
    * Analysiert den Inhalt eines Elements
+   * VERSION 2.0.0: Async für KI-gestützte Analyse
    */
-  analyzeElement(element) {
+  async analyzeElement(element) {
     const text = this.getElementText(element);
-    const analysis = this.detector.analyze(text, this.currentLang);
+    const analysis = await this.detector.analyze(text, this.currentLang);
 
     // Speichere Analyse
     this.currentAnalysis.set(element, analysis);
