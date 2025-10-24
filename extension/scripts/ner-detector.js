@@ -41,8 +41,15 @@ export class NERDetector {
             quantized: true, // Kleinere Größe, etwas schneller
             progress_callback: (progress) => {
               if (progress.status === 'downloading') {
-                const percent = Math.round((progress.loaded / progress.total) * 100);
-                console.log(`[AI Compliance NER] Download: ${percent}%`);
+                if (progress.total && progress.total > 0) {
+                  // Content-Length verfügbar - zeige Prozent
+                  const percent = Math.round((progress.loaded / progress.total) * 100);
+                  console.log(`[AI Compliance NER] Download: ${percent}%`);
+                } else {
+                  // Kein Content-Length - zeige nur geladene Bytes
+                  const mb = (progress.loaded / 1024 / 1024).toFixed(1);
+                  console.log(`[AI Compliance NER] Download: ${mb} MB geladen...`);
+                }
               }
             }
           }
@@ -103,7 +110,7 @@ export class NERDetector {
           end: entity.end,
           score: entity.score
         }))
-        .filter(p => p.score > 0.7); // Nur high-confidence Erkennungen
+        .filter(p => p.score > 0.6); // Confidence-Threshold gesenkt für bessere Erkennung von Namen-Listen
 
       // Cache speichern (mit Limit)
       this.addToCache(cacheKey, persons);
@@ -255,7 +262,7 @@ export class NERDetector {
           score: entity.score
         };
 
-        if ((label === 'PER' || label.startsWith('B-PER') || label.startsWith('I-PER')) && item.score > 0.7) {
+        if ((label === 'PER' || label.startsWith('B-PER') || label.startsWith('I-PER')) && item.score > 0.6) {
           entities.persons.push(item);
         } else if ((label === 'DATE' || label.startsWith('B-DATE') || label.startsWith('I-DATE')) && item.score > 0.6) {
           entities.dates.push(item);

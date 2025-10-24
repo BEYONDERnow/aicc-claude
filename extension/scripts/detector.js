@@ -360,7 +360,7 @@ class ComplianceDetector {
       warning: [
         {
           id: 'phone_swiss',
-          pattern: /\b(?:\+41|0041|0)[\s.-]?(?:\(0\)[\s.-]?)?(?:7[6-9]|[2-9]\d)[\s.-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}\b/g,
+          pattern: /\b(?:\+41|0041|0)[\s-]?(?:\(0\)[\s-]?)?(?:7[6-9]|[2-9]\d)[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}\b/g,
           severity: 'warning',
           category: 'pii',
           nameDE: 'Schweizer Telefonnummer',
@@ -370,7 +370,7 @@ class ComplianceDetector {
         },
         {
           id: 'phone_german',
-          pattern: /\b(?:\+49|0049|0)[\s.-]?\d{2,5}[\s.-]?\d{3,}[\s.-]?\d{2,}\b/g,
+          pattern: /\b(?:\+49|0049|0)[\s-]?\d{2,5}[\s-]?\d{3,}[\s-]?\d{2,}\b/g,
           severity: 'warning',
           category: 'pii',
           nameDE: 'Deutsche Telefonnummer',
@@ -380,7 +380,7 @@ class ComplianceDetector {
         },
         {
           id: 'phone_intl',
-          pattern: /\b\+\d{1,3}[\s.-]?\(?\d{1,4}\)?[\s.-]?\d{1,4}[\s.-]?\d{1,9}\b/g,
+          pattern: /\b\+\d{1,3}[\s-]?\(?\d{1,4}\)?[\s-]?\d{1,4}[\s-]?\d{1,9}\b/g,
           severity: 'warning',
           category: 'pii',
           nameDE: 'Internationale Telefonnummer',
@@ -396,7 +396,15 @@ class ComplianceDetector {
           nameDE: 'IP-Adresse',
           nameEN: 'IP Address',
           descDE: 'IP-Adressen können zur Identifikation verwendet werden (DSGVO)',
-          descEN: 'IP addresses can be used for identification (GDPR)'
+          descEN: 'IP addresses can be used for identification (GDPR)',
+          customValidator: (match) => {
+            // Prüfe ob jedes Oktett im gültigen Bereich 0-255 liegt
+            const octets = match[0].split('.');
+            return octets.every(octet => {
+              const num = parseInt(octet, 10);
+              return num >= 0 && num <= 255;
+            });
+          }
         },
         {
           id: 'zip_swiss',
@@ -792,7 +800,7 @@ class ComplianceDetector {
       });
     }
 
-    // Schritt 2: Sliding Window - teste 2-Wort und 3-Wort Kombinationen
+    // Schritt 2: Sliding Window - teste 2-5 Wort Kombinationen
     for (let i = 0; i < allWords.length; i++) {
       // 2-Wort-Kombination
       if (i + 1 < allWords.length) {
@@ -814,6 +822,31 @@ class ComplianceDetector {
         // Alle 3 Wörter müssen aufeinander folgen
         if (w2.start - w1.end <= 1 && w3.start - w2.end <= 1) {
           this.addNameCandidate(candidates, text, [w1, w2, w3]);
+        }
+      }
+
+      // 4-Wort-Kombination (für Namen-Listen)
+      if (i + 3 < allWords.length) {
+        const words = [allWords[i], allWords[i + 1], allWords[i + 2], allWords[i + 3]];
+
+        // Alle 4 Wörter müssen aufeinander folgen
+        if (words[1].start - words[0].end <= 1 &&
+            words[2].start - words[1].end <= 1 &&
+            words[3].start - words[2].end <= 1) {
+          this.addNameCandidate(candidates, text, words);
+        }
+      }
+
+      // 5-Wort-Kombination (für lange Namen-Listen)
+      if (i + 4 < allWords.length) {
+        const words = [allWords[i], allWords[i + 1], allWords[i + 2], allWords[i + 3], allWords[i + 4]];
+
+        // Alle 5 Wörter müssen aufeinander folgen
+        if (words[1].start - words[0].end <= 1 &&
+            words[2].start - words[1].end <= 1 &&
+            words[3].start - words[2].end <= 1 &&
+            words[4].start - words[3].end <= 1) {
+          this.addNameCandidate(candidates, text, words);
         }
       }
     }
@@ -960,11 +993,44 @@ class ComplianceDetector {
     if (words.length === 2) {
       score += 2;
     } else if (words.length === 3) {
-      // 3-Wort-Namen sind selten und brauchen Kontext!
-      if (knownCount === 3 && hasContext) {
-        score += 3; // Bonus NUR mit Kontext: "Name: Hans Peter Müller"
+      // 3-Wort-Namen: Unterstütze Listen UND Kontext-Namen
+      if (knownCount === 3) {
+        // Alle 3 Wörter im Lexicon - sehr wahrscheinlich ein Name
+        if (hasContext) {
+          score += 5; // "Name: Hans Peter Müller"
+        } else {
+          score += 2; // "Hans Peter Tristan" in einer Liste
+        }
+      } else if (knownCount === 2) {
+        // 2 von 3 im Lexicon
+        if (hasContext) {
+          score += 3;
+        } else {
+          score += 1;
+        }
+      } else if (knownCount === 1) {
+        // Nur 1 im Lexicon
+        if (hasContext) {
+          score += 1;
+        } else {
+          score -= 2; // Leichte Penalty
+        }
       } else {
-        score -= 8; // STARKE PENALTY ohne Kontext - verhindert "Hans Peter Tristan"
+        // Kein Wort im Lexicon
+        score -= 5;
+      }
+    } else if (words.length >= 4) {
+      // 4+ Wort-Namen: Sehr selten, aber möglich bei Listen
+      const ratio = knownCount / words.length;
+      if (ratio >= 0.75) {
+        // Mind. 75% im Lexicon
+        score += hasContext ? 4 : 2;
+      } else if (ratio >= 0.5) {
+        // Mind. 50% im Lexicon
+        score += hasContext ? 2 : 0;
+      } else {
+        // Weniger als 50%
+        score -= 3;
       }
     }
 
