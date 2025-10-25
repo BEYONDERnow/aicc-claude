@@ -11,6 +11,10 @@ import { pipeline, env } from '@xenova/transformers';
 env.allowLocalModels = true;
 env.allowRemoteModels = true;
 
+// WASM-Pfad für Chrome Extension
+// Die WASM-Dateien werden von Rollup nach extension/dist/ kopiert
+env.backends.onnx.wasm.wasmPaths = chrome.runtime.getURL('dist/');
+
 export class NERDetector {
   constructor() {
     this.nerReady = false;
