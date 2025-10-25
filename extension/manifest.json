@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Compliance Checker",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "description": "Lokaler Compliance-Checker für KI-Plattformen - prüft Eingaben auf personenbezogene und sensible Daten",
   "permissions": [
     "storage"

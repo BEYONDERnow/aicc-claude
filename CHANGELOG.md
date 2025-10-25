@@ -7,6 +7,54 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.1.4] - 2025-10-25
+
+### 🎨 Improved - UX & Performance Enhancements
+
+#### Enhancement 1: Gruppierung von Mehrfacherkennungen
+**Problem**: Wenn ein Wert (z.B. "Hans Peter") als mehrere Typen erkannt wurde, erschien er mehrfach in der Tabelle.
+
+**Lösung**: Detektionen werden nun nach erkanntem Wert gruppiert:
+- Alle Typen werden in einer Zeile zusammengefasst
+- Höchste Severity wird angezeigt
+- Beschreibungen werden kombiniert mit " • " Separator
+
+**Ergebnis**: Übersichtlichere Tabellen, weniger Duplikate ✅
+
+---
+
+#### Enhancement 2: Performance-Optimierung für langen Text
+**Problem**: Bei sehr langem Text (>2000 Zeichen) wurde der Browser langsam.
+
+**Lösung**: Mehrere Performance-Optimierungen:
+- **Dynamisches Debouncing**: 300ms → 500ms (>2000 Zeichen) → 800ms (>5000 Zeichen)
+- **Throttling**: Scroll/Resize Events auf 150ms gedrosselt
+- **requestAnimationFrame**: UI-Updates flüssiger
+- **Passive Event Listeners**: Scroll-Performance verbessert
+
+**Ergebnis**: Flüssige Performance auch bei langem Text ✅
+
+---
+
+#### Enhancement 3: Icon-Position
+**Problem**: Status-Icon war oben rechts im Textfeld und bei langem Text nicht sichtbar.
+
+**Lösung**: Icon ist nun **fest unten rechts im Viewport** positioniert (bottom: 20px, right: 20px).
+
+**Ergebnis**: Icon immer sichtbar, auch bei viel Text ✅
+
+---
+
+### 📝 Changed Files
+
+- `extension/scripts/content.js` (+80 -30 Zeilen)
+  - `generateOverlayTable`: Gruppierung nach Wert
+  - `handleInput`: Dynamisches Debouncing
+  - `attachToElement`: Throttling für Scroll/Resize
+  - `positionIcon`: Feste Position unten rechts
+
+---
+
 ## [2.1.3] - 2025-10-25
 
 ### 🔧 Fixed - WASM Support for NER Model Loading

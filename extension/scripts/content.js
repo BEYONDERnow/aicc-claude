@@ -195,21 +195,36 @@ class ComplianceMonitor {
     // Überwache Submit-Button für dieses Element
     this.attachSubmitButtonHandler(element);
 
-    // Event Handler für Overlay-Repositioning (mit Debouncing!)
+    // Event Handler für Overlay-Repositioning (mit Throttling für bessere Performance!)
     let overlayUpdateTimer = null;
+    let lastOverlayUpdate = 0;
+    const throttleDelay = 150; // 150ms Throttle
+
     const updateOverlays = () => {
-      clearTimeout(overlayUpdateTimer);
-      overlayUpdateTimer = setTimeout(() => {
+      const now = Date.now();
+      const timeSinceLastUpdate = now - lastOverlayUpdate;
+
+      if (timeSinceLastUpdate < throttleDelay) {
+        // Throttle: Ignoriere zu häufige Aufrufe
+        clearTimeout(overlayUpdateTimer);
+        overlayUpdateTimer = setTimeout(updateOverlays, throttleDelay - timeSinceLastUpdate);
+        return;
+      }
+
+      lastOverlayUpdate = now;
+
+      // Verwende requestAnimationFrame für flüssige Updates
+      requestAnimationFrame(() => {
         const analysis = this.currentAnalysis.get(element);
         if (analysis && analysis.highlightRanges.length > 0) {
           this.highlightText(element, analysis);
         }
-      }, 100); // 100ms Debounce für Performance
+      });
     };
 
-    // Update Overlays bei Scroll/Resize (aber debounced!)
-    window.addEventListener('scroll', updateOverlays, true);
-    window.addEventListener('resize', updateOverlays);
+    // Update Overlays bei Scroll/Resize (aber throttled!)
+    window.addEventListener('scroll', updateOverlays, { passive: true, capture: true });
+    window.addEventListener('resize', updateOverlays, { passive: true });
 
     // Initial analysis
     setTimeout(() => this.analyzeElement(element), 100);
@@ -321,8 +336,11 @@ class ComplianceMonitor {
 
     iconWrapper.style.display = 'block';
     iconWrapper.style.position = 'fixed';
-    iconWrapper.style.top = `${rect.top + 8}px`;
-    iconWrapper.style.right = `${window.innerWidth - rect.right + 8}px`;
+
+    // Position unten rechts im Viewport (nicht am Textfeld!)
+    iconWrapper.style.bottom = '20px';
+    iconWrapper.style.right = '20px';
+    iconWrapper.style.top = 'auto';
     iconWrapper.style.zIndex = '999999';
   }
 
@@ -331,9 +349,25 @@ class ComplianceMonitor {
    */
   handleInput(element) {
     clearTimeout(this.analyzeTimer);
+
+    // Dynamisches Debouncing basierend auf Textlänge
+    const text = this.getElementText(element);
+    const textLength = text.length;
+
+    // Performance-Optimierung: Längeres Debouncing bei langem Text
+    let delay = this.debounceDelay;
+    if (textLength > 5000) {
+      delay = 800; // 800ms für sehr langen Text
+    } else if (textLength > 2000) {
+      delay = 500; // 500ms für langen Text
+    }
+
     this.analyzeTimer = setTimeout(() => {
-      this.analyzeElement(element);
-    }, this.debounceDelay);
+      // Verwende requestAnimationFrame für UI-Updates
+      requestAnimationFrame(() => {
+        this.analyzeElement(element);
+      });
+    }, delay);
   }
 
   /**
@@ -738,19 +772,44 @@ class ComplianceMonitor {
     html += '</tr></thead>';
     html += '<tbody>';
 
-    // Sortiere nach Severity
-    const sorted = [...analysis.detections].sort((a, b) => {
-      if (a.severity === 'critical' && b.severity !== 'critical') return -1;
-      if (a.severity !== 'critical' && b.severity === 'critical') return 1;
-      return 0;
+    // Gruppiere Detections nach erkanntem Wert
+    const grouped = {};
+    analysis.detections.forEach(detection => {
+      const key = detection.match.toLowerCase().trim();
+      if (!grouped[key]) {
+        grouped[key] = [];
+      }
+      grouped[key].push(detection);
     });
 
-    sorted.forEach(detection => {
+    // Sortiere Gruppen nach höchster Severity
+    const sortedGroups = Object.entries(grouped).sort((a, b) => {
+      const aSeverity = a[1].some(d => d.severity === 'critical') ? 0 : 1;
+      const bSeverity = b[1].some(d => d.severity === 'critical') ? 0 : 1;
+      return aSeverity - bSeverity;
+    });
+
+    sortedGroups.forEach(([matchKey, detections]) => {
+      // Nimm die höchste Severity
+      const maxSeverity = detections.some(d => d.severity === 'critical') ? 'critical' : 'warning';
+
+      // Sammle alle Typ-Namen
+      const types = [...new Set(detections.map(d => d.name))].join(', ');
+
+      // Sammle alle Kategorien
+      const categories = [...new Set(detections.map(d => d.category))];
+      const categoryText = categories.map(cat =>
+        this.detector.t(`categories.${cat}`, this.currentLang)
+      ).join(', ');
+
+      // Sammle alle Beschreibungen (eindeutige)
+      const descriptions = [...new Set(detections.map(d => d.description))].join(' • ');
+
       html += '<tr>';
-      html += `<td><strong>${this.escapeHtml(detection.name)}</strong><br><small class="aicc-category">${this.detector.t(`categories.${detection.category}`, this.currentLang)}</small></td>`;
-      html += `<td><code>${this.escapeHtml(detection.match)}</code></td>`;
-      html += `<td>${this.escapeHtml(detection.description)}</td>`;
-      html += `<td><span class="aicc-severity-badge aicc-severity-${detection.severity}">${this.detector.t(detection.severity, this.currentLang)}</span></td>`;
+      html += `<td><strong>${this.escapeHtml(types)}</strong><br><small class="aicc-category">${categoryText}</small></td>`;
+      html += `<td><code>${this.escapeHtml(detections[0].match)}</code></td>`;
+      html += `<td>${this.escapeHtml(descriptions)}</td>`;
+      html += `<td><span class="aicc-severity-badge aicc-severity-${maxSeverity}">${this.detector.t(maxSeverity, this.currentLang)}</span></td>`;
       html += '</tr>';
     });
 
