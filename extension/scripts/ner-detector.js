@@ -110,7 +110,7 @@ export class NERDetector {
           end: entity.end,
           score: entity.score
         }))
-        .filter(p => p.score > 0.6); // Confidence-Threshold gesenkt für bessere Erkennung von Namen-Listen
+        .filter(p => p.score > 0.5); // Confidence-Threshold gesenkt für bessere Erkennung von Einzelnamen
 
       // Cache speichern (mit Limit)
       this.addToCache(cacheKey, persons);
@@ -161,7 +161,7 @@ export class NERDetector {
           end: entity.end,
           score: entity.score
         }))
-        .filter(d => d.score > 0.6); // Etwas niedrigerer Threshold für Daten
+        .filter(d => d.score > 0.5); // Threshold gesenkt für bessere Erkennung
 
       this.addToCache(cacheKey, dates);
 
@@ -210,7 +210,7 @@ export class NERDetector {
           end: entity.end,
           score: entity.score
         }))
-        .filter(l => l.score > 0.6);
+        .filter(l => l.score > 0.5);
 
       this.addToCache(cacheKey, locations);
 
@@ -262,11 +262,11 @@ export class NERDetector {
           score: entity.score
         };
 
-        if ((label === 'PER' || label.startsWith('B-PER') || label.startsWith('I-PER')) && item.score > 0.6) {
+        if ((label === 'PER' || label.startsWith('B-PER') || label.startsWith('I-PER')) && item.score > 0.5) {
           entities.persons.push(item);
-        } else if ((label === 'DATE' || label.startsWith('B-DATE') || label.startsWith('I-DATE')) && item.score > 0.6) {
+        } else if ((label === 'DATE' || label.startsWith('B-DATE') || label.startsWith('I-DATE')) && item.score > 0.5) {
           entities.dates.push(item);
-        } else if ((label === 'LOC' || label.startsWith('B-LOC') || label.startsWith('I-LOC')) && item.score > 0.6) {
+        } else if ((label === 'LOC' || label.startsWith('B-LOC') || label.startsWith('I-LOC')) && item.score > 0.5) {
           entities.locations.push(item);
         }
       });

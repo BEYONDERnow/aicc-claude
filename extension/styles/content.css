@@ -431,6 +431,69 @@ body.aicc-modal-open .aicc-overlay-container {
 }
 
 /* ===========================
+   Grouped Detections (v2.1.2)
+   =========================== */
+
+.aicc-detected-value {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.aicc-observations-cell {
+  max-width: 500px;
+}
+
+.aicc-observation {
+  margin: 8px 0;
+}
+
+.aicc-observation:first-child {
+  margin-top: 0;
+}
+
+.aicc-observation:last-child {
+  margin-bottom: 0;
+}
+
+.aicc-obs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.aicc-obs-header strong {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--beyonder-midnight);
+}
+
+.aicc-obs-category {
+  background: var(--beyonder-grey-light);
+  color: var(--beyonder-grey-dark);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.aicc-obs-description {
+  font-size: 13px;
+  color: var(--beyonder-grey-dark);
+  line-height: 1.5;
+  margin-left: 0;
+}
+
+.aicc-obs-divider {
+  border: none;
+  border-top: 1px dashed var(--beyonder-grey-light);
+  margin: 12px 0;
+}
+
+/* ===========================
    Modal (Warning Before Submit)
    =========================== */
 

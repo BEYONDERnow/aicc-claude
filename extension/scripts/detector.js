@@ -359,6 +359,25 @@ class ComplianceDetector {
       // WARNUNG - Orange Warnungen
       warning: [
         {
+          id: 'suspicious_number_sequence',
+          pattern: /\b\d{3}[.\s-]\d{3}[.\s-]\d{3}[.\s-]\d{2,4}\b/g,
+          severity: 'warning',
+          category: 'pii',
+          nameDE: 'Verdächtige Zahlenfolge (mögl. AHV/Versicherungsnummer)',
+          nameEN: 'Suspicious Number Sequence (possible SSN/Insurance Number)',
+          descDE: 'Diese Zahlenfolge könnte eine AHV-Nummer oder andere Identifikationsnummer sein',
+          descEN: 'This number sequence might be a social security or identification number',
+          customValidator: (match) => {
+            // Filtere echte AHV-Nummern aus (die werden von ssn_swiss erkannt)
+            const cleaned = match[0].replace(/[.\s-]/g, '');
+            if (cleaned.startsWith('756')) {
+              return false; // Echte AHV, wird von ssn_swiss erkannt
+            }
+            // Nur Zahlenfolgen mit mind. 10 Stellen
+            return cleaned.length >= 10;
+          }
+        },
+        {
           id: 'phone_swiss',
           pattern: /(?<=^|\s)(?:\+41|0041|0)[\s-]?(?:\(0\)[\s-]?)?(?:7[6-9]|[2-9]\d)[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}\b/gm,
           severity: 'warning',
@@ -469,6 +488,16 @@ class ComplianceDetector {
           nameEN: 'Salary Information',
           descDE: 'Gehaltsinformationen sind sensible Geschäftsdaten',
           descEN: 'Salary information is sensitive business data'
+        },
+        {
+          id: 'money_amount',
+          pattern: /\b\d{1,3}(?:['\s]?\d{3})*(?:[.,]\d{1,2})?\s*(?:CHF|EUR|USD|€|\$|Fr\.|Franken|Euro|Dollar)\b/gi,
+          severity: 'warning',
+          category: 'business',
+          nameDE: 'Geldbetrag',
+          nameEN: 'Money Amount',
+          descDE: 'Geldbeträge können sensible Geschäftsinformationen darstellen',
+          descEN: 'Money amounts may represent sensitive business information'
         }
       ]
     };
@@ -676,10 +705,15 @@ class ComplianceDetector {
       status = 'warning';
     }
 
+    // Gruppiere Erkennungen (verhindert Duplikate in der UI)
+    const groupedDetections = this.groupDetections(detections);
+
     return {
       status,
-      detections: this.deduplicateDetections(detections),
-      highlightRanges: this.sortRanges(highlightRanges)
+      detections: groupedDetections,
+      highlightRanges: this.sortRanges(highlightRanges),
+      // Für Backward-Kompatibilität: Flache Liste
+      detectionsFlat: detections
     };
   }
 
@@ -721,6 +755,7 @@ class ComplianceDetector {
 
   /**
    * Entfernt duplizierte Erkennungen
+   * DEPRECATED: Wird durch groupDetections() ersetzt
    */
   deduplicateDetections(detections) {
     const seen = new Set();
@@ -732,6 +767,57 @@ class ComplianceDetector {
       seen.add(key);
       return true;
     });
+  }
+
+  /**
+   * Gruppiert Erkennungen basierend auf Position und Text
+   * Verhindert mehrfache Zeilen für dasselbe erkannte Objekt
+   *
+   * @param {Array} detections - Flache Liste von Erkennungen
+   * @returns {Array} - Gruppierte Erkennungen mit Observations
+   */
+  groupDetections(detections) {
+    const groups = new Map();
+
+    detections.forEach(detection => {
+      // Gruppierungs-Schlüssel: Position + Text
+      const key = `${detection.start}-${detection.end}-${detection.match}`;
+
+      if (!groups.has(key)) {
+        // Neue Gruppe erstellen
+        groups.set(key, {
+          id: `detection-${groups.size + 1}`,
+          match: detection.match,
+          start: detection.start,
+          end: detection.end,
+          // Höchste Severity der Gruppe
+          severity: detection.severity,
+          // Alle verschiedenen Beobachtungen
+          observations: []
+        });
+      }
+
+      const group = groups.get(key);
+
+      // Füge Beobachtung hinzu
+      group.observations.push({
+        type: detection.id,
+        name: detection.name,
+        description: detection.description,
+        severity: detection.severity,
+        category: detection.category
+      });
+
+      // Update Severity auf höchste (critical > warning)
+      if (detection.severity === 'critical') {
+        group.severity = 'critical';
+      } else if (detection.severity === 'warning' && group.severity !== 'critical') {
+        group.severity = 'warning';
+      }
+    });
+
+    // Konvertiere Map zu Array und sortiere nach Position
+    return Array.from(groups.values()).sort((a, b) => a.start - b.start);
   }
 
   /**
@@ -807,8 +893,12 @@ class ComplianceDetector {
       });
     }
 
-    // Schritt 2: Sliding Window - teste 2-5 Wort Kombinationen
+    // Schritt 2: Sliding Window - teste 1-5 Wort Kombinationen
     for (let i = 0; i < allWords.length; i++) {
+      // 1-Wort-Kandidat (Einzelname wie "Peter")
+      const w1 = allWords[i];
+      this.addNameCandidate(candidates, text, [w1]);
+
       // 2-Wort-Kombination
       if (i + 1 < allWords.length) {
         const w1 = allWords[i];
@@ -997,7 +1087,26 @@ class ComplianceDetector {
     }
 
     // Wortanzahl
-    if (words.length === 2) {
+    if (words.length === 1) {
+      // Einzelname (z.B. "Peter")
+      if (knownCount === 1) {
+        // Im Lexicon -> sehr wahrscheinlich ein Name
+        if (hasContext) {
+          score += 6; // "Name: Peter"
+        } else if (allCapitalized) {
+          score += 4; // "Peter" am Satzanfang oder alleinstehend
+        } else {
+          score += 2; // "peter" kleingeschrieben
+        }
+      } else {
+        // Nicht im Lexicon
+        if (hasContext) {
+          score += 3; // Kontext hilft
+        } else {
+          score -= 3; // Wahrscheinlich kein Name
+        }
+      }
+    } else if (words.length === 2) {
       score += 2;
     } else if (words.length === 3) {
       // 3-Wort-Namen: Unterstütze Listen UND Kontext-Namen

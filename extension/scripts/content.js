@@ -727,13 +727,13 @@ class ComplianceMonitor {
 
   /**
    * Generiert Tabelle für Overlay
+   * VERSION 2.1.2: Unterstützt gruppierte Detections mit Observations
    */
   generateOverlayTable(analysis) {
     let html = '<table class="aicc-detection-table">';
     html += '<thead><tr>';
-    html += `<th>${this.currentLang === 'de' ? 'Typ' : 'Type'}</th>`;
     html += `<th>${this.currentLang === 'de' ? 'Erkannter Wert' : 'Detected Value'}</th>`;
-    html += `<th>${this.currentLang === 'de' ? 'Beschreibung' : 'Description'}</th>`;
+    html += `<th>${this.currentLang === 'de' ? 'Beobachtungen' : 'Observations'}</th>`;
     html += `<th>${this.currentLang === 'de' ? 'Risiko' : 'Risk'}</th>`;
     html += '</tr></thead>';
     html += '<tbody>';
@@ -747,9 +747,40 @@ class ComplianceMonitor {
 
     sorted.forEach(detection => {
       html += '<tr>';
-      html += `<td><strong>${this.escapeHtml(detection.name)}</strong><br><small class="aicc-category">${this.detector.t(`categories.${detection.category}`, this.currentLang)}</small></td>`;
-      html += `<td><code>${this.escapeHtml(detection.match)}</code></td>`;
-      html += `<td>${this.escapeHtml(detection.description)}</td>`;
+
+      // Spalte 1: Erkannter Wert
+      html += `<td><code class="aicc-detected-value">${this.escapeHtml(detection.match)}</code></td>`;
+
+      // Spalte 2: Beobachtungen (alle Observations für diesen Wert)
+      html += '<td class="aicc-observations-cell">';
+      if (detection.observations && detection.observations.length > 0) {
+        detection.observations.forEach((obs, index) => {
+          html += '<div class="aicc-observation">';
+          html += `<div class="aicc-obs-header">`;
+          html += `<strong>${this.escapeHtml(obs.name)}</strong>`;
+          html += `<span class="aicc-obs-category">${this.detector.t(`categories.${obs.category}`, this.currentLang)}</span>`;
+          html += `</div>`;
+          html += `<div class="aicc-obs-description">${this.escapeHtml(obs.description)}</div>`;
+          html += '</div>';
+
+          // Separator zwischen Observations (außer nach der letzten)
+          if (index < detection.observations.length - 1) {
+            html += '<hr class="aicc-obs-divider">';
+          }
+        });
+      } else {
+        // Fallback für alte Struktur (ohne Observations)
+        html += `<div class="aicc-observation">`;
+        html += `<div class="aicc-obs-header">`;
+        html += `<strong>${this.escapeHtml(detection.name || 'Unknown')}</strong>`;
+        html += `<span class="aicc-obs-category">${this.detector.t(`categories.${detection.category}`, this.currentLang)}</span>`;
+        html += `</div>`;
+        html += `<div class="aicc-obs-description">${this.escapeHtml(detection.description || '')}</div>`;
+        html += '</div>';
+      }
+      html += '</td>';
+
+      // Spalte 3: Risiko
       html += `<td><span class="aicc-severity-badge aicc-severity-${detection.severity}">${this.detector.t(detection.severity, this.currentLang)}</span></td>`;
       html += '</tr>';
     });
