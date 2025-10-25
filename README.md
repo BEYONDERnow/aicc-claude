@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.1.2** • by BEYONDER
+**Version 2.1.3** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -12,7 +12,22 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.1.2 (Aktuell) - 2025-10-25
+### Version 2.1.3 (Aktuell) - 2025-10-25
+
+**🔧 WASM Support: Fixed NER Model Loading in Chrome Extension**
+
+#### 🎯 Highlight
+
+**WASM Loading Fixed** ✅ GELÖST
+- NER-Model konnte nicht geladen werden: `"no available backend found"`
+- **Fix**: WASM-Dateien kopiert, web_accessible_resources hinzugefügt, WASM-Pfad konfiguriert
+- **Ergebnis**: AI-basierte Namenserkennung funktioniert nun einwandfrei!
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#213---2025-10-25)
+
+---
+
+### Version 2.1.2 - 2025-10-25
 
 **🔧 Enhanced Detection Patterns: Phone (0) spacing, Name lists, Currency amounts**
 
@@ -512,4 +527,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.1.2**
+**Version 2.1.3**

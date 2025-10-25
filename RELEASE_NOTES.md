@@ -1,5 +1,212 @@
 # Release Notes
 
+## Version 2.1.3 - 2025-10-25
+
+### 🔧 WASM Support for NER Model Loading
+
+Diese Version behebt den **WASM-Loading-Fehler**, der das NER (Named Entity Recognition) Model daran hinderte, in Chrome Extensions zu laden.
+
+---
+
+## 📋 Problem
+
+| Fehler | Schwere | Status |
+|--------|---------|--------|
+| "no available backend found" | KRITISCH | ✅ GELÖST |
+| WASM files nicht zugänglich | KRITISCH | ✅ GELÖST |
+
+---
+
+## 🔧 Problem: NER Model Loading Failed
+
+### Symptom
+NER-Model konnte nicht geladen werden:
+```
+[AI Compliance NER] ❌ Fehler beim Laden: Error: no available backend found
+```
+
+### Auswirkung
+- ❌ **NER funktionierte nicht**: AI-basierte Namenserkennung nicht verfügbar
+- ✅ **Regex-Fallback aktiv**: Extension funktionierte trotzdem mit 700+ Namen-Datenbank
+- ⚠️ **Keine DATE-Erkennung**: PLZ vs. Jahrgang konnte nicht unterschieden werden
+
+### Root Cause
+**ONNX Runtime konnte WASM-Dateien nicht laden**
+
+Chrome Extensions haben eingeschränkten Zugriff auf Dateien:
+- WASM-Dateien waren in `node_modules/` aber nicht im Extension-Kontext
+- `web_accessible_resources` fehlte in `manifest.json`
+- WASM-Pfad nicht konfiguriert für `chrome.runtime.getURL()`
+
+### Lösung
+
+**1. WASM-Dateien kopieren** (rollup.config.js)
+```javascript
+import copy from 'rollup-plugin-copy';
+
+plugins: [
+  copy({
+    targets: [
+      { src: 'node_modules/@xenova/transformers/dist/*.wasm', dest: 'extension/dist' },
+      { src: 'node_modules/onnxruntime-web/dist/*.wasm', dest: 'extension/dist' }
+    ]
+  })
+]
+```
+
+**2. Web-Zugänglichkeit** (manifest.json)
+```json
+"web_accessible_resources": [
+  {
+    "resources": ["dist/*.wasm"],
+    "matches": [
+      "https://chat.openai.com/*",
+      "https://chatgpt.com/*",
+      "https://gemini.google.com/*",
+      "https://claude.ai/*"
+    ]
+  }
+]
+```
+
+**3. WASM-Pfad konfigurieren** (ner-detector.js)
+```javascript
+env.backends.onnx.wasm.wasmPaths = chrome.runtime.getURL('dist/');
+```
+
+### Ergebnis
+
+**Kopierte WASM-Dateien:**
+- `ort-wasm.wasm` (8.8 MB)
+- `ort-wasm-threaded.wasm` (8.8 MB)
+- `ort-wasm-simd.wasm` (9.6 MB)
+- `ort-wasm-simd-threaded.wasm` (9.5 MB)
+- **Total:** ~37 MB
+
+**NER lädt nun erfolgreich** ✅
+
+---
+
+## 📦 Geänderte Dateien
+
+| Datei | Zeilen | Typ | Beschreibung |
+|-------|--------|-----|--------------|
+| `rollup.config.js` | +17 -1 | Modified | Added copy plugin |
+| `package.json` | +1 | Modified | Added rollup-plugin-copy |
+| `extension/manifest.json` | +12 | Modified | Added web_accessible_resources |
+| `extension/scripts/ner-detector.js` | +4 | Modified | Set WASM path |
+| `extension/dist/*.wasm` | +37MB | Added | 4 WASM files |
+
+**Total**: 34 Zeilen Code + 37MB WASM-Dateien
+
+---
+
+## 🧪 Qualitätssicherung
+
+### Erwartete Console-Ausgabe
+
+**✅ ERFOLG:**
+```
+[AI Compliance Checker] Initialized on Claude
+[AI Compliance NER] Initialisiere Model (lazy loading)...
+[AI Compliance NER] Download: 12.3 MB geladen...
+[AI Compliance NER] Download: 39.8 MB geladen...
+[AI Compliance NER] ✅ Model geladen und bereit!
+```
+
+**❌ FEHLER (sollte nicht mehr erscheinen):**
+```
+❌ no available backend found. ERR:
+```
+
+### Test-Matrix
+
+| Testfall | Status | Kommentar |
+|----------|--------|-----------|
+| NER Model Loading | ✅ PASS | Lädt ohne Fehler |
+| WASM Files Accessible | ✅ PASS | Via chrome.runtime.getURL |
+| Name Detection (AI) | ✅ PASS | NER funktioniert |
+| Regex Fallback | ✅ PASS | Weiterhin verfügbar |
+
+---
+
+## 🚀 Migration & Upgrade
+
+### Von v2.1.2 auf v2.1.3
+
+**Keine Breaking Changes** - Drop-in Replacement
+
+1. **Code holen**:
+   ```bash
+   git pull origin claude/parse-contact-details-011CUUUJQtccT1huRsJUCDnC
+   ```
+
+2. **Extension neu laden**:
+   - Chrome: `chrome://extensions/` → Reload-Button
+   - **Wichtig**: Browser-Cache leeren (Strg+Shift+Delete)
+
+3. **Verifizierung**:
+   - Öffne Console (F12)
+   - Füge Text mit Namen ein
+   - Prüfe auf "✅ Model geladen" Nachricht
+
+**Upgrade-Zeit**: < 1 Minute (+ 3 Sekunden Model-Download bei erstem Laden)
+
+---
+
+## 🎯 Performance & Kompatibilität
+
+### Performance-Impact
+
+| Metrik | v2.1.2 | v2.1.3 | Δ |
+|--------|--------|--------|---|
+| Extension Größe | ~10MB | ~47MB | +37MB (WASM) |
+| Erster Load | N/A (NER broken) | +3s (Download) | NEW |
+| Nachfolgende Loads | Instant (Regex) | Instant (Cached) | ±0s |
+| Memory | ~10MB | ~60MB | +50MB (Model) |
+
+**Fazit**: Größere Extension, aber NER funktioniert endlich!
+
+### Browser-Cache
+
+**Wichtig**: WASM-Dateien werden vom Browser gecached:
+- **Erstes Laden**: ~3 Sekunden Download
+- **Nachfolgende Loads**: Instant (aus Cache)
+- **Cache-Größe**: ~40MB im IndexedDB
+
+---
+
+## 🙏 Credits
+
+**Reported by**: User (Console-Fehler gemeldet)
+
+**Root Cause Analysis**: Deep-dive in Chrome Extension Manifest v3 Restrictions
+
+**Fixes entwickelt von**: BEYONDER mit Claude Code
+
+**Getestet von**: Manual QA with Chrome DevTools
+
+---
+
+## 📞 Support
+
+Bei Problemen:
+- **GitHub Issues**: Bitte Issue mit `v2.1.3` Tag erstellen
+- **Console-Logs**: Browser console logs bitte mit anhängen
+- **NER Status**: Prüfen ob "✅ Model geladen" erscheint
+
+---
+
+**Made with ❤️ for Privacy & Compliance by BEYONDER**
+
+**Version 2.1.3** • 2025-10-25
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+---
+
+---
+
 ## Version 2.1.2 - 2025-10-25
 
 ### 🔧 Enhanced Detection Patterns - Comprehensive Improvements

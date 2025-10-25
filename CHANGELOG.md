@@ -7,6 +7,35 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.1.3] - 2025-10-25
+
+### 🔧 Fixed - WASM Support for NER Model Loading
+
+#### Problem: NER Model Loading Failed
+**Symptom**: NER (Named Entity Recognition) konnte nicht geladen werden mit Fehler `"no available backend found"`.
+
+**Root Cause**: ONNX Runtime WASM-Dateien waren nicht in der Chrome Extension zugänglich.
+
+**Fix**:
+- **Rollup Config**: `rollup-plugin-copy` hinzugefügt zum Kopieren der WASM-Dateien
+- **Manifest**: `web_accessible_resources` für `dist/*.wasm` hinzugefügt
+- **NER Detector**: `env.backends.onnx.wasm.wasmPaths` auf `chrome.runtime.getURL('dist/')` gesetzt
+- **WASM-Dateien**: 4 WASM-Dateien (~37MB) nach `extension/dist/` kopiert
+
+**Ergebnis**: NER-Model lädt nun erfolgreich ohne Fehler ✅
+
+---
+
+### 📝 Changed Files
+
+- `rollup.config.js` - Added copy plugin for WASM files
+- `package.json` - Added rollup-plugin-copy dependency
+- `extension/manifest.json` - Added web_accessible_resources
+- `extension/scripts/ner-detector.js` - Set WASM path
+- `extension/dist/` - Added 4 WASM files (37MB)
+
+---
+
 ## [2.1.2] - 2025-10-25
 
 ### 🔧 Fixed - Enhanced Detection Patterns
