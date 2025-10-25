@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.1.1** • by BEYONDER
+**Version 2.1.2** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -12,7 +12,29 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.1.1 (Aktuell) - 2025-10-24
+### Version 2.1.2 (Aktuell) - 2025-10-25
+
+**🔧 Enhanced Detection Patterns: Phone (0) spacing, Name lists, Currency amounts**
+
+#### 🎯 Highlights
+
+**Problem 1 - Phone (0) mit Leerzeichen** ✅ GELÖST
+- Format `+41 (0) 79 328 70 70` wurde nicht erkannt
+- **Fix**: Pattern-Reihenfolge korrigiert, Leerzeichen nach `(0)` erlaubt
+
+**Problem 2 - Namen-Listen ohne Kontext** ✅ GELÖST
+- "Hans Peter", "Tristan Andres" wurden nicht erkannt trotz Lexicon
+- **Fix**: Spezial-Regel für 2 bekannte Vornamen ohne Kontext
+
+**Problem 3 - Allgemeine Währungsbeträge** ✅ NEU
+- `200 CHF`, `2'308 CHF`, `2.981 €` wurden nicht erkannt
+- **Fix**: Neues currency_amount Pattern mit Schweizer/EU/US Tausendertrennzeichen
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#212---2025-10-25)
+
+---
+
+### Version 2.1.1 - 2025-10-24
 
 **🐛 Kritische Bugfixes: Phone Detection, Overlay Positioning, NER Fallback**
 
@@ -490,4 +512,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 1.0.9 BETA**
+**Version 2.1.2**
