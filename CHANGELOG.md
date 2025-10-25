@@ -7,6 +7,71 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.1.2] - 2025-10-25
+
+### 🔧 Fixed - Enhanced Detection Patterns
+
+#### Problem 1: Schweizer Telefonnummern mit (0) und Leerzeichen
+**Symptom**: Telefonnummern im Format `+41 (0) 79 328 70 70` wurden nicht erkannt.
+
+**Root Cause**: Pattern erlaubte Leerzeichen erst NACH `(0)`, nicht ZWISCHEN `(0)` und den Ziffern.
+
+**Fix**:
+- Pattern angepasst: `(?:\(0\)[\s-]?)?` → `(?:\(0\))?[\s-]?`
+- Nun werden beide Formate erkannt: `+41 (0)79` und `+41 (0) 79`
+
+**Ergebnis**: Alle `+41 (0)` Varianten werden nun erkannt ✅
+
+---
+
+#### Problem 2: Namen-Listen ohne Kontext
+**Symptom**: Namen wie "Hans Peter" und "Tristan Andres" wurden nicht erkannt, obwohl alle Namen im Lexicon vorhanden waren.
+
+**Root Cause**: Scoring-System hatte zu strenge Anti-Overlap-Regel für 2-Wort-Namen ohne Kontext.
+
+**Fix**:
+- Neue Spezial-Regel hinzugefügt für 2 bekannte Vornamen ohne Kontext
+- Direkte Erkennung mit Score 15 (über Threshold 10)
+- Anti-Overlap-Penalty (-5) entfernt für Vornamen-Paare
+
+**Ergebnis**: Namen-Listen wie "Hans Peter Tristan Andres" werden vollständig erkannt ✅
+
+---
+
+#### Problem 3: Allgemeine Währungsbeträge
+**Symptom**: Geldbeträge wie `200 CHF`, `2'308 CHF`, `2.981 €` wurden nicht erkannt.
+
+**Root Cause**: Nur Gehalts-Pattern mit Kontext-Wörtern vorhanden (z.B. "Gehalt:", "Salary:").
+
+**Fix**:
+- Neues Pattern `currency_amount` hinzugefügt
+- Unterstützt: CHF, Fr., EUR, €, USD, $
+- Schweizer Tausendertrennzeichen `'` (z.B. `2'308`)
+- Deutsche/EU Tausendertrennzeichen `.` (z.B. `2.981`)
+- Beide Reihenfolgen: Betrag vor/nach Währung
+
+**Pattern**:
+```javascript
+/\b\d{1,3}(?:[',\.]\d{3})*(?:[.,]\d{1,2})?\s*(?:CHF|Fr\.?|EUR|€|USD|\$)\b|
+ \b(?:CHF|Fr\.?|EUR|€|USD|\$)\s*\d{1,3}(?:[',\.]\d{3})*(?:[.,]\d{1,2})?\b/gi
+```
+
+**Ergebnis**: Allgemeine Währungsbeträge werden nun erkannt ✅
+
+---
+
+### 📝 Changed Files
+
+- `extension/scripts/detector.js` (22 Zeilen geändert)
+  - Telefon-Pattern: Leerzeichen-Handling verbessert
+  - Namen-Scoring: Spezial-Regel für Vornamen-Paare
+  - Currency-Pattern: Neues allgemeines Währungs-Pattern
+- `extension/dist/detector.bundle.js` - Neu gebaut
+- `package.json` - Version 2.1.1 → 2.1.2
+- `extension/manifest.json` - Version 2.1.1 → 2.1.2
+
+---
+
 ## [2.1.1] - 2025-10-24
 
 ### 🔧 Fixed - Critical Bugs in Production
