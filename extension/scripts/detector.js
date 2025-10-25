@@ -360,7 +360,7 @@ class ComplianceDetector {
       warning: [
         {
           id: 'phone_swiss',
-          pattern: /(?<=^|\s)(?:\+41|0041|0)[\s-]?(?:\(0\)[\s-]?)?(?:7[6-9]|[2-9]\d)[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}\b/gm,
+          pattern: /(?<=^|\s)(?:\+41|0041|0)[\s-]?(?:\(0\))?[\s-]?(?:7[6-9]|[2-9]\d)[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}\b/gm,
           severity: 'warning',
           category: 'pii',
           nameDE: 'Schweizer Telefonnummer',
@@ -469,6 +469,16 @@ class ComplianceDetector {
           nameEN: 'Salary Information',
           descDE: 'Gehaltsinformationen sind sensible Geschäftsdaten',
           descEN: 'Salary information is sensitive business data'
+        },
+        {
+          id: 'currency_amount',
+          pattern: /\b\d{1,3}(?:[',\.]\d{3})*(?:[.,]\d{1,2})?\s*(?:CHF|Fr\.?|EUR|€|USD|\$)\b|\b(?:CHF|Fr\.?|EUR|€|USD|\$)\s*\d{1,3}(?:[',\.]\d{3})*(?:[.,]\d{1,2})?\b/gi,
+          severity: 'warning',
+          category: 'business',
+          nameDE: 'Geldbetrag',
+          nameEN: 'Currency Amount',
+          descDE: 'Geldbeträge können sensible Geschäftsinformationen sein',
+          descEN: 'Currency amounts may be sensitive business information'
         }
       ]
     };
@@ -965,6 +975,16 @@ class ComplianceDetector {
       };
     }
 
+    // === SPEZIAL: 2 bekannte Vornamen ohne Kontext → AKZEPTIEREN (Namen-Listen) ===
+    // z.B. "Hans Peter", "Tristan Andres" in Listen
+    if (words.length === 2 && knownCount === 2 && !hasContext) {
+      return {
+        total: 15, // Über Threshold (10)
+        threshold: 10,
+        source: 'name-list-detected'
+      };
+    }
+
     // === SCORING ===
 
     // Kontext
@@ -1068,12 +1088,6 @@ class ComplianceDetector {
     // Strenger bei kleingeschrieben ohne Kontext
     if (allLowercase && !hasContext) {
       threshold = 15;
-    }
-
-    // Strenger bei "beide Vornamen ohne Kontext mitten im Text"
-    if (words.length === 2 && knownCount === 2 && !hasContext && !isAtStart) {
-      score -= 5;
-      threshold = 12;
     }
 
     return {
