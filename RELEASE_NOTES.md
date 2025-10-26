@@ -1,6 +1,37 @@
 # Release Notes
 
 ## Version 2.1.4 - 2025-10-25
+## Version 2.1.5 - 2025-10-25
+
+### 🚀 Validation Report Feature
+
+Neues Feature: **Code-Fenster mit Prüfreport** im Modal/Overlay.
+
+#### Was ist neu?
+- **Validierungs-Report**: Formatierter Markdown-Report aller Erkennungen
+- **Copy-Button**: Kopiert Report direkt in Clipboard
+- **Code-Fenster**: Dunkles Theme mit Syntax-Highlighting
+- **Prompt-ready**: Report funktioniert als kompletter Prompt für Claude
+
+#### Report-Format:
+\`\`\`markdown
+# AI Compliance Checker - Validierungsreport
+## Rolle: Datenschutz-Experte
+## Aufgabe: Validiere Erkennungen
+## Erkannte Daten (Markdown-Tabelle)
+## Anweisungen: Prüfe und markiere ✅/❌
+\`\`\`
+
+#### Verwendung:
+1. Füge Text ein → Extension erkennt Daten
+2. Öffne Modal → Scrolle nach unten
+3. Klicke "📋 Kopieren"
+4. Sende Report an Claude zur Validierung
+
+**Ergebnis**: Qualitätssicherung durch AI-Validierung!
+
+---
+
 
 ### 🎨 UX & Performance Enhancements
 

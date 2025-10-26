@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.1.4** • by BEYONDER
+**Version 2.1.5** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -12,7 +12,23 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.1.4 (Aktuell) - 2025-10-25
+### Version 2.1.5 (Aktuell) - 2025-10-25
+
+**🚀 Validation Report: Code-Fenster mit Prüfreport für Claude**
+
+#### 🎯 Highlight
+
+**Validierungs-Report** ✅ NEU
+- Code-Fenster im Modal mit formatiertem Markdown-Report
+- Copy-Button zum Kopieren in Clipboard
+- Report funktioniert als kompletter Prompt für Claude-Validierung
+- **Verwendung**: Erkennungen an Claude schicken zur Qualitätsprüfung
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#215---2025-10-25)
+
+---
+
+### Version 2.1.4 - 2025-10-25
 
 **🎨 UX & Performance: Gruppierung, Performance-Optimierung, Icon-Position**
 
@@ -20,18 +36,12 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 **Enhancement 1 - Gruppierung** ✅ UMGESETZT
 - Mehrfacherkennungen werden in einer Zeile zusammengefasst
-- **Vorher**: "Hans Peter" erschien 2x (als Name und Vorname)
-- **Nachher**: Nur 1 Zeile mit kombinierten Typen
 
 **Enhancement 2 - Performance** ✅ OPTIMIERT
 - Dynamisches Debouncing (300ms → 800ms bei >5000 Zeichen)
-- Throttling für Scroll/Resize Events (150ms)
-- requestAnimationFrame für flüssige UI-Updates
-- **Ergebnis**: Keine Lag mehr bei langem Text!
 
 **Enhancement 3 - Icon-Position** ✅ GEÄNDERT
-- Icon jetzt **fest unten rechts im Viewport** (nicht am Textfeld)
-- **Ergebnis**: Immer sichtbar, auch bei viel Text!
+- Icon jetzt **fest unten rechts im Viewport**
 
 > **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#214---2025-10-25)
 
@@ -552,4 +562,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.1.4**
+**Version 2.1.5**
