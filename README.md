@@ -1,10 +1,10 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.1.5** • by BEYONDER
+**Version 2.1.6** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
-**NEU in v2.x**: 🤖 **Transformer.js Integration** mit Named Entity Recognition (NER) für intelligente Namenserkennung!
+**HINWEIS zu NER**: Named Entity Recognition ist standardmäßig deaktiviert (wegen WASM-Kompatibilitätsproblemen), kann aber optional aktiviert werden. Extension funktioniert perfekt mit Regex-Only Detection.
 
 ---
 
@@ -12,7 +12,28 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.1.5 (Aktuell) - 2025-10-25
+### Version 2.1.6 (Aktuell) - 2025-10-26
+
+**🔧 Chrome Store Ready - Silent NER Fallback**
+
+#### 🎯 Highlights
+
+**Silent Fail Strategy** ✅ CHROME STORE READY
+- WASM-Ladefehler werden nicht mehr in Console geloggt
+- NER ist standardmäßig deaktiviert (optional aktivierbar via Chrome Storage)
+- Extension funktioniert einwandfrei nur mit Regex-Patterns
+- Keine Console-Errors mehr → Chrome Store Submission möglich
+
+**Graceful Degradation** ✅ STABIL
+- Regex-Detection erkennt alle relevanten Patterns (Email, Phone, IBAN, AHV, etc.)
+- NER bleibt als optionales Power-User Feature verfügbar
+- Keine Funktionalität verloren
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#216---2025-10-26)
+
+---
+
+### Version 2.1.5 - 2025-10-26
 
 **🚀 Validation Report: Code-Fenster mit Prüfreport für Claude**
 
