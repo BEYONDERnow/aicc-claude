@@ -818,3 +818,110 @@ body.aicc-modal-open .aicc-overlay-container {
 .aicc-modal-body::-webkit-scrollbar-thumb:hover {
   background: var(--beyonder-midnight);
 }
+
+/* ===========================
+   Validation Report Code Window
+   =========================== */
+
+.aicc-validation-report-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid var(--beyonder-grey-light);
+}
+
+.aicc-validation-report-section h3 {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--beyonder-midnight);
+  margin: 0 0 12px 0;
+}
+
+.aicc-code-window {
+  background: var(--beyonder-white-smoke);
+  border: 1px solid var(--beyonder-grey-light);
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+}
+
+.aicc-code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--beyonder-midnight);
+  border-bottom: 1px solid var(--beyonder-grey-light);
+}
+
+.aicc-code-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--beyonder-white);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.aicc-copy-btn,
+.aicc-copy-btn-overlay {
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--beyonder-midnight);
+  background: var(--beyonder-white);
+  border: 1px solid var(--beyonder-grey-light);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
+}
+
+.aicc-copy-btn:hover,
+.aicc-copy-btn-overlay:hover {
+  background: var(--beyonder-aquamarine);
+  color: var(--beyonder-white);
+  border-color: var(--beyonder-aquamarine);
+  transform: translateY(-1px);
+}
+
+.aicc-copy-btn:active,
+.aicc-copy-btn-overlay:active {
+  transform: translateY(0);
+}
+
+.aicc-code-content {
+  margin: 0;
+  padding: 16px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.aicc-code-content code {
+  font-family: inherit;
+  color: inherit;
+}
+
+/* Scrollbar for code window */
+.aicc-code-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.aicc-code-content::-webkit-scrollbar-track {
+  background: #2d2d2d;
+  border-radius: 4px;
+}
+
+.aicc-code-content::-webkit-scrollbar-thumb {
+  background: #555555;
+  border-radius: 4px;
+}
+
+.aicc-code-content::-webkit-scrollbar-thumb:hover {
+  background: #666666;
+}

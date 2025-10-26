@@ -8,6 +8,27 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 ---
 
 ## [2.1.4] - 2025-10-25
+## [2.1.5] - 2025-10-25
+
+### 🚀 Feature - Validierungs-Report für Claude
+
+#### Code-Fenster mit Prüfreport
+Neues Code-Fenster im Modal/Overlay mit komplettem Validierungs-Report für Claude.
+
+**Funktionen**:
+- Generiert formatierten Markdown-Report als Prompt
+- Enthält: Rolle, Aufgabe, Markdown-Tabelle, Anweisungen
+- Copy-Button zum Kopieren in Clipboard
+- Dark Theme Code-Fenster (VS Code-Style)
+
+**Verwendung**: User können Report an Claude schicken zum Validieren der Erkennungen.
+
+### 📝 Changed Files
+- `content.js`: +100 Zeilen (generateValidationReport, Copy Handlers)
+- `content.css`: +108 Zeilen (Code-Fenster Styling)
+
+---
+
 
 ### 🎨 Improved - UX & Performance Enhancements
 

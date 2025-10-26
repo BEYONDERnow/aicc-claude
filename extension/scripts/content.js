@@ -722,6 +722,26 @@ class ComplianceMonitor {
         </div>
         <div class="aicc-overlay-body">
           ${this.generateOverlayTable(analysis)}
+
+          <div class="aicc-validation-report-section">
+            <h3>
+              ${this.currentLang === 'de' ? '📋 Validierungs-Report für Claude' : '📋 Validation Report for Claude'}
+            </h3>
+            <p style="margin: 8px 0; font-size: 13px; color: #666;">
+              ${this.currentLang === 'de'
+                ? 'Kopiere diesen Report und sende ihn an Claude zum Überprüfen der Erkennungen:'
+                : 'Copy this report and send it to Claude to validate the detections:'}
+            </p>
+            <div class="aicc-code-window">
+              <div class="aicc-code-header">
+                <span class="aicc-code-label">Markdown</span>
+                <button class="aicc-copy-btn-overlay" data-copy-target="validation-report-overlay">
+                  ${this.currentLang === 'de' ? '📋 Kopieren' : '📋 Copy'}
+                </button>
+              </div>
+              <pre class="aicc-code-content" id="aicc-validation-report-overlay"><code>${this.escapeHtml(this.generateValidationReport(analysis))}</code></pre>
+            </div>
+          </div>
         </div>
         <div class="aicc-overlay-footer">
           <div class="aicc-overlay-branding">
@@ -757,6 +777,103 @@ class ComplianceMonitor {
     overlay.querySelector('.aicc-overlay-content').addEventListener('click', (e) => {
       e.stopPropagation();
     });
+
+    // Copy button handler
+    const copyBtn = overlay.querySelector('.aicc-copy-btn-overlay');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        const reportText = this.generateValidationReport(analysis);
+        navigator.clipboard.writeText(reportText).then(() => {
+          const originalText = copyBtn.textContent;
+          copyBtn.textContent = this.currentLang === 'de' ? '✅ Kopiert!' : '✅ Copied!';
+          setTimeout(() => {
+            copyBtn.textContent = originalText;
+          }, 2000);
+        }).catch(err => {
+          console.error('Failed to copy:', err);
+          copyBtn.textContent = this.currentLang === 'de' ? '❌ Fehler' : '❌ Error';
+        });
+      });
+    }
+  }
+
+  /**
+   * Generiert Validierungs-Report für Claude
+   */
+  generateValidationReport(analysis) {
+    const lang = this.currentLang;
+
+    // Gruppiere wie in der Tabelle
+    const grouped = {};
+    analysis.detections.forEach(detection => {
+      const key = detection.match.toLowerCase().trim();
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(detection);
+    });
+
+    const sortedGroups = Object.entries(grouped).sort((a, b) => {
+      const aSeverity = a[1].some(d => d.severity === 'critical') ? 0 : 1;
+      const bSeverity = b[1].some(d => d.severity === 'critical') ? 0 : 1;
+      return aSeverity - bSeverity;
+    });
+
+    // Erstelle Markdown-Tabelle
+    let report = `# AI Compliance Checker - Validierungsreport
+
+## Rolle
+Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
+
+## Aufgabe
+Überprüfe die folgenden ${analysis.detections.length} erkannten sensiblen Daten und validiere ob die Erkennungen korrekt sind.
+
+Zähle am Ende wie viele Erkennungen korrekt (✅) und wie viele falsch (❌) sind.
+
+## Erkannte Daten
+
+| # | Typ | Wert | Kategorie | Beschreibung | Risiko | Korrekt? |
+|---|-----|------|-----------|--------------|--------|----------|
+`;
+
+    let counter = 1;
+    sortedGroups.forEach(([matchKey, detections]) => {
+      const maxSeverity = detections.some(d => d.severity === 'critical') ? 'critical' : 'warning';
+      const types = [...new Set(detections.map(d => d.name))].join(', ');
+      const categories = [...new Set(detections.map(d => d.category))];
+      const categoryText = categories.map(cat =>
+        this.detector.t(`categories.${cat}`, lang)
+      ).join(', ');
+      const descriptions = [...new Set(detections.map(d => d.description))].join(' • ');
+      const riskText = this.detector.t(maxSeverity, lang);
+
+      report += `| ${counter} | ${types} | \`${detections[0].match}\` | ${categoryText} | ${descriptions} | ${riskText} | ⬜ |\n`;
+      counter++;
+    });
+
+    report += `
+## Anweisungen
+1. **Prüfe jeden Eintrag** ob er tatsächlich sensible Daten enthält
+2. **Ersetze ⬜** mit:
+   - ✅ wenn korrekt erkannt (True Positive)
+   - ❌ wenn falsch erkannt (False Positive)
+3. **Ergänze Kommentare** bei:
+   - Fehlenden Erkennungen (False Negatives)
+   - Zweifelhaften Fällen
+4. **Zähle am Ende**:
+   - Anzahl ✅ (korrekt)
+   - Anzahl ❌ (falsch)
+   - Accuracy = ✅ / (✅ + ❌)
+
+## Kontext
+- **Tool**: AI Compliance Checker v2.1.5
+- **Sprache**: ${lang === 'de' ? 'Deutsch' : 'English'}
+- **Erkennungen**: ${analysis.detections.length} total (${analysis.detections.filter(d => d.severity === 'critical').length} kritisch, ${analysis.detections.filter(d => d.severity === 'warning').length} Warnungen)
+- **Status**: ${analysis.status === 'critical' ? '🔴 Kritisch' : '🟠 Warnung'}
+
+---
+
+Beginne mit der Validierung!`;
+
+    return report;
   }
 
   /**
@@ -854,6 +971,26 @@ class ComplianceMonitor {
                 : 'Your message may contain sensitive data. Please review the following detections.')}
           </div>
           ${this.generateOverlayTable(analysis)}
+
+          <div class="aicc-validation-report-section">
+            <h3>
+              ${this.currentLang === 'de' ? '📋 Validierungs-Report für Claude' : '📋 Validation Report for Claude'}
+            </h3>
+            <p style="margin: 8px 0; font-size: 13px; color: #666;">
+              ${this.currentLang === 'de'
+                ? 'Kopiere diesen Report und sende ihn an Claude zum Überprüfen der Erkennungen:'
+                : 'Copy this report and send it to Claude to validate the detections:'}
+            </p>
+            <div class="aicc-code-window">
+              <div class="aicc-code-header">
+                <span class="aicc-code-label">Markdown</span>
+                <button class="aicc-copy-btn" data-copy-target="validation-report">
+                  ${this.currentLang === 'de' ? '📋 Kopieren' : '📋 Copy'}
+                </button>
+              </div>
+              <pre class="aicc-code-content" id="aicc-validation-report"><code>${this.escapeHtml(this.generateValidationReport(analysis))}</code></pre>
+            </div>
+          </div>
         </div>
         <div class="aicc-modal-footer">
           <div class="aicc-modal-branding">
@@ -950,6 +1087,24 @@ class ComplianceMonitor {
             this.analyzeElement(element);
           }, 1000);
         }, 100);
+      });
+    }
+
+    // Copy button handler
+    const copyBtn = modal.querySelector('.aicc-copy-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        const reportText = this.generateValidationReport(analysis);
+        navigator.clipboard.writeText(reportText).then(() => {
+          const originalText = copyBtn.textContent;
+          copyBtn.textContent = this.currentLang === 'de' ? '✅ Kopiert!' : '✅ Copied!';
+          setTimeout(() => {
+            copyBtn.textContent = originalText;
+          }, 2000);
+        }).catch(err => {
+          console.error('Failed to copy:', err);
+          copyBtn.textContent = this.currentLang === 'de' ? '❌ Fehler' : '❌ Error';
+        });
       });
     }
 
