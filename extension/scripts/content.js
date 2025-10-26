@@ -151,6 +151,8 @@ class ComplianceMonitor {
     element.addEventListener('keydown', (e) => this.handleKeyDown(element, e), { capture: true });
     element.addEventListener('paste', () => this.handlePaste(element));
 
+    console.log('[AICC] Attached event listeners to element:', element.tagName, element.className || element.id || '(no id/class)');
+
     // Beobachte Änderungen am Element (z.B. wenn Text gelöscht wird nach Absenden)
     const observer = new MutationObserver((mutations) => {
       // WICHTIG: Ignoriere Änderungen an unseren eigenen Overlays!
@@ -385,15 +387,73 @@ class ComplianceMonitor {
   handleKeyDown(element, event) {
     // Enter ohne Shift = Absenden
     if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+      console.log('[AICC KeyDown] Enter pressed, checking analysis...');
+
       const analysis = this.currentAnalysis.get(element);
+      console.log('[AICC KeyDown] Analysis:', analysis ? `Status: ${analysis.status}, Detections: ${analysis.detections?.length || 0}` : 'NONE');
+
       if (analysis && (analysis.status === 'critical' || analysis.status === 'warning')) {
+        console.log('[AICC KeyDown] BLOCKING - Showing modal');
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
         this.showWarningModal(analysis, element);
         return false;
+      } else if (!analysis) {
+        // Fallback: Wenn keine Analyse vorhanden, führe schnelle Analyse durch
+        console.log('[AICC KeyDown] No analysis found, running quick analysis...');
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+
+        // Analysiere und zeige dann Modal falls nötig
+        this.analyzeElement(element).then(() => {
+          const newAnalysis = this.currentAnalysis.get(element);
+          if (newAnalysis && (newAnalysis.status === 'critical' || newAnalysis.status === 'warning')) {
+            this.showWarningModal(newAnalysis, element);
+          } else {
+            // Keine Warnungen, sende normal
+            this.simulateSubmit(element);
+          }
+        });
+        return false;
       }
+
+      console.log('[AICC KeyDown] Safe - Allowing submit');
     }
+  }
+
+  /**
+   * Simuliert das Absenden (wenn Analyse safe ist)
+   */
+  simulateSubmit(element) {
+    console.log('[AICC] Simulating submit after analysis...');
+
+    // Temporär: Status auf safe setzen
+    const tempAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
+    this.currentAnalysis.set(element, tempAnalysis);
+
+    // Suche Submit-Button
+    const submitButton = this.findSubmitButton(element);
+    if (submitButton) {
+      submitButton.click();
+    } else {
+      // Fallback: Trigger Enter event
+      const event = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        code: 'Enter',
+        keyCode: 13,
+        which: 13,
+        bubbles: true,
+        cancelable: true
+      });
+      element.dispatchEvent(event);
+    }
+
+    // Nach 1 Sekunde: Analysiere neu
+    setTimeout(() => {
+      this.analyzeElement(element);
+    }, 1000);
   }
 
   /**
@@ -402,7 +462,15 @@ class ComplianceMonitor {
    */
   async analyzeElement(element) {
     const text = this.getElementText(element);
+    console.log('[AICC Analyze] Text length:', text.length, 'chars');
+
     const analysis = await this.detector.analyze(text, this.currentLang);
+    console.log('[AICC Analyze] Result:', {
+      status: analysis.status,
+      detections: analysis.detections.length,
+      critical: analysis.detections.filter(d => d.severity === 'critical').length,
+      warning: analysis.detections.filter(d => d.severity === 'warning').length
+    });
 
     // Speichere Analyse
     this.currentAnalysis.set(element, analysis);

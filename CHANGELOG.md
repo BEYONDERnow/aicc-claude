@@ -7,6 +7,76 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.3.1] - 2025-10-26
+
+### 🐛 CRITICAL FIX - Enter-Handler greift nicht
+
+#### Problem
+**User-Report**: "Man kann Enter drücken und das Modal erscheint nicht"
+- Warnung wird beim Drücken von Enter nicht angezeigt
+- Text mit sensiblen Daten wird ohne Warnung abgesendet
+- Kritischer Sicherheitsfehler
+
+#### Root Cause
+- Analyse möglicherweise noch nicht abgeschlossen beim Enter-Drücken
+- Keine Fallback-Logik für fehlende Analyse
+- Fehlendes Debug-Logging erschwert Fehlersuche
+
+#### Lösung
+
+**1. Fallback-Logik hinzugefügt**:
+```javascript
+// Wenn keine Analyse vorhanden:
+// 1. Verhindere Submit
+// 2. Führe schnelle Analyse durch
+// 3. Zeige Modal falls nötig ODER sende ab
+```
+
+**2. Erweiterte handleKeyDown() Funktion**:
+- Prüft ob Analyse vorhanden ist
+- Falls nicht: Führt sofortige Analyse durch
+- Wartet auf Ergebnis bevor Submit
+- Neue `simulateSubmit()` Funktion für sicheres Absenden
+
+**3. Umfangreiches Debug-Logging**:
+```javascript
+[AICC KeyDown] Enter pressed, checking analysis...
+[AICC KeyDown] Analysis: Status: critical, Detections: 9
+[AICC KeyDown] BLOCKING - Showing modal
+[AICC Analyze] Text length: 150 chars
+[AICC Analyze] Result: {status: 'critical', detections: 9, critical: 2, warning: 7}
+[AICC] Attached event listeners to element: DIV ProseMirror
+```
+
+**4. Neue Funktion simulateSubmit()**:
+- Wird aufgerufen wenn Analyse safe ist
+- Setzt temporär Status auf safe
+- Sucht Submit-Button oder triggert Enter-Event
+- Re-analysiert nach 1 Sekunde
+
+#### Erwartetes Verhalten
+
+**Szenario 1**: Sensible Daten vorhanden
+1. User drückt Enter
+2. Analyse wird geprüft (oder durchgeführt)
+3. Modal erscheint mit Warnung
+4. User kann entscheiden: Abbrechen oder Senden
+
+**Szenario 2**: Keine sensiblen Daten
+1. User drückt Enter
+2. Analyse zeigt "safe"
+3. Text wird normal gesendet
+
+### 📝 Dateien geändert
+- `extension/scripts/content.js` (handleKeyDown, analyzeElement, simulateSubmit, attachToElement)
+
+### 📦 Versionierung
+- ✅ `package.json` → 2.3.1
+- ✅ `manifest.json` → 2.3.1
+- ✅ `popup.html` → 2.3.1
+
+---
+
 ## [2.3.0] - 2025-10-26
 
 ### 🚀 MAJOR UPDATE - Accuracy-Boost: 64% → 85-90%
