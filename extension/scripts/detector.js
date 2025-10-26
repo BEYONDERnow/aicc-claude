@@ -1,12 +1,12 @@
 /**
  * AI Compliance Checker - Detection Engine
- * Version 2.0.0 - KI-gestützte Erkennung mit Transformer.js
+ * Version 2.2.0 - Enhanced NER ohne WASM (Lexicon-based)
  * by BEYONDER
  * Erkennt personenbezogene und sensible Daten in Text-Eingaben
- * 100% lokal, keine Server-Kommunikation
+ * 100% lokal, keine Server-Kommunikation, kein WASM
  */
 
-import { NERDetector } from './ner-detector.js';
+import { EnhancedNERDetector } from './enhanced-ner.js';
 
 class ComplianceDetector {
   constructor() {
@@ -15,12 +15,12 @@ class ComplianceDetector {
     this.nameBlacklist = this.initializeNameBlacklist();
     this.commonFirstNames = this.initializeCommonFirstNames();
 
-    // VERSION 2.0.0: NER-Detector für intelligente Namenserkennung
-    this.nerDetector = new NERDetector();
-    this.nerAvailable = false;
-    this.nerEnabled = true; // Kann deaktiviert werden für Fallback
+    // VERSION 2.2.0: Enhanced NER-Detector (Lexicon-based, kein WASM)
+    this.nerDetector = new EnhancedNERDetector();
+    this.nerAvailable = true; // Immer verfügbar (kein WASM-Loading mehr)
+    this.nerEnabled = true;
 
-    console.log('[AI Compliance Checker] v2.0.0 - KI-gestützte Erkennung aktiv');
+    console.log('[AI Compliance Checker] v2.2.0 - Enhanced NER (6600+ Namen, kein WASM)');
   }
 
   /**
