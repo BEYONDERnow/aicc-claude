@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "AI Compliance Checker",
-  "version": "2.1.6",
-  "description": "Lokaler Compliance-Checker für KI-Plattformen - prüft Eingaben auf personenbezogene und sensible Daten",
+  "version": "2.2.0",
+  "description": "Enhanced Compliance-Checker für KI-Plattformen - 6600+ Namen-Lexikon, kein WASM",
   "permissions": [
     "storage"
   ],
@@ -42,18 +42,5 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     }
-  },
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "dist/*.wasm"
-      ],
-      "matches": [
-        "https://chat.openai.com/*",
-        "https://chatgpt.com/*",
-        "https://gemini.google.com/*",
-        "https://claude.ai/*"
-      ]
-    }
-  ]
+  }
 }
