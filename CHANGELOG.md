@@ -7,6 +7,128 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.2.1] - 2025-10-26
+
+### 🚀 CRITICAL FIX - Performance-Optimierungen & Browser-Absturz behoben
+
+#### Problem: Browser-Absturz bei langen Texten
+**User-Report**:
+- Extension zu langsam beim Kopieren längerer Texte
+- Browser stürzt ab bei großen Text-Mengen
+- Keine Performance-Limits implementiert
+
+**Root Cause**:
+- Enhanced NER v2.2.0 hatte keine Text-Längen-Limits
+- Layer 2 (Lexicon) hatte komplexe lookahead-Logik → Endlosschleifen
+- Layer 3 (Capitalization) lief auch auf sehr langen Texten (>100k)
+- Kein Fast-Mode für lange Texte
+
+### 🔧 Fixes
+
+#### 1. **Text-Längen-Limits & Fast Mode**
+- **Max 50.000 Zeichen** (darüber: Automatic Truncation)
+- **Fast Mode ab 10.000 Zeichen** (nur Layer 1+4, schnellste Layer)
+- **Layer 3 Skip ab 20.000 Zeichen**
+- **Layer 2 Skip ab 30.000 Zeichen**
+
+#### 2. **Match-Limits (verhindert Endlosschleifen)**
+- Layer 2 (Lexicon): Max 500 Matches
+- Layer 3 (Capitalization): Max 100 Matches
+- Early Exit bei zu vielen Matches mit Console-Warning
+
+#### 3. **Vereinfachte Logik in Layer 2**
+- **Removed**: Komplexe Nachname-Lookahead (führte zu Hängern)
+- **Simplified**: Nur einzelne Wörter matchen (viel schneller)
+- Pattern-Matching ohne verschachtelte exec()-Calls
+
+#### 4. **Versionierung überall aktualisiert**
+- ✅ `package.json` → 2.2.1
+- ✅ `manifest.json` → 2.2.1 + **bessere Beschreibung**
+- ✅ `detector.js` → v2.2.1 Console-Log
+- ✅ `enhanced-ner.js` → v2.2.1 + Performance-Infos
+- ✅ `popup.html` → v2.2.1 + "Enhanced NER 6600+" Text
+
+### 📊 Performance-Verbesserungen
+
+**Test-Ergebnisse (test-performance.js)**:
+```
+Text-Länge    |  Zeit      | Status
+--------------+------------+------------------
+83 Zeichen    |  1.78ms    | 🚀 SCHNELL
+594 Zeichen   |  0.56ms    | 🚀 SCHNELL
+21k Zeichen   |  1.79ms    | 🚀 SCHNELL (Fast Mode)
+40k Zeichen   |  3.38ms    | 🚀 SCHNELL (Fast Mode)
+114k Zeichen  |  0.30ms    | 🚀 SCHNELL (Truncation)
+```
+
+**Alle Tests < 200ms!** ✅ **Kein Browser-Absturz mehr!**
+
+### 🎯 Manifest-Beschreibung verbessert
+
+**Vorher (v2.2.0 - technisch)**:
+```
+"Enhanced Compliance-Checker für KI-Plattformen - 6600+ Namen-Lexikon, kein WASM"
+```
+
+**Nachher (v2.2.1 - user-fokussiert)**:
+```
+"Schützt Ihre sensiblen Daten bei ChatGPT, Claude & Gemini.
+ Erkennt Namen, E-Mails, IBAN, Telefonnummern uvm.
+ 100% lokal, DSGVO-konform."
+```
+
+→ **Klare Beschreibung WAS die Extension macht** (nicht WIE)!
+
+### 🔧 Technical Changes
+
+**Geänderte Dateien**:
+- `extension/scripts/enhanced-ner.js` (~+100 Zeilen)
+  - `detectNames()`: Text-Längen-Limits + Fast Mode Logic
+  - `detectByLexicon()`: Vereinfacht + Match-Limit + Skip ab 30k
+  - `detectByCapitalization()`: Skip ab 20k + Match-Limit 100
+  - `getDetectorInfo()`: Performance-Parameter hinzugefügt
+
+- `extension/manifest.json`
+  - Version: 2.2.0 → 2.2.1
+  - Description: User-fokussiert verbessert
+
+- `extension/popup.html`
+  - Version: 1.0.9 → 2.2.1 (!)
+  - "Hybrid Detection 700+" → "Enhanced NER 6600+"
+  - "Namen (Hybrid Detection)" → "Namen (Enhanced NER - 6600+ Namen)"
+
+- `package.json` & `extension/scripts/detector.js`
+  - Version: 2.2.0 → 2.2.1
+
+**Neue Dateien**:
+- `test-performance.js` - Performance Test Suite (5 Test-Cases)
+
+### ✅ Test Results
+
+**Namen-Erkennung (Quick Test)**:
+- ✅ Hans Müller (DE)
+- ✅ Klaus Schmidt (DE)
+- ✅ Franz Horvath (AT)
+- ✅ Jean-Luc Dupont (FR, Compound)
+- ✅ John Smith (EN)
+
+**Performance Test (test-performance.js)**:
+- ✅ Kurze Texte (<1k):     < 2ms
+- ✅ Mittlere Texte (1-10k): < 2ms
+- ✅ Lange Texte (10-50k):   < 4ms (Fast Mode)
+- ✅ Sehr lange (50-100k):   < 1ms (Truncation)
+- ✅ Extrem lange (>100k):   < 1ms (Truncation)
+
+### 🎯 User Impact
+
+**Probleme gelöst:**
+- ✅ **Kein Browser-Absturz** mehr bei langen Texten
+- ✅ **Schnelle Performance** auch bei 100k+ Zeichen
+- ✅ **Klare Extension-Beschreibung** für Chrome Store
+- ✅ **Korrekte Versionierung** überall sichtbar
+
+---
+
 ## [2.2.0] - 2025-10-26
 
 ### 🚀 MAJOR UPDATE - Enhanced NER ohne WASM
