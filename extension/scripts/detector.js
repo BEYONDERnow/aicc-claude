@@ -1,6 +1,6 @@
 /**
  * AI Compliance Checker - Detection Engine
- * Version 2.2.0 - Enhanced NER ohne WASM (Lexicon-based)
+ * Version 2.2.1 - Enhanced NER ohne WASM (Performance-optimiert)
  * by BEYONDER
  * Erkennt personenbezogene und sensible Daten in Text-Eingaben
  * 100% lokal, keine Server-Kommunikation, kein WASM
@@ -20,7 +20,7 @@ class ComplianceDetector {
     this.nerAvailable = true; // Immer verfügbar (kein WASM-Loading mehr)
     this.nerEnabled = true;
 
-    console.log('[AI Compliance Checker] v2.2.0 - Enhanced NER (6600+ Namen, kein WASM)');
+    console.log('[AI Compliance Checker] v2.2.1 - Enhanced NER (6600+ Namen, Performance-optimiert)');
   }
 
   /**

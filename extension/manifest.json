@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "AI Compliance Checker",
-  "version": "2.2.0",
-  "description": "Enhanced Compliance-Checker für KI-Plattformen - 6600+ Namen-Lexikon, kein WASM",
+  "version": "2.2.1",
+  "description": "Schützt Ihre sensiblen Daten bei ChatGPT, Claude & Gemini. Erkennt Namen, E-Mails, IBAN, Telefonnummern uvm. 100% lokal, DSGVO-konform.",
   "permissions": [
     "storage"
   ],

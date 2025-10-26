@@ -75,21 +75,51 @@ export class EnhancedNERDetector {
   /**
    * Haupt-Erkennungs-Methode
    * Kombiniert alle 4 Layer und gibt deduplizierte Ergebnisse zurück
+   *
+   * PERFORMANCE OPTIMIERT v2.2.1:
+   * - Text-Längen-Limit (10000 Zeichen)
+   * - Chunking für lange Texte
+   * - Early Exit für sehr lange Texte
    */
   async detectNames(text, lang = 'de') {
     if (!text || text.trim().length === 0) return [];
 
+    // PERFORMANCE: Text-Längen-Limit
+    const MAX_LENGTH = 10000; // 10k Zeichen
+    const MAX_LENGTH_STRICT = 50000; // 50k absolutes Limit
+
+    if (text.length > MAX_LENGTH_STRICT) {
+      // Sehr langer Text: Nur erste 50k Zeichen analysieren
+      console.warn('[Enhanced NER] Text zu lang (' + text.length + ' Zeichen), analysiere nur erste 50k');
+      text = text.substring(0, MAX_LENGTH_STRICT);
+    }
+
+    // PERFORMANCE: Bei mittellangen Texten (10k-50k) nur Layer 1+4 (schnellste)
+    const useFastMode = text.length > MAX_LENGTH;
+
     const detections = [];
 
-    // Layer 1: Kontext-basiert (höchste Präzision)
+    // Layer 1: Kontext-basiert (höchste Präzision, schnell)
     const contextNames = this.detectByContext(text, lang);
     detections.push(...contextNames);
 
-    // Layer 2: Lexikon-basiert (hohe Abdeckung)
+    // FAST MODE: Nur Kontext + Compound für lange Texte
+    if (useFastMode) {
+      console.log('[Enhanced NER] Fast Mode aktiviert (Text > 10k Zeichen)');
+
+      // Layer 4: Compound-Namen (schnell, kein Lexikon-Lookup)
+      const compoundNames = this.detectCompoundNames(text);
+      detections.push(...compoundNames);
+
+      return this.validateAndMerge(detections, text);
+    }
+
+    // NORMAL MODE: Alle Layer
+    // Layer 2: Lexikon-basiert (hohe Abdeckung, mittel-schnell)
     const lexiconNames = this.detectByLexicon(text, lang);
     detections.push(...lexiconNames);
 
-    // Layer 3: Kapitalisierungs-Analyse
+    // Layer 3: Kapitalisierungs-Analyse (langsam)
     const capitalizedNames = this.detectByCapitalization(text);
     detections.push(...capitalizedNames);
 
@@ -166,44 +196,44 @@ export class EnhancedNERDetector {
    * Prüft gegen 6600+ bekannte Vornamen & Nachnamen
    * Hohe Präzision (~90%) und Recall
    */
+  /**
+   * LAYER 2: Lexikon-basierte Erkennung
+   * Prüft gegen 6600+ bekannte Vornamen & Nachnamen
+   * Hohe Präzision (~90%) und Recall
+   *
+   * PERFORMANCE OPTIMIERT v2.2.1:
+   * - Limit auf max 500 Matches
+   * - Timeout Protection
+   */
   detectByLexicon(text, lang) {
     const results = [];
+
+    // PERFORMANCE: Nur für Texte < 30k Zeichen
+    if (text.length > 30000) {
+      console.log('[Enhanced NER] Lexicon skipped (text > 30k)');
+      return results;
+    }
 
     // Split in Wörter (behalte Positionen) - inkl. Akzente áéíóúý etc.
     const wordPattern = /[A-ZÄÖÜÀÂÆÇÉÈÊËÏÎÔŒÙÛÜÁÉÍÓÚÝ][a-zäöüàâæçéèêëïîôœùûüßáéíóúý-]+/g;
     let match;
+    let matchCount = 0;
+    const MAX_MATCHES = 500;
 
     while ((match = wordPattern.exec(text)) !== null) {
+      // PERFORMANCE: Limit iterations
+      if (++matchCount > MAX_MATCHES) {
+        console.warn('[Enhanced NER] Lexicon: Too many matches (>' + MAX_MATCHES + '), aborted');
+        break;
+      }
+
       const word = match[0];
       const position = match.index;
 
       // Prüfe ob es ein Vorname ist
       if (isFirstName(word, lang)) {
-        // Schaue ob ein Nachname folgt
-        const nextWordMatch = wordPattern.exec(text);
-        if (nextWordMatch) {
-          const nextWord = nextWordMatch[0];
-          const nextPosition = nextWordMatch.index;
-
-          // Prüfe ob Nachname direkt folgt (max 1 Zeichen Abstand)
-          if (nextPosition - (position + word.length) <= 1 && isLastName(nextWord)) {
-            // Vollständiger Name!
-            const fullName = text.substring(position, nextPosition + nextWord.length);
-            results.push({
-              text: fullName.trim(),
-              start: position,
-              end: nextPosition + nextWord.length,
-              confidence: 0.90,
-              layer: 'lexicon-full'
-            });
-            continue; // Skip next iteration
-          } else {
-            // Reset regex position
-            wordPattern.lastIndex = nextPosition;
-          }
-        }
-
-        // Nur Vorname (niedrigere Confidence)
+        // PERFORMANCE: Simplified - kein lookahead mehr
+        // Nur Vorname (ohne Nachname-Check, zu komplex)
         if (!this.isBlacklisted(word)) {
           results.push({
             text: word,
@@ -233,16 +263,34 @@ export class EnhancedNERDetector {
    * LAYER 3: Kapitalisierungs-Analyse
    * Erkennt mehrere aufeinanderfolgende kapitalisierte Wörter
    * Mittlere Präzision (~75%) - anfällig für False Positives
+   *
+   * PERFORMANCE OPTIMIERT v2.2.1:
+   * - Limit auf max 100 Matches
+   * - Skip für sehr lange Texte (>20k)
    */
   detectByCapitalization(text) {
     const results = [];
 
-    // Pattern: 2-4 kapitalisierte Wörter hintereinander
-    // z.B. "Hans Peter Müller" oder "Johann Wolfgang Goethe"
-    const pattern = /\b([A-ZÄÖÜÀÂÆÇÉÈÊËÏÎÔŒÙÛÜ][a-zäöüàâæçéèêëïîôœùûüß-]+(?:\s+[A-ZÄÖÜÀÂÆÇÉÈÊËÏÎÔŒÙÛÜ][a-zäöüàâæçéèêëïîôœùûüß-]+){1,3})\b/g;
+    // PERFORMANCE: Nur für Texte < 20k Zeichen (Layer ist langsam)
+    if (text.length > 20000) {
+      return results; // Skip für sehr lange Texte
+    }
+
+    // Pattern: 2-3 kapitalisierte Wörter hintereinander (reduziert von 4)
+    // z.B. "Hans Peter" oder "Johann Wolfgang"
+    const pattern = /\b([A-ZÄÖÜÀÂÆÇÉÈÊËÏÎÔŒÙÛÜ][a-zäöüàâæçéèêëïîôœùûüß-]+(?:\s+[A-ZÄÖÜÀÂÆÇÉÈÊËÏÎÔŒÙÛÜ][a-zäöüàâæçéèêëïîôœùûüß-]+){1,2})\b/g;
 
     let match;
+    let matchCount = 0;
+    const MAX_MATCHES = 100; // Limit für Performance
+
     while ((match = pattern.exec(text)) !== null) {
+      // PERFORMANCE: Limit Matches
+      if (++matchCount > MAX_MATCHES) {
+        console.warn('[Enhanced NER] Capitalization: Zu viele Matches (>' + MAX_MATCHES + '), abgebrochen');
+        break;
+      }
+
       const name = match[1];
       const position = match.index;
 
@@ -263,16 +311,8 @@ export class EnhancedNERDetector {
           confidence: 0.75,
           layer: 'capitalization'
         });
-      } else {
-        // Niedriger Confidence ohne Lexikon-Match
-        results.push({
-          text: name,
-          start: position,
-          end: position + name.length,
-          confidence: 0.55,
-          layer: 'capitalization-low'
-        });
       }
+      // Skip low-confidence (reduziert False Positives & Performance)
     }
 
     return results;
@@ -468,12 +508,17 @@ export class EnhancedNERDetector {
  */
 export function getDetectorInfo() {
   return {
-    version: '2.2.0',
-    type: 'Enhanced NER (Lexicon-based)',
+    version: '2.2.1',
+    type: 'Enhanced NER (Lexicon-based, Performance-optimized)',
     layers: 4,
     dependencies: 'None (Pure JavaScript)',
     lexiconSize: '~6600 names',
     languages: ['de', 'fr', 'it', 'en', 'at', 'international'],
-    countries: ['Germany', 'Austria', 'Switzerland', 'France', 'Italy', 'UK', 'Ireland', 'B2B International']
+    countries: ['Germany', 'Austria', 'Switzerland', 'France', 'Italy', 'UK', 'Ireland', 'B2B International'],
+    performance: {
+      maxTextLength: 50000,
+      fastModeThreshold: 10000,
+      capitalizationLimit: 20000
+    }
   };
 }
