@@ -154,6 +154,23 @@ export class EnhancedNERDetector {
     while ((match = pattern.exec(text)) !== null) {
       let name = match[1].trim();
 
+      // v2.3.0 FIX: Filter ALL-CAPS Wörter (wegen case-insensitive 'gi' Flag)
+      // "KONTAKTDATEN" wird zu "DATEN" extrahiert → filtern!
+      if (name === name.toUpperCase() && name.length > 2) {
+        continue;
+      }
+
+      // v2.3.0 FIX: Filter lowercase-only Wörter
+      if (name === name.toLowerCase()) {
+        continue;
+      }
+
+      // v2.3.0 FIX: Blacklist häufiger False Positives
+      const contextBlacklist = ['CH', 'EUR', 'USD', 'CHF', 'Tel', 'Email', 'Team', 'Text', 'Test', 'Code', 'Info', 'Data', 'Liste'];
+      if (contextBlacklist.includes(name)) {
+        continue;
+      }
+
       // Schneide bei bekannten Nicht-Namen-Wörtern ab
       // z.B. "Klaus Schmidt arbeitet" → "Klaus Schmidt"
       const words = name.split(/\s+/);
@@ -319,15 +336,37 @@ export class EnhancedNERDetector {
       if (this.isSentenceStart(text, position)) continue;
       if (this.isAllUpperCase(name)) continue; // "WICHTIG INFO" ausschließen
 
-      // Prüfe ob mind. ein Wort im Lexikon ist (erhöht Präzision)
+      // v2.3.0 FIX: Filtere einzelne Wörter in Multi-Word Namen
       const words = name.split(/\s+/);
-      const hasKnownName = words.some(w => isFirstName(w) || isLastName(w));
+      const validWords = [];
+      const capBlacklist = ['Tel', 'Email', 'Team', 'Test', 'Code', 'Info', 'Data', 'Bitte'];
+
+      for (const word of words) {
+        // Skip lowercase Wörter (z.B. "chris" in "Andres chris")
+        if (word === word.toLowerCase()) break;
+
+        // Skip ALL-CAPS Wörter (außer 2-Buchstaben wie "AL")
+        if (word === word.toUpperCase() && word.length > 2) break;
+
+        // Skip Blacklist
+        if (capBlacklist.includes(word)) break;
+
+        validWords.push(word);
+      }
+
+      if (validWords.length === 0) continue;
+
+      const cleanName = validWords.join(' ');
+
+      // Prüfe ob mind. ein Wort im Lexikon ist (erhöht Präzision)
+      const hasKnownName = validWords.some(w => isFirstName(w) || isLastName(w));
 
       if (hasKnownName) {
+        const cleanStart = position;
         results.push({
-          text: name,
-          start: position,
-          end: position + name.length,
+          text: cleanName,
+          start: cleanStart,
+          end: cleanStart + cleanName.length,
           confidence: 0.75,
           layer: 'capitalization'
         });

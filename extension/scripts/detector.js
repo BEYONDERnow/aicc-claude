@@ -286,8 +286,8 @@ class ComplianceDetector {
       critical: [
         {
           id: 'email',
-          // FIX v2.3.0: Bessere Word-Boundary (stoppt bei Whitespace/Zeilenende)
-          pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}(?=\s|$|[^\w@.-])/g,
+          // FIX v2.3.0 HOTFIX: Stoppt nur bei Whitespace/Zeilenende (nicht bei Buchstaben!)
+          pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}(?=\s|$)/g,
           severity: 'critical',
           category: 'pii',
           nameDE: 'E-Mail-Adresse',
@@ -684,6 +684,20 @@ class ComplianceDetector {
         return false;
       }
 
+      // Filter 7: Filtere Jahre (1900-2100)
+      if (zipValue >= 1900 && zipValue <= 2100) {
+        // Kontext-Check: Steht "Jahr", "geboren", "seit", "bis", "ab" in der Nähe?
+        const pos = zip.start;
+        const contextBefore = text.substring(Math.max(0, pos - 30), pos).toLowerCase();
+        const contextAfter = text.substring(pos, Math.min(text.length, pos + 30)).toLowerCase();
+        const yearKeywords = ['jahr', 'geboren', 'seit', 'bis', 'ab', 'year', 'born', 'since', 'until', 'from'];
+
+        if (yearKeywords.some(keyword => contextBefore.includes(keyword) || contextAfter.includes(keyword))) {
+          console.log(`[PLZ Filter] ${zip.match} ist ein Jahr (Kontext-Check)`);
+          return false;
+        }
+      }
+
       return true;
     });
   }
@@ -956,15 +970,19 @@ class ComplianceDetector {
         }
       }
 
+      // v2.3.0 HOTFIX: Verwende captured group falls vorhanden (z.B. Passwort)
+      const matchText = match[1] !== undefined ? match[1] : match[0];
+      const matchStart = match[1] !== undefined ? match.index + match[0].indexOf(match[1]) : match.index;
+
       matches.push({
         id: patternDef.id,
         severity: patternDef.severity,
         category: patternDef.category,
         name: lang === 'de' ? patternDef.nameDE : patternDef.nameEN,
         description: lang === 'de' ? patternDef.descDE : patternDef.descEN,
-        match: match[0],
-        start: match.index,
-        end: match.index + match[0].length
+        match: matchText,
+        start: matchStart,
+        end: matchStart + matchText.length
       });
     }
 
