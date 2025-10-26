@@ -7,6 +7,47 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.2.2] - 2025-10-26
+
+### ✨ Feature - Validierungsreport mit Prompt-Kontext
+
+#### Problem
+**User-Report**:
+- "Im Validierungsreport fehlt noch der eingegebene Prompt"
+- Claude braucht den Original-Text, um die Erkennungen im Kontext validieren zu können
+- Ohne Prompt-Kontext kann Claude nicht beurteilen, ob Erkennungen sinnvoll sind
+
+#### Lösung
+
+**Validierungsreport erweitert**:
+- ✅ **Neue Sektion**: "Eingegebener Prompt" zeigt den Original-Text
+- ✅ **Automatische Kürzung**: Texte >1000 Zeichen werden gekürzt (mit Längen-Info)
+- ✅ **Besserer Kontext**: Claude sieht jetzt den vollständigen Input
+- ✅ **Textlänge**: Im Kontext-Bereich wird die Gesamt-Zeichenanzahl angezeigt
+
+**Technische Details**:
+- `generateValidationReport(analysis, element)` aktualisiert
+- Extrahiert Text via `getElementText(element)`
+- Fügt Text in Markdown Code-Block ein
+- Alle 4 Aufrufe der Funktion aktualisiert (Modal + Overlay)
+
+**Versionierung**:
+- ✅ `package.json` → 2.2.2
+- ✅ `manifest.json` → 2.2.2
+- ✅ `detector.js` → v2.2.2
+- ✅ `enhanced-ner.js` → v2.2.2
+- ✅ `popup.html` → v2.2.2
+
+### 📝 Dateien geändert
+- `extension/scripts/content.js` (generateValidationReport-Funktion)
+- `extension/manifest.json` (Version)
+- `package.json` (Version)
+- `extension/popup.html` (Version)
+- `extension/scripts/detector.js` (Version + Console-Log)
+- `extension/scripts/enhanced-ner.js` (Version + Typ-Beschreibung)
+
+---
+
 ## [2.2.1] - 2025-10-26
 
 ### 🚀 CRITICAL FIX - Performance-Optimierungen & Browser-Absturz behoben

@@ -7,7 +7,7 @@
  * Layer 3: Capitalization (75%+ Präzision) - Pattern-Matching
  * Layer 4: Compound Names (90%+ Präzision) - Hans-Peter, Jean-Luc
  *
- * Version: 2.2.0
+ * Version: 2.2.2
  */
 
 import { FIRST_NAMES, LAST_NAMES, isFirstName, isLastName } from './names-lexicon.js';
@@ -508,8 +508,8 @@ export class EnhancedNERDetector {
  */
 export function getDetectorInfo() {
   return {
-    version: '2.2.1',
-    type: 'Enhanced NER (Lexicon-based, Performance-optimized)',
+    version: '2.2.2',
+    type: 'Enhanced NER (Lexicon-based, Validation Report with Prompt)',
     layers: 4,
     dependencies: 'None (Pure JavaScript)',
     lexiconSize: '~6600 names',
