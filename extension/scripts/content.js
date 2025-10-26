@@ -739,7 +739,7 @@ class ComplianceMonitor {
                   ${this.currentLang === 'de' ? '📋 Kopieren' : '📋 Copy'}
                 </button>
               </div>
-              <pre class="aicc-code-content" id="aicc-validation-report-overlay"><code>${this.escapeHtml(this.generateValidationReport(analysis))}</code></pre>
+              <pre class="aicc-code-content" id="aicc-validation-report-overlay"><code>${this.escapeHtml(this.generateValidationReport(analysis, element))}</code></pre>
             </div>
           </div>
         </div>
@@ -782,7 +782,7 @@ class ComplianceMonitor {
     const copyBtn = overlay.querySelector('.aicc-copy-btn-overlay');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
-        const reportText = this.generateValidationReport(analysis);
+        const reportText = this.generateValidationReport(analysis, element);
         navigator.clipboard.writeText(reportText).then(() => {
           const originalText = copyBtn.textContent;
           copyBtn.textContent = this.currentLang === 'de' ? '✅ Kopiert!' : '✅ Copied!';
@@ -800,7 +800,7 @@ class ComplianceMonitor {
   /**
    * Generiert Validierungs-Report für Claude
    */
-  generateValidationReport(analysis) {
+  generateValidationReport(analysis, element = null) {
     const lang = this.currentLang;
 
     // Gruppiere wie in der Tabelle
@@ -817,6 +817,12 @@ class ComplianceMonitor {
       return aSeverity - bSeverity;
     });
 
+    // Extrahiere eingegebenen Text
+    const inputText = element ? this.getElementText(element) : '';
+    const textPreview = inputText.length > 1000
+      ? inputText.substring(0, 1000) + '\n\n[... Text gekürzt, insgesamt ' + inputText.length + ' Zeichen ...]'
+      : inputText;
+
     // Erstelle Markdown-Tabelle
     let report = `# AI Compliance Checker - Validierungsreport
 
@@ -827,6 +833,14 @@ Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally I
 Überprüfe die folgenden ${analysis.detections.length} erkannten sensiblen Daten und validiere ob die Erkennungen korrekt sind.
 
 Zähle am Ende wie viele Erkennungen korrekt (✅) und wie viele falsch (❌) sind.
+
+## Eingegebener Prompt
+
+Der Benutzer hat folgenden Text eingegeben:
+
+\`\`\`
+${textPreview}
+\`\`\`
 
 ## Erkannte Daten
 
@@ -864,8 +878,9 @@ Zähle am Ende wie viele Erkennungen korrekt (✅) und wie viele falsch (❌) si
    - Accuracy = ✅ / (✅ + ❌)
 
 ## Kontext
-- **Tool**: AI Compliance Checker v2.1.5
+- **Tool**: AI Compliance Checker v2.2.2
 - **Sprache**: ${lang === 'de' ? 'Deutsch' : 'English'}
+- **Textlänge**: ${inputText.length} Zeichen
 - **Erkennungen**: ${analysis.detections.length} total (${analysis.detections.filter(d => d.severity === 'critical').length} kritisch, ${analysis.detections.filter(d => d.severity === 'warning').length} Warnungen)
 - **Status**: ${analysis.status === 'critical' ? '🔴 Kritisch' : '🟠 Warnung'}
 
@@ -988,7 +1003,7 @@ Beginne mit der Validierung!`;
                   ${this.currentLang === 'de' ? '📋 Kopieren' : '📋 Copy'}
                 </button>
               </div>
-              <pre class="aicc-code-content" id="aicc-validation-report"><code>${this.escapeHtml(this.generateValidationReport(analysis))}</code></pre>
+              <pre class="aicc-code-content" id="aicc-validation-report"><code>${this.escapeHtml(this.generateValidationReport(analysis, element))}</code></pre>
             </div>
           </div>
         </div>
@@ -1094,7 +1109,7 @@ Beginne mit der Validierung!`;
     const copyBtn = modal.querySelector('.aicc-copy-btn');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
-        const reportText = this.generateValidationReport(analysis);
+        const reportText = this.generateValidationReport(analysis, element);
         navigator.clipboard.writeText(reportText).then(() => {
           const originalText = copyBtn.textContent;
           copyBtn.textContent = this.currentLang === 'de' ? '✅ Kopiert!' : '✅ Copied!';
