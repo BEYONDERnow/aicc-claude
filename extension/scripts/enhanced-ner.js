@@ -7,7 +7,7 @@
  * Layer 3: Capitalization (75%+ Präzision) - Pattern-Matching
  * Layer 4: Compound Names (90%+ Präzision) - Hans-Peter, Jean-Luc
  *
- * Version: 2.2.2
+ * Version: 2.3.0 - ALL-CAPS Filter, Word-Boundary Checks
  */
 
 import { FIRST_NAMES, LAST_NAMES, isFirstName, isLastName } from './names-lexicon.js';
@@ -229,6 +229,26 @@ export class EnhancedNERDetector {
 
       const word = match[0];
       const position = match.index;
+
+      // v2.3.0 PHASE 1: ALL-CAPS Filter (außer 2-Buchstaben wie "AL")
+      if (word === word.toUpperCase() && word.length > 2) {
+        continue; // Skip KONTAKTDATEN, FINANZDATEN, etc.
+      }
+
+      // v2.3.0 PHASE 1: Lowercase-Only Filter (compound-Teile)
+      if (word === word.toLowerCase()) {
+        continue; // Skip "kverbindung" aus "Bankverbindung"
+      }
+
+      // v2.3.0 PHASE 1: Word Boundary Check (nicht Teilstring)
+      const before = text[position - 1];
+      const after = text[position + word.length];
+      if (before && /[a-zäöüA-ZÄÖÜ]/.test(before)) continue;
+      if (after && /[a-zäöüA-ZÄÖÜ]/.test(after)) continue;
+
+      // v2.3.0 PHASE 1: Blacklist häufiger False Positives
+      const commonFalsePositives = ['CH', 'EUR', 'USD', 'CHF', 'Name', 'Tel', 'Email', 'Team', 'Text', 'Test', 'Code'];
+      if (commonFalsePositives.includes(word)) continue;
 
       // Prüfe ob es ein Vorname ist
       if (isFirstName(word, lang)) {
@@ -508,8 +528,8 @@ export class EnhancedNERDetector {
  */
 export function getDetectorInfo() {
   return {
-    version: '2.2.2',
-    type: 'Enhanced NER (Lexicon-based, Validation Report with Prompt)',
+    version: '2.3.0',
+    type: 'Enhanced NER (Accuracy Boost: ALL-CAPS Filter, Word-Boundary)',
     layers: 4,
     dependencies: 'None (Pure JavaScript)',
     lexiconSize: '~6600 names',
