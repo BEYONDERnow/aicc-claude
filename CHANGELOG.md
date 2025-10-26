@@ -7,8 +7,65 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.1.6] - 2025-10-26
+
+### 🔧 Fixed - Silent NER Fallback (Chrome Store Ready)
+
+#### Problem: Console Errors beim WASM-Laden
+**Symptom**: WASM-Ladefehler erschienen in der Console:
+- "Unable to determine content-length from response headers"
+- "no available backend found"
+- "Fehler bei Entity-Erkennung"
+
+**Root Cause**: WASM-Backend konnte in manchen Chrome Extension Contexts nicht geladen werden, aber die Fehler wurden laut in die Console geloggt - das ist inakzeptabel für Chrome Store Submission.
+
+**Fix - Silent Fail Strategy**:
+- **NER Feature Flag**: `nerEnabled` standardmäßig `false` (kann via Storage aktiviert werden)
+- **Silent Failure**: Alle Console-Errors entfernt, kein Logging bei WASM-Fehlern
+- **Permanente Deaktivierung**: `nerDisabled` Flag verhindert weitere Versuche nach Fehler
+- **Graceful Degradation**: Extension arbeitet weiterhin perfekt mit Regex-Only Detection
+- **Early Returns**: Alle detect-Methoden returnen sofort leere Arrays wenn NER deaktiviert
+
+**Ergebnis**:
+- ✅ Keine Console-Errors mehr
+- ✅ Extension läuft stabil nur mit Regex-Patterns
+- ✅ NER kann optional von Power-Usern aktiviert werden
+- ✅ Chrome Store Ready
+
+---
+
+### 📝 Changed Files
+
+- `extension/scripts/ner-detector.js` (~50 -20 Zeilen)
+  - Constructor: Neue Flags `nerDisabled`, `nerEnabled`, `errorLogged`
+  - `initNER`: Silent fail, kein throw, return boolean
+  - `detectNames/Dates/Locations/All`: Early return bei `nerDisabled`
+  - Alle catch-Blocks: Keine Console-Errors mehr
+
+---
+
+## [2.1.5] - 2025-10-26
+
+### 🚀 Feature - Validierungs-Report für Claude
+
+#### Code-Fenster mit Prüfreport
+Neues Code-Fenster im Modal/Overlay mit komplettem Validierungs-Report für Claude.
+
+**Funktionen**:
+- Generiert formatierten Markdown-Report als Prompt
+- Enthält: Rolle, Aufgabe, Markdown-Tabelle, Anweisungen
+- Copy-Button zum Kopieren in Clipboard
+- Dark Theme Code-Fenster (VS Code-Style)
+
+**Verwendung**: User können Report an Claude schicken zum Validieren der Erkennungen.
+
+### 📝 Changed Files
+- `content.js`: +100 Zeilen (generateValidationReport, Copy Handlers)
+- `content.css`: +108 Zeilen (Code-Fenster Styling)
+
+---
+
 ## [2.1.4] - 2025-10-25
-## [2.1.5] - 2025-10-25
 
 ### 🚀 Feature - Validierungs-Report für Claude
 

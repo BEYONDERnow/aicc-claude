@@ -22,8 +22,17 @@ export class NERDetector {
     this.ner = null;
     this.cache = new Map();
     this.maxCacheSize = 100;
+    this.nerDisabled = false; // Flag für permanente Deaktivierung bei Fehler
+    this.nerEnabled = false; // Feature standardmäßig deaktiviert (wegen WASM-Problemen)
+    this.errorLogged = false; // Verhindert mehrfache Error-Logs
 
-    console.log('[AI Compliance NER] Initialisiert - Models werden lazy geladen');
+    // Prüfe Storage-Einstellung (optional)
+    chrome.storage?.local.get(['nerEnabled'], (result) => {
+      this.nerEnabled = result.nerEnabled === true;
+      if (this.nerEnabled) {
+        console.log('[AI Compliance NER] Feature aktiviert - Models werden lazy geladen');
+      }
+    });
   }
 
   /**
@@ -31,29 +40,35 @@ export class NERDetector {
    * Wird beim ersten Aufruf automatisch geladen
    */
   async initNER() {
-    if (this.nerReady) return;
+    // Prüfe ob NER aktiviert ist
+    if (!this.nerEnabled) {
+      if (!this.errorLogged) {
+        this.errorLogged = true;
+        // Stille Info-Meldung, keine Errors
+      }
+      this.nerDisabled = true;
+      return false;
+    }
+
+    // Prüfe ob NER bereits dauerhaft deaktiviert wurde
+    if (this.nerDisabled) {
+      return false;
+    }
+
+    if (this.nerReady) return true;
 
     if (!this.nerPromise) {
-      console.log('[AI Compliance NER] Lade Model (einmalig, wird gecached)...');
-
       try {
         // Xenova/bert-base-NER: Mehrsprachig (DE/EN/FR/IT), ~40MB
         this.nerPromise = pipeline(
           'token-classification',
           'Xenova/bert-base-NER',
           {
-            quantized: true, // Kleinere Größe, etwas schneller
+            quantized: true,
             progress_callback: (progress) => {
-              if (progress.status === 'downloading') {
-                if (progress.total && progress.total > 0) {
-                  // Content-Length verfügbar - zeige Prozent
-                  const percent = Math.round((progress.loaded / progress.total) * 100);
-                  console.log(`[AI Compliance NER] Download: ${percent}%`);
-                } else {
-                  // Kein Content-Length - zeige nur geladene Bytes
-                  const mb = (progress.loaded / 1024 / 1024).toFixed(1);
-                  console.log(`[AI Compliance NER] Download: ${mb} MB geladen...`);
-                }
+              // Stille Progress-Updates (keine Console-Logs)
+              if (progress.status === 'downloading' && progress.total > 0) {
+                // Optional: Progress könnte in UI angezeigt werden
               }
             }
           }
@@ -61,17 +76,27 @@ export class NERDetector {
 
         this.ner = await this.nerPromise;
         this.nerReady = true;
-
-        console.log('[AI Compliance NER] ✅ Model geladen und bereit!');
+        return true;
       } catch (error) {
-        console.error('[AI Compliance NER] ❌ Fehler beim Laden:', error);
+        // Silent fail - keine Console-Errors für Chrome Store
+        if (!this.errorLogged) {
+          this.errorLogged = true;
+          // NER wird permanent deaktiviert, Extension funktioniert mit Regex
+        }
+        this.nerDisabled = true;
         this.nerPromise = null;
-        throw error;
+        return false;
       }
     } else {
-      // Warten auf bereits laufendes Laden
-      this.ner = await this.nerPromise;
-      this.nerReady = true;
+      try {
+        // Warten auf bereits laufendes Laden
+        this.ner = await this.nerPromise;
+        this.nerReady = true;
+        return true;
+      } catch (error) {
+        this.nerDisabled = true;
+        return false;
+      }
     }
   }
 
@@ -84,6 +109,9 @@ export class NERDetector {
   async detectNames(text) {
     if (!text || text.trim().length === 0) return [];
 
+    // Früher Return wenn NER deaktiviert (silent fail)
+    if (this.nerDisabled) return [];
+
     // Cache-Check
     const cacheKey = `names:${text}`;
     if (this.cache.has(cacheKey)) {
@@ -92,8 +120,9 @@ export class NERDetector {
 
     try {
       // Stelle sicher dass Model geladen ist
-      if (!this.nerReady) {
-        await this.initNER();
+      const initialized = await this.initNER();
+      if (!initialized || !this.nerReady) {
+        return []; // Silent fail, kein Error
       }
 
       // NER ausführen
@@ -119,11 +148,10 @@ export class NERDetector {
       // Cache speichern (mit Limit)
       this.addToCache(cacheKey, persons);
 
-      console.log(`[AI Compliance NER] Namen erkannt: ${persons.length}`, persons.map(p => p.text));
-
       return persons;
     } catch (error) {
-      console.error('[AI Compliance NER] Fehler bei Namenserkennung:', error);
+      // Silent fail - keine Console-Errors
+      this.nerDisabled = true;
       return []; // Leeres Array bei Fehler (Fallback zu Regex)
     }
   }
@@ -137,6 +165,7 @@ export class NERDetector {
    */
   async detectDates(text) {
     if (!text || text.trim().length === 0) return [];
+    if (this.nerDisabled) return [];
 
     // Cache-Check
     const cacheKey = `dates:${text}`;
@@ -145,8 +174,9 @@ export class NERDetector {
     }
 
     try {
-      if (!this.nerReady) {
-        await this.initNER();
+      const initialized = await this.initNER();
+      if (!initialized || !this.nerReady) {
+        return [];
       }
 
       const result = await this.ner(text, {
@@ -165,15 +195,13 @@ export class NERDetector {
           end: entity.end,
           score: entity.score
         }))
-        .filter(d => d.score > 0.6); // Etwas niedrigerer Threshold für Daten
+        .filter(d => d.score > 0.6);
 
       this.addToCache(cacheKey, dates);
 
-      console.log(`[AI Compliance NER] Daten erkannt: ${dates.length}`, dates.map(d => d.text));
-
       return dates;
     } catch (error) {
-      console.error('[AI Compliance NER] Fehler bei Datums-Erkennung:', error);
+      this.nerDisabled = true;
       return [];
     }
   }
@@ -187,6 +215,7 @@ export class NERDetector {
    */
   async detectLocations(text) {
     if (!text || text.trim().length === 0) return [];
+    if (this.nerDisabled) return [];
 
     const cacheKey = `locations:${text}`;
     if (this.cache.has(cacheKey)) {
@@ -194,8 +223,9 @@ export class NERDetector {
     }
 
     try {
-      if (!this.nerReady) {
-        await this.initNER();
+      const initialized = await this.initNER();
+      if (!initialized || !this.nerReady) {
+        return [];
       }
 
       const result = await this.ner(text, {
@@ -220,7 +250,7 @@ export class NERDetector {
 
       return locations;
     } catch (error) {
-      console.error('[AI Compliance NER] Fehler bei Orts-Erkennung:', error);
+      this.nerDisabled = true;
       return [];
     }
   }
@@ -237,14 +267,19 @@ export class NERDetector {
       return { persons: [], dates: [], locations: [] };
     }
 
+    if (this.nerDisabled) {
+      return { persons: [], dates: [], locations: [] };
+    }
+
     const cacheKey = `all:${text}`;
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey);
     }
 
     try {
-      if (!this.nerReady) {
-        await this.initNER();
+      const initialized = await this.initNER();
+      if (!initialized || !this.nerReady) {
+        return { persons: [], dates: [], locations: [] };
       }
 
       const result = await this.ner(text, {
@@ -277,15 +312,9 @@ export class NERDetector {
 
       this.addToCache(cacheKey, entities);
 
-      console.log('[AI Compliance NER] Alle Entities:', {
-        persons: entities.persons.length,
-        dates: entities.dates.length,
-        locations: entities.locations.length
-      });
-
       return entities;
     } catch (error) {
-      console.error('[AI Compliance NER] Fehler bei Entity-Erkennung:', error);
+      this.nerDisabled = true;
       return { persons: [], dates: [], locations: [] };
     }
   }
