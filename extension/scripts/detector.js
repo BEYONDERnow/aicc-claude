@@ -970,9 +970,12 @@ class ComplianceDetector {
         }
       }
 
-      // v2.3.0 HOTFIX: Verwende captured group falls vorhanden (z.B. Passwort)
-      const matchText = match[1] !== undefined ? match[1] : match[0];
-      const matchStart = match[1] !== undefined ? match.index + match[0].indexOf(match[1]) : match.index;
+      // v2.3.3 FIX: Verwende captured group NUR bei single-group patterns (z.B. Passwort)
+      // Multi-group patterns (z.B. Adressen mit 4 groups) brauchen full match!
+      const hasMultipleGroups = match.length > 2; // [full, group1, group2+]
+      const useCapturedGroup = (match[1] !== undefined && !hasMultipleGroups);
+      const matchText = useCapturedGroup ? match[1] : match[0];
+      const matchStart = useCapturedGroup ? match.index + match[0].indexOf(match[1]) : match.index;
 
       matches.push({
         id: patternDef.id,
