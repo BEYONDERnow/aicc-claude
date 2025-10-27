@@ -165,11 +165,11 @@ export class EnhancedNERDetector {
         continue;
       }
 
-      // v2.3.0 FIX: Blacklist häufiger False Positives
-      const contextBlacklist = ['CH', 'EUR', 'USD', 'CHF', 'Tel', 'Email', 'Team', 'Text', 'Test', 'Code', 'Info', 'Data', 'Liste'];
-      if (contextBlacklist.includes(name)) {
-        continue;
-      }
+      // v2.3.3: ERWEITERTE Context-Blacklist (wird pro Wort geprüft)
+      const contextBlacklist = [
+        'CH', 'EUR', 'USD', 'CHF', 'Tel', 'Email', 'Team', 'Text', 'Test', 'Code',
+        'Info', 'Data', 'Liste', 'Name', 'Artikel', 'Bitte', 'Diese', 'Dieses'
+      ];
 
       // Schneide bei bekannten Nicht-Namen-Wörtern ab
       // z.B. "Klaus Schmidt arbeitet" → "Klaus Schmidt"
@@ -178,6 +178,11 @@ export class EnhancedNERDetector {
 
       for (const word of words) {
         const lower = word.toLowerCase();
+
+        // v2.3.3 FIX: Prüfe contextBlacklist für JEDES Wort!
+        if (contextBlacklist.includes(word)) {
+          break; // Stoppe bei Blacklist-Wort
+        }
 
         // Stoppe bei bekannten Verben/Präpositionen
         if (this.blacklist.has(word) ||
@@ -191,6 +196,21 @@ export class EnhancedNERDetector {
       if (validWords.length === 0) continue;
 
       name = validWords.join(' ');
+
+      // v2.3.3 FIX: Multi-Word Filter (filtere lowercase/ALL-CAPS aus Multi-Word Namen)
+      const finalWords = [];
+      for (const word of name.split(/\s+/)) {
+        // Skip lowercase (z.B. "chris" in "Andres chris")
+        if (word === word.toLowerCase()) break;
+
+        // Skip ALL-CAPS (außer 2-Buchstaben)
+        if (word === word.toUpperCase() && word.length > 2) break;
+
+        finalWords.push(word);
+      }
+
+      if (finalWords.length === 0) continue;
+      name = finalWords.join(' ');
 
       // Validierung: Nicht in Blacklist
       if (!this.isBlacklisted(name)) {
@@ -235,7 +255,7 @@ export class EnhancedNERDetector {
     const wordPattern = /[A-ZÄÖÜÀÂÆÇÉÈÊËÏÎÔŒÙÛÜÁÉÍÓÚÝ][a-zäöüàâæçéèêëïîôœùûüßáéíóúý-]+/g;
     let match;
     let matchCount = 0;
-    const MAX_MATCHES = 500;
+    const MAX_MATCHES = 2000; // v2.3.3: Erhöht von 500 → 2000 für längere Texte
 
     while ((match = wordPattern.exec(text)) !== null) {
       // PERFORMANCE: Limit iterations
@@ -246,6 +266,12 @@ export class EnhancedNERDetector {
 
       const word = match[0];
       const position = match.index;
+
+      // v2.3.3: Minimum Wortlänge (verhindert "An", "Ab", "Am", etc.)
+      if (word.length < 3) continue;
+
+      // v2.3.3: Maximum Wortlänge (unrealistisch lange Wörter)
+      if (word.length > 30) continue;
 
       // v2.3.0 PHASE 1: ALL-CAPS Filter (außer 2-Buchstaben wie "AL")
       if (word === word.toUpperCase() && word.length > 2) {
@@ -263,8 +289,14 @@ export class EnhancedNERDetector {
       if (before && /[a-zäöüA-ZÄÖÜ]/.test(before)) continue;
       if (after && /[a-zäöüA-ZÄÖÜ]/.test(after)) continue;
 
-      // v2.3.0 PHASE 1: Blacklist häufiger False Positives
-      const commonFalsePositives = ['CH', 'EUR', 'USD', 'CHF', 'Name', 'Tel', 'Email', 'Team', 'Text', 'Test', 'Code'];
+      // v2.3.3: ERWEITERTE Blacklist häufiger False Positives
+      const commonFalsePositives = [
+        'CH', 'EUR', 'USD', 'CHF', 'Name', 'Tel', 'Email', 'Team', 'Text', 'Test', 'Code',
+        'Die', 'Der', 'Das', 'Ein', 'Eine', 'Den', 'Dem', 'Des',
+        'Und', 'Oder', 'Aber', 'Mit', 'Von', 'Für', 'Bei', 'Nach', 'Vor', 'Über',
+        'Jahr', 'Jahre', 'Monat', 'Monate', 'Tag', 'Tage', 'Zeit',
+        'Info', 'Data', 'Liste', 'Artikel'
+      ];
       if (commonFalsePositives.includes(word)) continue;
 
       // Prüfe ob es ein Vorname ist
