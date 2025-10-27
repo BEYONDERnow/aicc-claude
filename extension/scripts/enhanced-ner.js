@@ -299,6 +299,44 @@ export class EnhancedNERDetector {
       ];
       if (commonFalsePositives.includes(word)) continue;
 
+      // v2.3.4: FACHBEGRIFF-PATTERN (verhindert Tech/Business False Positives)
+      // 1. Bindestrich-Komposita (außer echte Namen wie "Jean-Pierre")
+      if (word.includes('-')) {
+        const parts = word.split('-');
+        // Echte Namen: alle Teile kapitalisiert und >= 3 Zeichen
+        const isRealName = parts.every(part =>
+          part.length >= 3 &&
+          part[0] === part[0].toUpperCase() &&
+          part.slice(1) === part.slice(1).toLowerCase()
+        );
+        if (!isRealName) {
+          continue; // Skip "Prompt-Library", "Remote-Teilnahme", etc.
+        }
+      }
+
+      // 2. Tech/Business Abkürzungen (ALL-CAPS 2 Zeichen - ergänzt v2.3.3 Filter)
+      if (word.length === 2 && word === word.toUpperCase()) {
+        continue; // Skip "KI", "AI", "IT", "HR", "PR"
+      }
+
+      // 3. Häufige Fachbegriff-Endungen
+      const techSuffixes = /(?:aufgaben?|profil|profilen|task|tasks|prompt|prompting|remote|online|video|tool|setup|copilot|referenz|channel|library|bibliothek|auswahl|dokumentation|testimonial|erfassung|grundlagen|teilnahme|meeting|dateien|case)$/i;
+      if (techSuffixes.test(word)) {
+        continue; // Skip "Aufgabenprofilen", "Tasks", etc.
+      }
+
+      // 4. Häufige Fachbegriff-Anfänge (nur wenn Suffix auch tech ist)
+      const techPrefixes = /^(?:Prompt|Remote|Online|Video|Tool|Task|Copilot|Referenz|Teams|Test|Setup)/i;
+      if (techPrefixes.test(word)) {
+        continue; // Skip "Prompting", "Remote", etc.
+      }
+
+      // 5. Jahreszeiten (können auch Nachnamen sein, aber Context ist wichtiger)
+      const seasons = ['Sommer', 'Winter', 'Frühling', 'Herbst', 'Frühjahr', 'Fruehjahr'];
+      if (seasons.includes(word)) {
+        continue; // Skip Jahreszeiten
+      }
+
       // Prüfe ob es ein Vorname ist
       if (isFirstName(word, lang)) {
         // PERFORMANCE: Simplified - kein lookahead mehr

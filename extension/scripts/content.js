@@ -490,11 +490,85 @@ class ComplianceMonitor {
    */
   getElementText(element) {
     if (element.contentEditable === 'true') {
-      // Verwende textContent für konsistente Offset-Berechnung
-      // (innerText normalisiert Zeilenumbrüche anders als DOM-Struktur)
-      return element.textContent || '';
+      // v2.3.4 FIX: Verwende innerText statt textContent
+      // textContent fügt Wörter zusammen ohne Leerzeichen zwischen Block-Elementen!
+      // Beispiel: <div>Arbeits</div><div>tasks</div> → "Arbeitstasks" (FALSCH!)
+      // innerText fügt automatisch Leerzeichen/Zeilenumbrüche ein → "Arbeits tasks" (RICHTIG!)
+
+      // ABER: Für Offset-Konsistenz mit Highlights müssen wir textContent mit
+      // manuell eingefügten Leerzeichen verwenden (siehe normalizeTextWithSpaces)
+      return this.normalizeTextWithSpaces(element);
     }
     return element.value || '';
+  }
+
+  /**
+   * v2.3.4: Normalisiert Text mit Leerzeichen zwischen Block-Elementen
+   * Verhindert Wort-Zusammenführung wie bei innerText, aber behält Offset-Konsistenz
+   */
+  normalizeTextWithSpaces(element) {
+    const walker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+
+    let result = '';
+    let previousNode = null;
+    let node;
+
+    while (node = walker.nextNode()) {
+      const text = node.textContent;
+
+      // Wenn vorheriger Node existiert, prüfe ob Leerzeichen nötig ist
+      if (previousNode) {
+        // Prüfe ob zwischen previousNode und node ein Block-Element ist
+        const needsSpace = this.needsSpaceBetweenNodes(previousNode, node);
+        if (needsSpace) {
+          result += ' '; // Füge Leerzeichen ein
+        }
+      }
+
+      result += text;
+      previousNode = node;
+    }
+
+    return result;
+  }
+
+  /**
+   * v2.3.4: Prüft ob zwischen zwei TextNodes ein Leerzeichen nötig ist
+   */
+  needsSpaceBetweenNodes(node1, node2) {
+    // Wenn letztes Zeichen von node1 oder erstes Zeichen von node2 bereits Whitespace ist
+    const text1 = node1.textContent;
+    const text2 = node2.textContent;
+
+    if (!text1 || !text2) return false;
+    if (/\s$/.test(text1) || /^\s/.test(text2)) return false;
+
+    // Finde gemeinsamen Parent
+    let parent1 = node1.parentElement;
+    let parent2 = node2.parentElement;
+
+    // Wenn unterschiedliche Block-Parents → Leerzeichen nötig
+    const blockElements = ['DIV', 'P', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE'];
+
+    if (parent1 !== parent2) {
+      // Prüfe ob eines der Parents ein Block-Element ist
+      while (parent1 && !blockElements.includes(parent1.tagName)) {
+        parent1 = parent1.parentElement;
+      }
+      while (parent2 && !blockElements.includes(parent2.tagName)) {
+        parent2 = parent2.parentElement;
+      }
+
+      if (parent1 !== parent2) {
+        return true; // Unterschiedliche Block-Parents → Leerzeichen
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -622,8 +696,8 @@ class ComplianceMonitor {
    * Erstellt Overlay-Highlights basierend auf Range API
    */
   createHighlightOverlays(element, analysis, container) {
-    // Verwende textContent (konsistent mit getElementText)
-    const text = element.textContent || '';
+    // v2.3.4: Verwende normalizeTextWithSpaces (konsistent mit getElementText)
+    const text = this.normalizeTextWithSpaces(element);
 
     // TreeWalker zum Durchlaufen aller TextNodes
     const walker = document.createTreeWalker(
@@ -634,11 +708,21 @@ class ComplianceMonitor {
 
     let currentOffset = 0;
     const textNodes = [];
+    let previousNode = null;
 
-    // Sammle alle TextNodes mit ihren Offsets
+    // v2.3.4: Sammle alle TextNodes mit ihren Offsets (inkl. eingefügte Leerzeichen)
     let node;
     while (node = walker.nextNode()) {
       const nodeText = node.textContent;
+
+      // Prüfe ob Leerzeichen vor diesem Node eingefügt wurde
+      if (previousNode) {
+        const needsSpace = this.needsSpaceBetweenNodes(previousNode, node);
+        if (needsSpace) {
+          currentOffset += 1; // Berücksichtige eingefügtes Leerzeichen
+        }
+      }
+
       textNodes.push({
         node: node,
         start: currentOffset,
@@ -646,6 +730,7 @@ class ComplianceMonitor {
         text: nodeText
       });
       currentOffset += nodeText.length;
+      previousNode = node;
     }
 
     // Erstelle Overlays für jede Highlight-Range
