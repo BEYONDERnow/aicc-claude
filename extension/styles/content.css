@@ -584,6 +584,109 @@ body.aicc-modal-open .aicc-overlay-container {
   background: var(--beyonder-white-smoke);
 }
 
+/* ===========================
+   File Warning Section
+   =========================== */
+
+.aicc-file-warning-section {
+  margin-bottom: 28px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(252, 192, 1, 0.08) 0%, rgba(252, 192, 1, 0.12) 100%);
+  border: 2px solid var(--status-warning);
+  border-radius: 14px;
+}
+
+.aicc-file-warning-section h3 {
+  margin: 0 0 12px 0;
+  font-family: var(--font-heading);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--beyonder-midnight);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aicc-file-warning-text {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #996C00;
+  line-height: 1.6;
+}
+
+.aicc-file-list {
+  list-style: none;
+  margin: 0 0 16px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aicc-file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--beyonder-white);
+  border: 1px solid var(--beyonder-grey-light);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.aicc-file-item:hover {
+  background: var(--beyonder-white-smoke);
+  border-color: var(--status-warning);
+  box-shadow: 0 2px 8px rgba(252, 192, 1, 0.15);
+}
+
+.aicc-file-icon {
+  font-size: 28px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.aicc-file-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.aicc-file-name {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--beyonder-midnight);
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+.aicc-file-size {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--beyonder-grey-dark);
+}
+
+.aicc-file-warning-note {
+  padding: 14px 16px;
+  background: rgba(252, 192, 1, 0.15);
+  border-left: 4px solid var(--status-warning);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #805900;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.aicc-file-warning-note strong {
+  font-weight: 700;
+  color: #663D00;
+}
+
 .aicc-modal-branding {
   text-align: center;
   font-family: var(--font-heading);
