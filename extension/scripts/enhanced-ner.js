@@ -255,7 +255,7 @@ export class EnhancedNERDetector {
     const wordPattern = /[A-ZÄÖÜÀÂÆÇÉÈÊËÏÎÔŒÙÛÜÁÉÍÓÚÝ][a-zäöüàâæçéèêëïîôœùûüßáéíóúý-]+/g;
     let match;
     let matchCount = 0;
-    const MAX_MATCHES = 2000; // v2.3.3: Erhöht von 500 → 2000 für längere Texte
+    const MAX_MATCHES = 5000; // v2.3.4: Erhöht 2000 → 5000 für sehr lange Texte (~10k Zeichen)
 
     while ((match = wordPattern.exec(text)) !== null) {
       // PERFORMANCE: Limit iterations
@@ -389,7 +389,7 @@ export class EnhancedNERDetector {
 
     let match;
     let matchCount = 0;
-    const MAX_MATCHES = 100; // Limit für Performance
+    const MAX_MATCHES = 500; // v2.3.4: Erhöht 100 → 500 für längere Texte
 
     while ((match = pattern.exec(text)) !== null) {
       // PERFORMANCE: Limit Matches
