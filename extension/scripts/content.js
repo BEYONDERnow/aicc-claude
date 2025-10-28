@@ -79,6 +79,19 @@ class ComplianceMonitor {
           'button[aria-label*="Send"]',
           'button[aria-label*="Senden"]',
           'button[aria-label*="Save"]'
+        ],
+        // v2.3.5: File-Upload Detection
+        fileInputSelectors: [
+          'input[type="file"]',
+          'button[aria-label*="Attach"]',
+          'button[aria-label*="Upload"]'
+        ],
+        attachedFilesSelectors: [
+          '[data-testid="attachment"]',
+          '.attachment',
+          '.file-attachment',
+          '[class*="attachment"]',
+          '[class*="file-preview"]'
         ]
       };
     } else if (hostname.includes('gemini.google.com')) {
@@ -93,6 +106,18 @@ class ComplianceMonitor {
         submitSelectors: [
           'button[aria-label*="Send"]',
           'button[mattooltip*="Send"]'
+        ],
+        // v2.3.5: File-Upload Detection
+        fileInputSelectors: [
+          'input[type="file"]',
+          'button[aria-label*="Attach"]',
+          'button[aria-label*="Upload"]'
+        ],
+        attachedFilesSelectors: [
+          '.attachment',
+          '[class*="upload"]',
+          '[class*="file"]',
+          'img[src*="upload"]'
         ]
       };
     } else if (hostname.includes('claude.ai')) {
@@ -107,6 +132,20 @@ class ComplianceMonitor {
         submitSelectors: [
           'button[aria-label*="Send"]',
           'button[type="submit"]'
+        ],
+        // v2.3.5: File-Upload Detection
+        fileInputSelectors: [
+          'input[type="file"]',
+          'button[aria-label*="Attach"]',
+          'button[aria-label*="file"]'
+        ],
+        attachedFilesSelectors: [
+          '[data-value*=".pdf"]',
+          '[data-value*=".doc"]',
+          '[data-value*=".txt"]',
+          '.file-pill',
+          '[class*="attachment"]',
+          '[class*="file-card"]'
         ]
       };
     }
@@ -114,7 +153,14 @@ class ComplianceMonitor {
     return {
       name: 'Unknown',
       inputSelectors: ['textarea', 'div[contenteditable="true"]'],
-      submitSelectors: ['button[type="submit"]']
+      submitSelectors: ['button[type="submit"]'],
+      // v2.3.5: Generic file detection
+      fileInputSelectors: ['input[type="file"]'],
+      attachedFilesSelectors: [
+        '[class*="attach"]',
+        '[class*="file"]',
+        '[class*="upload"]'
+      ]
     };
   }
 
@@ -459,6 +505,7 @@ class ComplianceMonitor {
   /**
    * Analysiert den Inhalt eines Elements
    * VERSION 2.0.0: Async für KI-gestützte Analyse
+   * VERSION 2.3.5: + File Attachment Detection
    */
   async analyzeElement(element) {
     const text = this.getElementText(element);
@@ -471,6 +518,36 @@ class ComplianceMonitor {
       critical: analysis.detections.filter(d => d.severity === 'critical').length,
       warning: analysis.detections.filter(d => d.severity === 'warning').length
     });
+
+    // v2.3.5: Prüfe auf angehängte Dateien
+    const attachedFiles = this.detectAttachedFiles(element);
+    analysis.attachedFiles = attachedFiles;
+
+    // Füge File-Warning zu Detections hinzu wenn Dateien vorhanden
+    if (attachedFiles.length > 0) {
+      const fileDetection = {
+        id: 'file_attachment',
+        severity: 'warning',
+        category: 'files',
+        name: this.currentLang === 'de' ? 'Dateianhang' : 'File Attachment',
+        description: this.currentLang === 'de'
+          ? `${attachedFiles.length} Datei(en) angehängt - Inhalte können sensible Daten enthalten!`
+          : `${attachedFiles.length} file(s) attached - may contain sensitive data!`,
+        match: attachedFiles.map(f => f.name).join(', '),
+        start: 0,
+        end: 0,
+        files: attachedFiles
+      };
+
+      analysis.detections.push(fileDetection);
+
+      // Update Status auf warning wenn safe
+      if (analysis.status === 'safe') {
+        analysis.status = 'warning';
+      }
+
+      console.log('[AICC File Detection] Added file warning:', fileDetection);
+    }
 
     // Speichere Analyse
     this.currentAnalysis.set(element, analysis);
@@ -569,6 +646,108 @@ class ComplianceMonitor {
     }
 
     return false;
+  }
+
+  /**
+   * v2.3.5: Erkennt angehängte Dateien
+   * Prüft ob Dateien an die Nachricht angehängt sind
+   */
+  detectAttachedFiles(element) {
+    const files = [];
+
+    // Methode 1: Suche nach File-Input mit .files Property
+    const fileInputs = document.querySelectorAll(
+      this.platforms.fileInputSelectors?.join(',') || 'input[type="file"]'
+    );
+
+    fileInputs.forEach(input => {
+      if (input.files && input.files.length > 0) {
+        Array.from(input.files).forEach(file => {
+          files.push({
+            name: file.name,
+            size: file.size,
+            type: file.type || this.getFileTypeFromName(file.name),
+            lastModified: file.lastModified,
+            source: 'file-input'
+          });
+        });
+      }
+    });
+
+    // Methode 2: Suche nach visuell dargestellten Attachments
+    if (this.platforms.attachedFilesSelectors) {
+      const attachedContainers = document.querySelectorAll(
+        this.platforms.attachedFilesSelectors.join(',')
+      );
+
+      attachedContainers.forEach(container => {
+        // Skip wenn bereits via File-Input erfasst
+        const fileName = container.textContent?.trim() ||
+                        container.getAttribute('data-filename') ||
+                        container.getAttribute('data-value') ||
+                        container.getAttribute('aria-label');
+
+        if (fileName && fileName.length > 0 && fileName.length < 200) {
+          // Prüfe ob es ein Dateiname ist (hat Extension)
+          if (/\.[a-zA-Z0-9]{2,4}$/.test(fileName)) {
+            // Vermeide Duplikate
+            if (!files.some(f => f.name === fileName)) {
+              files.push({
+                name: fileName,
+                size: container.getAttribute('data-size') || 'Unbekannt',
+                type: this.getFileTypeFromName(fileName),
+                source: 'visual',
+                element: container
+              });
+            }
+          }
+        }
+      });
+    }
+
+    console.log('[AICC File Detection]', files.length, 'file(s) detected:', files);
+    return files;
+  }
+
+  /**
+   * v2.3.5: Bestimmt Dateityp aus Dateiname
+   */
+  getFileTypeFromName(fileName) {
+    if (!fileName) return 'unknown';
+    const ext = fileName.split('.').pop()?.toLowerCase();
+
+    const typeMap = {
+      'pdf': 'application/pdf',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'txt': 'text/plain',
+      'csv': 'text/csv',
+      'json': 'application/json',
+      'png': 'image/png',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'gif': 'image/gif',
+      'zip': 'application/zip'
+    };
+
+    return typeMap[ext] || 'unknown';
+  }
+
+  /**
+   * v2.3.5: Formatiert Dateigröße für Anzeige
+   */
+  formatFileSize(bytes) {
+    if (bytes === 'Unbekannt' || bytes === 'unknown') return 'Unbekannt';
+    if (typeof bytes === 'string') return bytes;
+
+    const num = Number(bytes);
+    if (isNaN(num)) return 'Unbekannt';
+
+    if (num < 1024) return num + ' B';
+    if (num < 1024 * 1024) return (num / 1024).toFixed(1) + ' KB';
+    return (num / 1024 / 1024).toFixed(1) + ' MB';
   }
 
   /**
@@ -1138,6 +1317,7 @@ Beginne mit der Validierung!`;
                 ? 'Ihre Nachricht könnte sensible Daten enthalten. Bitte überprüfen Sie die folgenden Erkennungen.'
                 : 'Your message may contain sensitive data. Please review the following detections.')}
           </div>
+          ${analysis.attachedFiles && analysis.attachedFiles.length > 0 ? this.generateFileWarningSection(analysis.attachedFiles) : ''}
           ${this.generateOverlayTable(analysis)}
 
           <div class="aicc-validation-report-section">
@@ -1328,6 +1508,55 @@ Beginne mit der Validierung!`;
   detectLanguage() {
     const lang = navigator.language || navigator.userLanguage;
     return lang.startsWith('de') ? 'de' : 'en';
+  }
+
+  /**
+   * v2.3.5: Generiert File-Warning-Sektion für Modal
+   */
+  generateFileWarningSection(attachedFiles) {
+    return `
+      <div class="aicc-file-warning-section">
+        <h3>
+          📎 ${this.currentLang === 'de' ? 'Dateianhänge erkannt' : 'File Attachments Detected'}
+        </h3>
+        <p class="aicc-file-warning-text">
+          ${this.currentLang === 'de'
+            ? 'Folgende Dateien sind angehängt. Diese können sensible Daten enthalten:'
+            : 'The following files are attached. They may contain sensitive data:'}
+        </p>
+        <ul class="aicc-file-list">
+          ${attachedFiles.map(file => `
+            <li class="aicc-file-item">
+              <span class="aicc-file-icon">${this.getFileIcon(file.type)}</span>
+              <div class="aicc-file-details">
+                <strong class="aicc-file-name">${this.escapeHtml(file.name)}</strong>
+                <span class="aicc-file-size">${this.formatFileSize(file.size)}</span>
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+        <div class="aicc-file-warning-note">
+          ⚠️ <strong>${this.currentLang === 'de' ? 'Wichtig:' : 'Important:'}</strong>
+          ${this.currentLang === 'de'
+            ? 'Bitte prüfen Sie die Dateiinhalte manuell auf personenbezogene oder sensible Daten (Namen, E-Mails, IBAN, etc.) bevor Sie diese teilen!'
+            : 'Please manually check file contents for personal or sensitive data (names, emails, IBAN, etc.) before sharing!'}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * v2.3.5: Gibt passendes Icon für Dateityp zurück
+   */
+  getFileIcon(type) {
+    if (type.includes('pdf')) return '📄';
+    if (type.includes('word') || type.includes('doc')) return '📝';
+    if (type.includes('excel') || type.includes('sheet')) return '📊';
+    if (type.includes('image') || type.includes('png') || type.includes('jpg')) return '🖼️';
+    if (type.includes('text')) return '📃';
+    if (type.includes('zip') || type.includes('rar')) return '📦';
+    if (type.includes('json')) return '📋';
+    return '📎';
   }
 
   /**
