@@ -243,6 +243,9 @@ class ComplianceMonitor {
     // Überwache Submit-Button für dieses Element
     this.attachSubmitButtonHandler(element);
 
+    // v2.3.5: Überwache File-Inputs für Datei-Attachments
+    this.attachFileInputHandler(element);
+
     // Event Handler für Overlay-Repositioning (mit Throttling für bessere Performance!)
     let overlayUpdateTimer = null;
     let lastOverlayUpdate = 0;
@@ -293,7 +296,33 @@ class ComplianceMonitor {
 
       // Füge Click-Handler hinzu (capture phase!)
       submitButton.addEventListener('click', (e) => {
-        const analysis = this.currentAnalysis.get(element);
+        // v2.3.5: Prüfe SOFORT auf Dateien (synchron!)
+        const attachedFiles = this.detectAttachedFiles(element);
+
+        let analysis = this.currentAnalysis.get(element);
+
+        // Wenn Dateien gefunden wurden, aber Analysis noch nicht aktualisiert
+        if (attachedFiles.length > 0) {
+          console.log('[AICC Submit] Files detected:', attachedFiles.length);
+
+          // Blockiere Submit und führe volle Analyse durch
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+
+          // Führe Analyse mit File-Detection durch
+          this.analyzeElement(element).then(() => {
+            const newAnalysis = this.currentAnalysis.get(element);
+            if (newAnalysis && (newAnalysis.status === 'critical' || newAnalysis.status === 'warning')) {
+              this.showWarningModal(newAnalysis, element, submitButton);
+            } else {
+              // Sende nach Analyse
+              this.simulateSubmit(element);
+            }
+          });
+
+          return false;
+        }
 
         // Wenn Warnungen oder kritische Daten erkannt wurden
         if (analysis && (analysis.status === 'critical' || analysis.status === 'warning')) {
@@ -316,6 +345,45 @@ class ComplianceMonitor {
     if (!submitButton) {
       setTimeout(() => this.attachSubmitButtonHandler(element), 500);
     }
+  }
+
+  /**
+   * Überwacht File-Inputs für Datei-Attachments
+   * VERSION 2.3.5: File Attachment Detection
+   */
+  attachFileInputHandler(element) {
+    // Finde alle File-Input-Elemente im Dokument
+    const fileInputSelectors = this.platforms.fileInputSelectors || ['input[type="file"]'];
+
+    const attachFileListener = () => {
+      fileInputSelectors.forEach(selector => {
+        const fileInputs = document.querySelectorAll(selector);
+
+        fileInputs.forEach(input => {
+          if (!input.hasAttribute('data-aicc-file-monitored')) {
+            input.setAttribute('data-aicc-file-monitored', 'true');
+
+            // Change-Event wenn Datei ausgewählt wird
+            input.addEventListener('change', (e) => {
+              console.log('[AICC File Input] File attached, triggering analysis...');
+
+              // Führe sofort Analyse durch
+              setTimeout(() => {
+                this.analyzeElement(element);
+              }, 100);
+            });
+
+            console.log('[AICC] Monitoring file input:', input);
+          }
+        });
+      });
+    };
+
+    // Initial attachment
+    attachFileListener();
+
+    // Wiederhole alle 2 Sekunden (falls File-Input dynamisch hinzugefügt wird)
+    setInterval(attachFileListener, 2000);
   }
 
   /**
@@ -435,24 +503,21 @@ class ComplianceMonitor {
     if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
       console.log('[AICC KeyDown] Enter pressed, checking analysis...');
 
-      const analysis = this.currentAnalysis.get(element);
+      // v2.3.5: Prüfe SOFORT auf Dateien (synchron!)
+      const attachedFiles = this.detectAttachedFiles(element);
+
+      let analysis = this.currentAnalysis.get(element);
       console.log('[AICC KeyDown] Analysis:', analysis ? `Status: ${analysis.status}, Detections: ${analysis.detections?.length || 0}` : 'NONE');
+      console.log('[AICC KeyDown] Files:', attachedFiles.length);
 
-      if (analysis && (analysis.status === 'critical' || analysis.status === 'warning')) {
-        console.log('[AICC KeyDown] BLOCKING - Showing modal');
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-        this.showWarningModal(analysis, element);
-        return false;
-      } else if (!analysis) {
-        // Fallback: Wenn keine Analyse vorhanden, führe schnelle Analyse durch
-        console.log('[AICC KeyDown] No analysis found, running quick analysis...');
+      // Wenn Dateien gefunden ODER keine Analysis vorhanden ODER Warnungen
+      if (attachedFiles.length > 0 || !analysis || (analysis && (analysis.status === 'critical' || analysis.status === 'warning'))) {
+        console.log('[AICC KeyDown] BLOCKING - Running analysis...');
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
 
-        // Analysiere und zeige dann Modal falls nötig
+        // Analysiere (inkl. File-Detection) und zeige dann Modal falls nötig
         this.analyzeElement(element).then(() => {
           const newAnalysis = this.currentAnalysis.get(element);
           if (newAnalysis && (newAnalysis.status === 'critical' || newAnalysis.status === 'warning')) {
