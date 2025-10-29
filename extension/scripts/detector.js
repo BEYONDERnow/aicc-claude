@@ -856,6 +856,13 @@ class ComplianceDetector {
         if (entities.persons && entities.persons.length > 0) {
           console.log('[AI Compliance] NER Namen erkannt:', entities.persons.map(p => p.text));
 
+          console.log('[NER Debug] Detected persons:', entities.persons.map(p => ({
+            text: p.text,
+            start: p.start,
+            end: p.end,
+            extracted: text.substring(p.start, p.end)
+          })));
+
           entities.persons.forEach(person => {
             detections.push({
               id: 'name_ner',
