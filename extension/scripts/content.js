@@ -571,10 +571,12 @@ class ComplianceMonitor {
    * Analysiert den Inhalt eines Elements
    * VERSION 2.0.0: Async für KI-gestützte Analyse
    * VERSION 2.3.5: + File Attachment Detection
+   * VERSION 2.3.8: + Debug Logs für Text-Extraction
    */
   async analyzeElement(element) {
     const text = this.getElementText(element);
     console.log('[AICC Analyze] Text length:', text.length, 'chars');
+    console.log('[AICC Analyze] Text preview:', text.substring(0, 200));
 
     const analysis = await this.detector.analyze(text, this.currentLang);
     console.log('[AICC Analyze] Result:', {
@@ -632,14 +634,13 @@ class ComplianceMonitor {
    */
   getElementText(element) {
     if (element.contentEditable === 'true') {
-      // v2.3.4 FIX: Verwende innerText statt textContent
-      // textContent fügt Wörter zusammen ohne Leerzeichen zwischen Block-Elementen!
-      // Beispiel: <div>Arbeits</div><div>tasks</div> → "Arbeitstasks" (FALSCH!)
-      // innerText fügt automatisch Leerzeichen/Zeilenumbrüche ein → "Arbeits tasks" (RICHTIG!)
+      // v2.3.8 CRITICAL FIX: Verwende innerText statt normalizeTextWithSpaces!
+      // Problem: normalizeTextWithSpaces() mit TreeWalker liest ALLE TextNodes inkl. alte Chat-Messages
+      // → 7002 chars statt 68 chars!
+      // → Wörter werden abgeschnitten: "Hans-Peter" → "s-Peter"
 
-      // ABER: Für Offset-Konsistenz mit Highlights müssen wir textContent mit
-      // manuell eingefügten Leerzeichen verwenden (siehe normalizeTextWithSpaces)
-      return this.normalizeTextWithSpaces(element);
+      // innerText extrahiert nur sichtbaren Text des Elements (ohne Children die nicht dazu gehören)
+      return element.innerText || element.textContent || '';
     }
     return element.value || '';
   }
