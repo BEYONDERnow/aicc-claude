@@ -577,6 +577,7 @@ class ComplianceMonitor {
     const text = this.getElementText(element);
     console.log('[AICC Analyze] Text length:', text.length, 'chars');
     console.log('[AICC Analyze] Text preview:', text.substring(0, 200));
+    console.log('[AICC Analyze] First 20 chars:', JSON.stringify(text.substring(0, 20)));
 
     const analysis = await this.detector.analyze(text, this.currentLang);
     console.log('[AICC Analyze] Result:', {
