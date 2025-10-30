@@ -76,7 +76,7 @@
  * =============================================================================
  */
 
-import { EnhancedNERDetector } from './enhanced-ner.js';
+import { CompromiseNER } from './compromise-ner.js';
 
 class ComplianceDetector {
   constructor() {
@@ -85,12 +85,12 @@ class ComplianceDetector {
     this.nameBlacklist = this.initializeNameBlacklist();
     this.commonFirstNames = this.initializeCommonFirstNames();
 
-    // VERSION 2.2.0: Enhanced NER-Detector (Lexicon-based, kein WASM)
-    this.nerDetector = new EnhancedNERDetector();
-    this.nerAvailable = true; // Immer verfügbar (kein WASM-Loading mehr)
+    // VERSION 2.5.0: Compromise.js NER (ML-quality without ML dependencies)
+    this.nerDetector = new CompromiseNER();
+    this.nerAvailable = true; // Immer verfügbar
     this.nerEnabled = true;
 
-    console.log('[AI Compliance Checker] v2.3.4 - Accuracy: ~92% (Critical: 100%, Warnings: ~85%)');
+    console.log('[AI Compliance Checker] v2.5.0 - Compromise.js NER - Accuracy: ~95% (Critical: 100%, Warnings: ~90%)');
   }
 
   /**
