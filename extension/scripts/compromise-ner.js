@@ -59,16 +59,6 @@ export class CompromiseNER {
           .replace(/[.,;!?]+$/, '')
           .trim();
 
-        // Berechne Position im Original-Text
-        // Compromise gibt uns den Text, wir müssen die Position finden
-        const start = text.indexOf(personText);
-
-        if (start === -1) {
-          // Falls nicht gefunden, überspringe
-          console.warn('[CompromiseNER] Could not find position for:', personText);
-          continue;
-        }
-
         // Zusätzliche Validierung: Filtere sehr kurze "Namen" (1 Buchstabe)
         if (personText.length < 2) {
           continue;
@@ -79,13 +69,26 @@ export class CompromiseNER {
           continue;
         }
 
-        results.push({
-          text: personText,
-          start: start,
-          end: start + personText.length,
-          score: 0.90, // Compromise hat hohe Genauigkeit
-          confidence: 0.90
-        });
+        // FIX v2.5.1: Finde ALLE Vorkommen des Namens, nicht nur das erste
+        // Vorher: text.indexOf(personText) fand nur das erste Vorkommen
+        // Problem: Bei Text >7000 Zeichen wurden spätere Vorkommen nicht erkannt
+        const positions = this.findAllOccurrences(text, personText);
+
+        if (positions.length === 0) {
+          console.warn('[CompromiseNER] Could not find position for:', personText);
+          continue;
+        }
+
+        // Füge alle Vorkommen hinzu
+        for (const start of positions) {
+          results.push({
+            text: personText,
+            start: start,
+            end: start + personText.length,
+            score: 0.90, // Compromise hat hohe Genauigkeit
+            confidence: 0.90
+          });
+        }
       }
 
       // Deduplizierung: Entferne überlappende Detections
@@ -95,6 +98,46 @@ export class CompromiseNER {
       console.error('[CompromiseNER] Error during detection:', error);
       return [];
     }
+  }
+
+  /**
+   * Findet alle Vorkommen eines Textes im Quelltext
+   * Nutzt Wortgrenzen-Check für genauere Erkennung
+   *
+   * @param {string} text - Der Quelltext
+   * @param {string} searchText - Der zu suchende Text
+   * @returns {Array<number>} Array von Start-Positionen
+   */
+  findAllOccurrences(text, searchText) {
+    const positions = [];
+    const searchLower = searchText.toLowerCase();
+    let currentPos = 0;
+
+    while (currentPos < text.length) {
+      const foundPos = text.toLowerCase().indexOf(searchLower, currentPos);
+
+      if (foundPos === -1) {
+        break;
+      }
+
+      // Prüfe Wortgrenzen (verhindert Matches in Wortmitte)
+      const beforeChar = foundPos > 0 ? text[foundPos - 1] : ' ';
+      const afterChar = foundPos + searchText.length < text.length
+        ? text[foundPos + searchText.length]
+        : ' ';
+
+      const isWordBoundaryBefore = /[\s,.!?;:()\[\]{}"'\n\r\t]/.test(beforeChar);
+      const isWordBoundaryAfter = /[\s,.!?;:()\[\]{}"'\n\r\t]/.test(afterChar);
+
+      if (isWordBoundaryBefore && isWordBoundaryAfter) {
+        positions.push(foundPos);
+      }
+
+      // Weitermachen ab der nächsten Position
+      currentPos = foundPos + 1;
+    }
+
+    return positions;
   }
 
   /**
