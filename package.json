@@ -1,6 +1,6 @@
 {
   "name": "ai-compliance-checker",
-  "version": "2.3.8",
+  "version": "2.3.9",
   "description": "Enhanced compliance checker for ChatGPT, Claude, Gemini with 6600+ names lexicon (no WASM, performance optimized)",
   "type": "module",
   "scripts": {

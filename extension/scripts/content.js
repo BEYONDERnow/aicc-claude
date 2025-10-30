@@ -571,7 +571,7 @@ class ComplianceMonitor {
    * Analysiert den Inhalt eines Elements
    * VERSION 2.0.0: Async für KI-gestützte Analyse
    * VERSION 2.3.5: + File Attachment Detection
-   * VERSION 2.3.8: + Debug Logs für Text-Extraction
+   * VERSION 2.3.9: + Debug Logs für Text-Extraction
    */
   async analyzeElement(element) {
     const text = this.getElementText(element);
@@ -635,7 +635,7 @@ class ComplianceMonitor {
    */
   getElementText(element) {
     if (element.contentEditable === 'true') {
-      // v2.3.8 CRITICAL FIX: Verwende innerText statt normalizeTextWithSpaces!
+      // v2.3.9 CRITICAL FIX: Verwende innerText statt normalizeTextWithSpaces!
       // Problem: normalizeTextWithSpaces() mit TreeWalker liest ALLE TextNodes inkl. alte Chat-Messages
       // → 7002 chars statt 68 chars!
       // → Wörter werden abgeschnitten: "Hans-Peter" → "s-Peter"
