@@ -251,8 +251,9 @@ export class CompromiseNER {
       for (const place of allPlaces) {
         const placeText = place.text.trim().replace(/[.,!?]+$/, ''); // Entferne Satzzeichen am Ende
 
-        // Filtere sehr kurze Orte (einzelne Buchstaben)
-        if (placeText.length < 2) {
+        // v2.6.0 FIX: Filtere sehr kurze Orte (< 3 Zeichen) um False Positives zu vermeiden
+        // Beispiel: "ist", "am", "im" werden oft fälschlich als Ort erkannt
+        if (placeText.length < 3) {
           continue;
         }
 

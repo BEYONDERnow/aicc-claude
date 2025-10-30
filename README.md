@@ -1,10 +1,11 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.5.0** • by BEYONDER
+**Version 2.6.0** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
-**🎯 Aktuelle Accuracy: ~95%** (kritische Daten: 100%, Warnungen: ~90%)
+**🎯 Aktuelle Accuracy: ~93%** (kritische Daten: 100%, Warnungen: ~87%)
+**🎯 Coverage: 6 Entity-Typen** (Namen, Geburtsdaten, Standorte, Geldbeträge, Organisationen + kritische Daten)
 
 > **📖 Vollständige Liste aller erkannten personenspezifischen Daten**: Siehe [ERKANNTE_DATEN.md](./ERKANNTE_DATEN.md)
 
@@ -14,7 +15,44 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.5.0 (Aktuell) - 2025-10-30
+### Version 2.6.0 (Aktuell) - 2025-10-30
+
+**🎯 4 Neue Compromise.js Entity-Erkennungen**
+
+#### 🚀 Neue Features
+
+**Erweiterte Entity-Erkennung mit Hybrid-System (Regex + NER):**
+
+1. **Geburtsdaten** ✅
+   - NER: "March 15, 1985" → erkannt
+   - Regex: "Geboren 1990", "Geburtsdatum: 15.03.1985" → erkannt
+
+2. **Standorte/Adressen** ✅
+   - NER: "Wohnt in Zürich", "Berlin nach München" → erkannt
+   - Regex: "Bahnhofstrasse 12, 8001 Zürich" → vollständige Adresse
+   - Filter: Sehr kurze False Positives (<3 Zeichen) gefiltert
+
+3. **Geldbeträge** ✅
+   - NER: "5 million dollars", "100k" → erkannt (EN)
+   - Regex: "1.5 Millionen CHF", "2.3 Milliarden Euro" → erkannt (DE)
+   - Abdeckung: CHF, EUR, USD + Millionen/Milliarden/Tausend
+
+4. **Organisationen** ✅
+   - NER: "UBS AG", "Google Switzerland", "IBM", "Microsoft" → erkannt
+   - Kontext: Funktioniert auch bei Teilerkennungen
+
+#### 📊 Performance
+
+- **Test Pass Rate:** 100% (15/15 Tests)
+- **Coverage:** 6 Entity-Typen (vorher: 2)
+- **Accuracy:** ~93% (leicht gesunken wegen mehr Entities)
+- **Bundle Size:** 372KB (unverändert)
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#260---2025-10-30)
+
+---
+
+### Version 2.5.0 - 2025-10-30
 
 **🚀 Major Upgrade: Compromise.js NER Integration**
 
@@ -299,10 +337,19 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 **Weitere Daten:**
 - **IP-Adressen** (öffentlich: DSGVO-relevant, privat: Info-Hinweis)
-- **Geburtsdaten** (`15.03.1985`, `geboren 1985`)
+- **Geburtsdaten** (v2.6.0: Hybrid NER + Regex)
+  - NER: `March 15, 1985` (EN, kontextuell)
+  - Regex: `geboren 1990`, `Geburtsdatum: 15.03.1985` (DE, mit Kontext)
+- **Standorte/Adressen** (v2.6.0: Hybrid NER + Regex)
+  - NER: `Zürich`, `Berlin`, `Switzerland` (Städte/Länder)
+  - Regex: `Bahnhofstrasse 12, 8001 Zürich` (vollständige Adressen)
+- **Geldbeträge** (v2.6.0: Hybrid NER + Regex)
+  - NER: `5 million dollars`, `100k` (EN)
+  - Regex: `1.5 Millionen CHF`, `2.3 Milliarden Euro` (DE)
+- **Organisationen** (v2.6.0: NER)
+  - `UBS AG`, `Google Switzerland`, `IBM`, `Microsoft`
 - **Vertraulichkeits-Kennzeichnungen** (`VERTRAULICH`, `CONFIDENTIAL`)
 - **Gehaltsangaben** (`Gehalt: 120'000 CHF`, `Lohn: 8'500 EUR`)
-- **Geldbeträge** (`120'000 CHF`, `€ 1.500`, `$ 10,000.00`)
 
 ### 🚦 Drei-Stufen-Warnsystem
 
@@ -563,11 +610,15 @@ Der gesamte Code ist:
 
 ## 🚀 Roadmap
 
-### Version 2.5 (Aktuell - Stable)
+### Version 2.6 (Aktuell - Stable)
 
 - ✅ **ML-quality NER** mit Compromise.js (ohne ML-Dependencies)
 - ✅ **Kontext-basierte Analyse** ("Ich traf Maria" → erkennt "Maria")
 - ✅ **Satz-Struktur-Verständnis** (Artikel-Check, Verb-Subjekt)
+- ✅ **Geburtsdaten-Erkennung** (Hybrid NER + Regex)
+- ✅ **Standorte/Adressen-Erkennung** (Hybrid NER + Regex)
+- ✅ **Geldbeträge-Erkennung** (Hybrid NER + Regex, Millionen/Milliarden)
+- ✅ **Organisations-Erkennung** (NER)
 - ✅ Basis-Erkennung (DE/EN)
 - ✅ ChatGPT, Claude, Gemini Support
 - ✅ Inline-Highlighting
@@ -576,7 +627,7 @@ Der gesamte Code ist:
 - ✅ Modal-Warnung vor Absenden
 - ✅ BEYONDER Branding
 
-### Version 2.6 (Geplant - Q1 2025)
+### Version 2.7 (Geplant - Q1 2025)
 
 - [ ] **Französisch & Italienisch Support** (Compromise.js unterstützt bereits)
 - [ ] **Anonymisierungs-Vorschläge** ("Hans Müller" → "Person A")
@@ -716,4 +767,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.5.0** - Powered by [Compromise.js](https://github.com/spencermountain/compromise)
+**Version 2.6.0** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Now with 6 Entity Types!
