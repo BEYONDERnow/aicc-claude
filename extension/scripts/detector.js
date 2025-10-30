@@ -572,7 +572,8 @@ class ComplianceDetector {
         },
         {
           id: 'date_of_birth',
-          pattern: /\b(?:geboren|born|geburtsdatum|date of birth|dob|geb\.)[\s:]+(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})/gi,
+          // v2.6.0: Erweitert um nur-Jahr Matching (z.B. "geboren 1985")
+          pattern: /\b(?:geboren|born|geburtsdatum|date of birth|dob|geb\.?)[\s:]+(\d{1,2}[./-]\d{1,2}[./-]\d{2,4}|\d{4})\b/gi,
           severity: 'warning',
           category: 'pii',
           nameDE: 'Geburtsdatum',
@@ -602,8 +603,8 @@ class ComplianceDetector {
         },
         {
           id: 'currency_amount',
-          // Phase 3: Erweitert um Euro mit Punkt-Separator (1.500 €)
-          pattern: /\b\d{1,3}(?:[',\.]\d{3})*(?:[.,]\d{1,2})?\s*(?:CHF|Fr\.?|EUR|€|USD|\$)\b|\b(?:CHF|Fr\.?|EUR|€|USD|\$)\s*\d{1,3}(?:[',\.]\d{3})*(?:[.,]\d{1,2})?\b/gi,
+          // v2.6.0: Erweitert um Millionen/Milliarden/Tausend (1.5 Millionen CHF, 2.3 Milliarden Euro)
+          pattern: /\b\d+(?:[.,]\d+)?\s*(?:millionen?|milliarden?|mrd\.?|mio\.?|tausend|k|million|billion|thousand)\s*(?:CHF|Fr\.?|EUR|€|USD|\$|dollars?|euros?|franken?)\b|\b\d{1,3}(?:[',\.]\d{3})*(?:[.,]\d{1,2})?\s*(?:CHF|Fr\.?|EUR|€|USD|\$)\b|\b(?:CHF|Fr\.?|EUR|€|USD|\$)\s*\d{1,3}(?:[',\.]\d{3})*(?:[.,]\d{1,2})?\b/gi,
           severity: 'warning',
           category: 'business',
           nameDE: 'Geldbetrag',
