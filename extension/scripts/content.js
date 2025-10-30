@@ -571,14 +571,10 @@ class ComplianceMonitor {
    * Analysiert den Inhalt eines Elements
    * VERSION 2.0.0: Async für KI-gestützte Analyse
    * VERSION 2.3.5: + File Attachment Detection
-   * VERSION 2.3.8: + Debug Logs für Text-Extraction
+   * VERSION 2.4.0: Fix NER position bug when trimming whitespace
    */
   async analyzeElement(element) {
     const text = this.getElementText(element);
-    console.log('[AICC Analyze] Text length:', text.length, 'chars');
-    console.log('[AICC Analyze] Text preview:', text.substring(0, 200));
-    console.log('[AICC Analyze] First 20 chars:', JSON.stringify(text.substring(0, 20)));
-
     const analysis = await this.detector.analyze(text, this.currentLang);
     console.log('[AICC Analyze] Result:', {
       status: analysis.status,
@@ -635,7 +631,7 @@ class ComplianceMonitor {
    */
   getElementText(element) {
     if (element.contentEditable === 'true') {
-      // v2.3.8 CRITICAL FIX: Verwende innerText statt normalizeTextWithSpaces!
+      // v2.3.9 CRITICAL FIX: Verwende innerText statt normalizeTextWithSpaces!
       // Problem: normalizeTextWithSpaces() mit TreeWalker liest ALLE TextNodes inkl. alte Chat-Messages
       // → 7002 chars statt 68 chars!
       // → Wörter werden abgeschnitten: "Hans-Peter" → "s-Peter"
