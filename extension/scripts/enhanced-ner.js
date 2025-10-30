@@ -7,12 +7,13 @@
  * Layer 3: Capitalization (98%+ Präzision) - Pattern + German Nouns Filter
  * Layer 4: Compound Names (98%+ Präzision) - Hans-Peter (Lexikon + Nomen validiert)
  *
- * Version: 2.3.7 - HYBRID German Nouns Filter (Option 3)
- * - 800+ häufigste deutsche Substantive als Inverse-Blacklist
- * - 15+ Nomen-Suffix-Patterns (ung, heit, keit, tion, etc.)
- * - Intelligente Bindestrich-Analyse mit Nomen-Check
+ * Version: 2.4.1 - Fix für abgeschnittene Namen im Transkript
+ * - Verhindert Erkennung von partiellen Namen (s-Peter, ne-Marie)
+ * - Erweiterte Word Boundary Checks (Bindestrich-Präfix)
+ * - Mindestlänge für Bindestrich-Präfix erhöht (3 → 4 Zeichen)
+ * - Filtert "k-Migration", "ce-Optimierung", "skripts-Projekt"
  * - "Video-Transkripts" → "Video" ist Nomen → GEFILTERT ✅
- * - "Jean-Pierre" → keiner ist Nomen → NAME erkannt ✅
+ * - "Jean-Pierre" → beide Teile ≥4 Zeichen + Namen → ERKANNT ✅
  * - Target: <1% False-Positive-Rate bei 100% Namen-Erkennung
  */
 
@@ -258,15 +259,14 @@ export class EnhancedNERDetector {
    * LAYER 2: Lexikon-basierte Erkennung
    * Prüft gegen 6600+ bekannte Vornamen & Nachnamen
    * Hohe Präzision (~90%) und Recall
-   */
-  /**
-   * LAYER 2: Lexikon-basierte Erkennung
-   * Prüft gegen 6600+ bekannte Vornamen & Nachnamen
-   * Hohe Präzision (~90%) und Recall
    *
    * PERFORMANCE OPTIMIERT v2.2.1:
    * - Limit auf max 500 Matches
    * - Timeout Protection
+   *
+   * v2.4.1 FIX: Verhindert Erkennung abgeschnittener Namen
+   * - Prüft ob Wort in der Mitte eines längeren Wortes steht
+   * - Filtert partielle Bindestriche (k-, ce-, skripts-)
    */
   detectByLexicon(text, lang) {
     const results = [];
@@ -309,11 +309,20 @@ export class EnhancedNERDetector {
         continue; // Skip "kverbindung" aus "Bankverbindung"
       }
 
-      // v2.3.0 PHASE 1: Word Boundary Check (nicht Teilstring)
+      // v2.4.1 FIX: Erweiterte Word Boundary Check
+      // Verhindert Erkennung von abgeschnittenen Wörtern wie "s-Peter" aus "Hans-Peter"
       const before = text[position - 1];
       const after = text[position + word.length];
-      if (before && /[a-zäöüA-ZÄÖÜ]/.test(before)) continue;
-      if (after && /[a-zäöüA-ZÄÖÜ]/.test(after)) continue;
+
+      // Prüfe ob Buchstabe ODER Bindestrich davor (verhindert "s-Peter" aus "Hans-Peter")
+      if (before && /[a-zäöüA-ZÄÖÜ-]/.test(before)) {
+        continue; // Skip: Wort ist Teil eines längeren Wortes
+      }
+
+      // Prüfe ob Buchstabe danach
+      if (after && /[a-zäöüA-ZÄÖÜ]/.test(after)) {
+        continue; // Skip: Wort geht noch weiter
+      }
 
       // v2.3.3: ERWEITERTE Blacklist häufiger False Positives
       const commonFalsePositives = [
@@ -342,6 +351,13 @@ export class EnhancedNERDetector {
 
         // Wenn NICHT Nomen-Kompositum, prüfe ob beide Teile Namen sind
         const parts = word.split('-');
+
+        // v2.4.1 FIX: Erhöhte Mindestlänge für ersten Teil (2 → 4)
+        // Verhindert "s-Peter", "ne-Marie", "k-Migration", "ce-Optimierung"
+        if (parts[0].length < 4) {
+          console.log(`[Enhanced NER] Lexicon: Bindestrich-Wort "${word}" übersprungen (erster Teil zu kurz: ${parts[0].length})`);
+          continue;
+        }
 
         // Filtere Wörter mit zu kurzen Teilen (z.B. "k-Kreditkarten")
         if (parts.some(part => part.length < 2)) {
@@ -507,6 +523,10 @@ export class EnhancedNERDetector {
    * LAYER 4: Compound-Namen (europäische Doppelnamen)
    * Hans-Peter, Jean-Luc, Marie-Claire, etc.
    * Hohe Präzision (~98% mit v2.3.7 Lexikon + Nomen-Check)
+   *
+   * v2.4.1 FIX: Verhindert Erkennung abgeschnittener Namen
+   * - Prüft ob Bindestrich-Wort am Wortanfang steht
+   * - Filtert partielle Wörter (s-Peter, ne-Marie, k-Migration)
    */
   detectCompoundNames(text) {
     const results = [];
@@ -519,6 +539,16 @@ export class EnhancedNERDetector {
       const name = match[1];
       const position = match.index;
 
+      // v2.4.1: ERWEITERTE Word Boundary Check
+      // Verhindert "s-Peter" aus "Hans-Peter" wenn Text abgeschnitten ist
+      const before = text[position - 1];
+
+      // Wenn Buchstabe oder Bindestrich davor → Teil eines längeren Wortes
+      if (before && /[a-zäöüA-ZÄÖÜ-]/.test(before)) {
+        console.log(`[Enhanced NER] Compound-Name "${name}" übersprungen (abgeschnitten, Zeichen davor: "${before}")`);
+        continue;
+      }
+
       // v2.3.7: HYBRID FILTER - Nomen + Lexikon
       // 1. Prüfe ob es ein Nomen-Kompositum ist
       if (isHyphenatedNoun(name)) {
@@ -527,6 +557,14 @@ export class EnhancedNERDetector {
 
       // 2. Prüfe ob ALLE Teile echte Namen im Lexikon sind
       const parts = name.split('-');
+
+      // v2.4.1 FIX: Mindestlänge für ersten Teil erhöht (3 → 4)
+      // Verhindert "s-Peter", "ne-Marie", "k-Migration" (zu kurze Präfixe)
+      if (parts[0].length < 4) {
+        console.log(`[Enhanced NER] Compound-Name "${name}" übersprungen (erster Teil zu kurz: ${parts[0].length} Zeichen)`);
+        continue;
+      }
+
       const allPartsAreNames = parts.every(part =>
         part.length >= 3 &&
         (isFirstName(part) || isLastName(part))
@@ -713,8 +751,8 @@ export class EnhancedNERDetector {
  */
 export function getDetectorInfo() {
   return {
-    version: '2.3.0',
-    type: 'Enhanced NER (Accuracy Boost: ALL-CAPS Filter, Word-Boundary)',
+    version: '2.4.1',
+    type: 'Enhanced NER (Fix: Truncated Names in Transcripts)',
     layers: 4,
     dependencies: 'None (Pure JavaScript)',
     lexiconSize: '~6600 names',
@@ -724,6 +762,9 @@ export function getDetectorInfo() {
       maxTextLength: 50000,
       fastModeThreshold: 10000,
       capitalizationLimit: 20000
+    },
+    fixes: {
+      'v2.4.1': 'Verhindert Erkennung von abgeschnittenen Namen (s-Peter, ne-Marie, k-Migration)'
     }
   };
 }
