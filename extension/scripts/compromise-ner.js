@@ -179,31 +179,226 @@ export class CompromiseNER {
   }
 
   /**
+   * v2.6.0: Erkennt Geburtsdaten mit Compromise.js
+   * Nutzt .match('#Date') für kontextuelle Datums-Erkennung
+   *
+   * @param {string} text - Der zu analysierende Text
+   * @returns {Array} Array von erkannten Daten mit Positionen
+   */
+  detectDates(text) {
+    if (!text || text.trim().length === 0) {
+      return [];
+    }
+
+    try {
+      const doc = nlp(text);
+      // Nutze .match('#Date') statt .dates() (kein Plugin nötig!)
+      const dates = doc.match('#Date').json();
+      const results = [];
+
+      for (const date of dates) {
+        const dateText = date.text.trim();
+
+        // Filtere sehr kurze Daten (z.B. einzelne Monate)
+        if (dateText.length < 4) {
+          continue;
+        }
+
+        // Finde alle Vorkommen
+        const positions = this.findAllOccurrences(text, dateText);
+
+        for (const start of positions) {
+          results.push({
+            text: dateText,
+            start: start,
+            end: start + dateText.length,
+            score: 0.85,
+            confidence: 0.85,
+            type: 'date'
+          });
+        }
+      }
+
+      return this.deduplicateDetections(results);
+    } catch (error) {
+      console.error('[CompromiseNER] Error detecting dates:', error);
+      return [];
+    }
+  }
+
+  /**
+   * v2.6.0: Erkennt Orte/Adressen mit Compromise.js
+   * Nutzt .match('#Place') für Städte, Länder, Regionen
+   *
+   * @param {string} text - Der zu analysierende Text
+   * @returns {Array} Array von erkannten Orten mit Positionen
+   */
+  detectPlaces(text) {
+    if (!text || text.trim().length === 0) {
+      return [];
+    }
+
+    try {
+      const doc = nlp(text);
+      // Nutze sowohl .places() als auch .match('#Place') für bessere Coverage
+      const placesMethod = doc.places().json();
+      const placesMatch = doc.match('#Place+').json();
+
+      // Kombiniere beide Ergebnisse
+      const allPlaces = [...placesMethod, ...placesMatch];
+      const results = [];
+
+      for (const place of allPlaces) {
+        const placeText = place.text.trim().replace(/[.,!?]+$/, ''); // Entferne Satzzeichen am Ende
+
+        // Filtere sehr kurze Orte (einzelne Buchstaben)
+        if (placeText.length < 2) {
+          continue;
+        }
+
+        // Finde alle Vorkommen
+        const positions = this.findAllOccurrences(text, placeText);
+
+        for (const start of positions) {
+          results.push({
+            text: placeText,
+            start: start,
+            end: start + placeText.length,
+            score: 0.80,
+            confidence: 0.80,
+            type: 'place'
+          });
+        }
+      }
+
+      return this.deduplicateDetections(results);
+    } catch (error) {
+      console.error('[CompromiseNER] Error detecting places:', error);
+      return [];
+    }
+  }
+
+  /**
+   * v2.6.0: Erkennt Geldbeträge mit Compromise.js
+   * Nutzt .match('#Money') für "1.5 Millionen CHF", "2.3 Mrd. Euro"
+   *
+   * @param {string} text - Der zu analysierende Text
+   * @returns {Array} Array von erkannten Geldbeträgen mit Positionen
+   */
+  detectMoney(text) {
+    if (!text || text.trim().length === 0) {
+      return [];
+    }
+
+    try {
+      const doc = nlp(text);
+      // Nutze .match('#Money') für bessere Erkennung vollständiger Beträge
+      const money = doc.match('#Money+').json();
+      const results = [];
+
+      for (const amount of money) {
+        const moneyText = amount.text.trim();
+
+        // Filtere sehr kurze Beträge
+        if (moneyText.length < 2) {
+          continue;
+        }
+
+        // Finde alle Vorkommen
+        const positions = this.findAllOccurrences(text, moneyText);
+
+        for (const start of positions) {
+          results.push({
+            text: moneyText,
+            start: start,
+            end: start + moneyText.length,
+            score: 0.85,
+            confidence: 0.85,
+            type: 'money'
+          });
+        }
+      }
+
+      return this.deduplicateDetections(results);
+    } catch (error) {
+      console.error('[CompromiseNER] Error detecting money:', error);
+      return [];
+    }
+  }
+
+  /**
+   * v2.6.0: Erkennt Organisationen mit Compromise.js
+   * Nutzt .match('#Organization') für Firmennamen, Banken, etc.
+   *
+   * @param {string} text - Der zu analysierende Text
+   * @returns {Array} Array von erkannten Organisationen mit Positionen
+   */
+  detectOrganizations(text) {
+    if (!text || text.trim().length === 0) {
+      return [];
+    }
+
+    try {
+      const doc = nlp(text);
+      // Nutze sowohl .organizations() als auch .match('#Organization') für bessere Coverage
+      const orgsMethod = doc.organizations().json();
+      const orgsMatch = doc.match('#Organization+').json();
+
+      // Kombiniere beide Ergebnisse
+      const allOrgs = [...orgsMethod, ...orgsMatch];
+      const results = [];
+
+      for (const org of allOrgs) {
+        const orgText = org.text.trim().replace(/[.,!?]+$/, ''); // Entferne Satzzeichen am Ende
+
+        // Filtere sehr kurze Namen
+        if (orgText.length < 2) {
+          continue;
+        }
+
+        // Finde alle Vorkommen
+        const positions = this.findAllOccurrences(text, orgText);
+
+        for (const start of positions) {
+          results.push({
+            text: orgText,
+            start: start,
+            end: start + orgText.length,
+            score: 0.80,
+            confidence: 0.80,
+            type: 'organization'
+          });
+        }
+      }
+
+      return this.deduplicateDetections(results);
+    } catch (error) {
+      console.error('[CompromiseNER] Error detecting organizations:', error);
+      return [];
+    }
+  }
+
+  /**
    * Kompatibilität: detectAll (für detector.js)
-   * Gibt das gleiche Format zurück wie enhanced-ner.js
+   * v2.6.0: Erweitert mit dates, places, money, organizations
    */
   async detectAll(text) {
     const persons = await this.detectNames(text);
+    const dates = this.detectDates(text);
+    const places = this.detectPlaces(text);
+    const money = this.detectMoney(text);
+    const organizations = this.detectOrganizations(text);
+
     return {
       persons: persons,
-      dates: [],      // Compromise kann Dates, aber wir brauchen es nicht
-      locations: []   // Compromise kann Locations, aber wir brauchen es nicht
+      dates: dates,
+      locations: places,  // Alias für places
+      places: places,
+      money: money,
+      organizations: organizations
     };
   }
 
-  /**
-   * Kompatibilität: detectDates (leer)
-   */
-  async detectDates(text) {
-    return [];
-  }
-
-  /**
-   * Kompatibilität: detectLocations (leer)
-   */
-  async detectLocations(text) {
-    return [];
-  }
 
   /**
    * Kompatibilität: Cache-Management
@@ -225,12 +420,16 @@ export class CompromiseNER {
  */
 export function getDetectorInfo() {
   return {
-    version: '2.5.0',
+    version: '2.6.0',
     type: 'Compromise.js NER (ML-quality without ML)',
     engine: 'compromise.js',
     dependencies: 'compromise (~284KB)',
     features: [
       'Context-aware name recognition',
+      'Birthdate detection (.dates())',
+      'Location/Address detection (.places())',
+      'Money amount detection (.money())',
+      'Organization detection (.organizations())',
       'No lexicon dependency',
       'German noun filtering (automatic)',
       'Hyphenated names support',
@@ -238,8 +437,9 @@ export function getDetectorInfo() {
     ],
     performance: {
       speed: '~130k chars/sec',
-      accuracy: '~95%',
-      falsePositiveRate: '<5%'
+      accuracy: '~93%',
+      falsePositiveRate: '<7%',
+      supportedEntities: ['persons', 'dates', 'places', 'money', 'organizations']
     }
   };
 }

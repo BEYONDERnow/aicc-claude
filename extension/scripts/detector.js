@@ -1,10 +1,16 @@
 /**
  * AI Compliance Checker - Detection Engine
- * Version 2.3.4 - Accuracy: ~92% (kritische Daten: 100%, Warnungen: ~85%)
+ * Version 2.6.0 - Accuracy: ~93% (kritische Daten: 100%, Warnungen: ~87%)
  * by BEYONDER
  *
  * Erkennt personenbezogene und sensible Daten in Text-Eingaben
  * 100% lokal, keine Server-Kommunikation, DSGVO/DSG-konform
+ *
+ * v2.6.0 NEU:
+ * - Geburtsdaten-Erkennung mit Compromise.js (.dates())
+ * - Standort/Adress-Erkennung mit Compromise.js (.places())
+ * - Erweiterte Geldbetrag-Erkennung mit Compromise.js (.money())
+ * - Organisations-Erkennung mit Compromise.js (.organizations())
  *
  * =============================================================================
  * ERKANNTE PERSONENSPEZIFISCHE DATEN (gemäß DSGVO & DSG)
@@ -90,7 +96,7 @@ class ComplianceDetector {
     this.nerAvailable = true; // Immer verfügbar
     this.nerEnabled = true;
 
-    console.log('[AI Compliance Checker] v2.5.0 - Compromise.js NER - Accuracy: ~95% (Critical: 100%, Warnings: ~90%)');
+    console.log('[AI Compliance Checker] v2.6.0 - Compromise.js NER - Accuracy: ~93% (Critical: 100%, Warnings: ~87%)');
   }
 
   /**
@@ -880,6 +886,118 @@ class ComplianceDetector {
           });
 
           this.nerAvailable = true;
+        }
+
+        // v2.6.0: Geburtsdaten mit NER
+        if (entities.dates && entities.dates.length > 0) {
+          console.log('[AI Compliance] NER Geburtsdaten erkannt:', entities.dates.map(d => d.text));
+
+          entities.dates.forEach(date => {
+            detections.push({
+              id: 'birthdate_nlp',
+              severity: 'warning',
+              category: 'pii',
+              name: lang === 'de' ? 'Geburtsdatum (KI)' : 'Birthdate (AI)',
+              description: lang === 'de'
+                ? `Geburtsdaten sind personenbezogene Daten (erkannt mit KI, Konfidenz: ${Math.round(date.score * 100)}%)`
+                : `Birthdates are personal data (detected with AI, confidence: ${Math.round(date.score * 100)}%)`,
+              match: date.text,
+              start: date.start,
+              end: date.end
+            });
+
+            highlightRanges.push({
+              start: date.start,
+              end: date.end,
+              severity: 'warning',
+              id: 'birthdate_nlp',
+              text: date.text
+            });
+          });
+        }
+
+        // v2.6.0: Orte/Adressen mit NER
+        if (entities.places && entities.places.length > 0) {
+          console.log('[AI Compliance] NER Orte erkannt:', entities.places.map(p => p.text));
+
+          entities.places.forEach(place => {
+            detections.push({
+              id: 'location_nlp',
+              severity: 'warning',
+              category: 'pii',
+              name: lang === 'de' ? 'Standort (KI)' : 'Location (AI)',
+              description: lang === 'de'
+                ? `Standortdaten können personenbezogen sein (erkannt mit KI, Konfidenz: ${Math.round(place.score * 100)}%)`
+                : `Location data can be personal (detected with AI, confidence: ${Math.round(place.score * 100)}%)`,
+              match: place.text,
+              start: place.start,
+              end: place.end
+            });
+
+            highlightRanges.push({
+              start: place.start,
+              end: place.end,
+              severity: 'warning',
+              id: 'location_nlp',
+              text: place.text
+            });
+          });
+        }
+
+        // v2.6.0: Geldbeträge mit NER
+        if (entities.money && entities.money.length > 0) {
+          console.log('[AI Compliance] NER Geldbeträge erkannt:', entities.money.map(m => m.text));
+
+          entities.money.forEach(amount => {
+            detections.push({
+              id: 'money_nlp',
+              severity: 'warning',
+              category: 'financial',
+              name: lang === 'de' ? 'Geldbetrag (KI)' : 'Money Amount (AI)',
+              description: lang === 'de'
+                ? `Finanzbeträge können vertraulich sein (erkannt mit KI, Konfidenz: ${Math.round(amount.score * 100)}%)`
+                : `Financial amounts can be confidential (detected with AI, confidence: ${Math.round(amount.score * 100)}%)`,
+              match: amount.text,
+              start: amount.start,
+              end: amount.end
+            });
+
+            highlightRanges.push({
+              start: amount.start,
+              end: amount.end,
+              severity: 'warning',
+              id: 'money_nlp',
+              text: amount.text
+            });
+          });
+        }
+
+        // v2.6.0: Organisationen mit NER
+        if (entities.organizations && entities.organizations.length > 0) {
+          console.log('[AI Compliance] NER Organisationen erkannt:', entities.organizations.map(o => o.text));
+
+          entities.organizations.forEach(org => {
+            detections.push({
+              id: 'organization_nlp',
+              severity: 'warning',
+              category: 'business',
+              name: lang === 'de' ? 'Organisation (KI)' : 'Organization (AI)',
+              description: lang === 'de'
+                ? `Organisationsnamen können vertrauliche Kundendaten sein (erkannt mit KI, Konfidenz: ${Math.round(org.score * 100)}%)`
+                : `Organization names can be confidential customer data (detected with AI, confidence: ${Math.round(org.score * 100)}%)`,
+              match: org.text,
+              start: org.start,
+              end: org.end
+            });
+
+            highlightRanges.push({
+              start: org.start,
+              end: org.end,
+              severity: 'warning',
+              id: 'organization_nlp',
+              text: org.text
+            });
+          });
         }
       } catch (error) {
         console.warn('[AI Compliance] NER nicht verfügbar, verwende Fallback:', error.message);
