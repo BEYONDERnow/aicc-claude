@@ -162,16 +162,23 @@ export class EnhancedNERDetector {
    * LAYER 1: Kontext-basierte Erkennung
    * Erkennt Namen mit Kontext-Markern wie "Name:", "Von:", etc.
    * Höchste Präzision (~95%)
+   *
+   * v2.4.1 FIX: Word boundaries für Kontext-Marker
+   * - Verhindert "An" Match in "Hans" → "s-Peter" Extraktion
    */
   detectByContext(text, lang) {
     const results = [];
     const markers = this.contextMarkers[lang] || this.contextMarkers.de;
 
-    // Baue Regex-Pattern für alle Marker
-    const markerPattern = markers.map(m => m.replace(/\./g, '\\.')).join('|');
+    // v2.4.1: Baue Regex-Pattern mit Word Boundaries
+    // Escape Punkte ZUERST, dann füge \b hinzu (aber nicht nach Punkt)
+    const markerPattern = markers.map(m => {
+      const escaped = m.replace(/\./g, '\\.');
+      // Füge \b nur hinzu wenn kein Punkt am Ende
+      return m.endsWith('.') ? `\\b${escaped}` : `\\b${escaped}\\b`;
+    }).join('|');
 
-    // Pattern: "Marker: Name" - stopped nur Vornamen bzw. bekannte Nachnamen
-    // Findet maximal 2-3 kapitalisierte Wörter die Namen sind
+    // Pattern: "Marker: Name" - findet maximal 2-3 kapitalisierte Wörter
     const pattern = new RegExp(
       `(?:${markerPattern})\\s*[:]?\\s*([A-ZÄÖÜÀÂÆÇÉÈÊËÏÎÔŒÙÛÜ][a-zäöüàâæçéèêëïîôœùûüßáéíóú-]+(?:\\s+[A-ZÄÖÜÀÂÆÇÉÈÊËÏÎÔŒÙÛÜ][a-zäöüàâæçéèêëïîôœùûüßáéíóú-]+){0,2})`,
       'gi'
@@ -342,10 +349,11 @@ export class EnhancedNERDetector {
 
       // 1. INTELLIGENTER Bindestrich-Filter mit Nomen-Check
       if (word.includes('-')) {
-        // Filtere wenn es ein Nomen-Kompositum ist
+        // v2.4.1: Übergebe isName-Funktion für bessere Unterscheidung
+        // "Hans-Peter" → beide Namen (trotz "-er" Suffix) → KEIN Nomen
         // "Video-Transkripts" → "Video" ist Nomen → Skip
-        // "Jean-Pierre" → keiner ist Nomen → Behalten
-        if (isHyphenatedNoun(word)) {
+        const isNameFn = (w) => isFirstName(w, lang) || isLastName(w);
+        if (isHyphenatedNoun(word, isNameFn)) {
           continue; // Skip Nomen-Komposita
         }
 
@@ -446,6 +454,9 @@ export class EnhancedNERDetector {
    * PERFORMANCE OPTIMIERT v2.2.1:
    * - Limit auf max 100 Matches
    * - Skip für sehr lange Texte (>20k)
+   *
+   * v2.4.1 FIX: Word boundary check für abgeschnittene Namen
+   * - Verhindert "Peter Schmidt" aus "s-Peter Schmidt"
    */
   detectByCapitalization(text) {
     const results = [];
@@ -472,6 +483,12 @@ export class EnhancedNERDetector {
 
       const name = match[1];
       const position = match.index;
+
+      // v2.4.1: Word Boundary Check - verhindert "Peter Schmidt" aus "s-Peter Schmidt"
+      const before = text[position - 1];
+      if (before && /[a-zäöüA-ZÄÖÜ-]/.test(before)) {
+        continue; // Skip: Name ist Teil eines längeren Wortes oder folgt auf Bindestrich
+      }
 
       // Validierungen
       if (this.isBlacklisted(name)) continue;
@@ -549,9 +566,10 @@ export class EnhancedNERDetector {
         continue;
       }
 
-      // v2.3.7: HYBRID FILTER - Nomen + Lexikon
-      // 1. Prüfe ob es ein Nomen-Kompositum ist
-      if (isHyphenatedNoun(name)) {
+      // v2.3.7 + v2.4.1: HYBRID FILTER - Nomen + Lexikon
+      // 1. Prüfe ob es ein Nomen-Kompositum ist (mit Name-Check)
+      const isNameFn = (w) => isFirstName(w) || isLastName(w);
+      if (isHyphenatedNoun(name, isNameFn)) {
         continue; // Skip "Video-Transkripts", "Mail-Adressen", etc.
       }
 

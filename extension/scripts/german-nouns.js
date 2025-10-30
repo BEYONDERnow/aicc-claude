@@ -225,9 +225,14 @@ export function isGermanNoun(word) {
  * Prüft ob ein Bindestrich-Wort ein Nomen-Kompositum ist
  * Beispiel: "Video-Transkripts" → beide Teile sind Nomen → true
  * @param {string} word - Das Bindestrich-Wort
+ * @param {Function} isName - Optional: Funktion um zu prüfen ob ein Name (isFirstName oder isLastName)
  * @returns {boolean} true wenn Nomen-Kompositum, false sonst
+ *
+ * v2.4.1 FIX: Prüfe Namen ZUERST, bevor Nomen geprüft werden
+ * - "Hans-Peter": Beide sind Namen (trotz "-er" Suffix) → KEIN Nomen
+ * - "Video-Transkripts": "Video" ist Nomen → Nomen-Kompositum
  */
-export function isHyphenatedNoun(word) {
+export function isHyphenatedNoun(word, isName = null) {
   if (!word.includes('-')) return false;
 
   const parts = word.split('-');
@@ -235,8 +240,14 @@ export function isHyphenatedNoun(word) {
   // Filtere sehr kurze Teile (z.B. "k-Kreditkarten")
   if (parts.some(part => part.length < 2)) return true; // Wahrscheinlich Nomen
 
+  // v2.4.1: ZUERST prüfen ob ALLE Teile Namen sind (wenn isName-Funktion gegeben)
+  // Falls ja: Dann ist es EIN NAME, kein Nomen!
+  if (isName && parts.every(part => part.length >= 3 && isName(part))) {
+    return false; // Alle Teile sind Namen → KEIN Nomen-Kompositum
+  }
+
   // Wenn MINDESTENS EIN Teil ein bekanntes Nomen ist → Kompositum ist Nomen
   // "Video-Transkripts": Video ✅ → Nomen
-  // "Jean-Pierre": Jean ❌, Pierre ❌ → kein Nomen
+  // "Jean-Pierre": Jean ❌, Pierre ❌ (aber im obigen Check als Name erkannt) → kein Nomen
   return parts.some(part => isGermanNoun(part));
 }
