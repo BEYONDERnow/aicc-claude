@@ -591,12 +591,18 @@ export class EnhancedNERDetector {
     const filtered = merged.filter(d => d.confidence >= 0.65);
 
     // Format für Kompatibilität mit detector.js
-    return filtered.map(d => ({
-      text: d.text.trim(),
-      start: d.start,
-      end: d.end,
-      score: d.confidence
-    }));
+    return filtered.map(d => {
+      const trimmed = d.text.trim();
+      const leadingSpaces = d.text.length - d.text.trimStart().length;
+      const trailingSpaces = d.text.length - d.text.trimEnd().length;
+
+      return {
+        text: trimmed,
+        start: d.start + leadingSpaces,
+        end: d.end - trailingSpaces,
+        score: d.confidence
+      };
+    });
   }
 
   /**
