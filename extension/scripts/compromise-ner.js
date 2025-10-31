@@ -1,6 +1,6 @@
 /**
  * AI Compliance Checker - Compromise.js NER Integration
- * Version: 2.5.0 - ML-quality NER without ML dependencies
+ * Version: 2.6.1 - ML-quality NER without ML dependencies + Stopword Filter
  *
  * Verwendet Compromise.js für Named Entity Recognition:
  * - Keine Lexikon-Abhängigkeit (erkennt auch unbekannte Namen)
@@ -14,6 +14,11 @@
  * ✅ "Der Große Erfolg" → NICHT als Name erkannt (vorher False Positive)
  * ✅ "Hans-Peter Schmidt" → als EINEN Namen erkannt (vorher 2 separate)
  *
+ * v2.6.1 Improvements:
+ * ✅ Stopword-Filter (100+ deutsche/englische Wörter werden nicht erkannt)
+ * ✅ Technische Begriff-Filter ("Quality-Assurance" nicht als Organisation)
+ * ✅ Erhöhte Mindestlänge (Namen/Orte/Orgs >= 3-4 Zeichen)
+ *
  * Trade-off: +284KB Bundle Size (~342KB total vs. ~58KB vorher)
  */
 
@@ -24,7 +29,61 @@ export class CompromiseNER {
     this.nerEnabled = true;
     this.nerReady = true;
 
-    console.log('[AI Compliance Checker] CompromiseNER v2.5.0 initialisiert');
+    // v2.6.1: Stopword-Liste für häufige deutsche/englische Wörter
+    // Diese Wörter werden NIEMALS als sensible Daten erkannt
+    this.stopwords = new Set([
+      // Deutsche Artikel, Pronomen, Konjunktionen
+      'der', 'die', 'das', 'den', 'dem', 'des', 'ein', 'eine', 'einer', 'eines', 'einem', 'einen',
+      'ich', 'du', 'er', 'sie', 'es', 'wir', 'ihr', 'Sie',
+      'und', 'oder', 'aber', 'denn', 'wie', 'als', 'bis', 'wenn', 'ob', 'seit',
+      // Deutsche Verben & Hilfsverben (häufigste)
+      'ist', 'sind', 'war', 'waren', 'sein', 'haben', 'hat', 'hatte', 'werden', 'wird', 'wurde',
+      'kann', 'könnte', 'muss', 'musste', 'soll', 'sollte', 'will', 'wollte', 'mag', 'darf',
+      // Deutsche Präpositionen
+      'in', 'an', 'auf', 'aus', 'bei', 'mit', 'nach', 'von', 'vor', 'zu', 'über', 'unter', 'durch',
+      'für', 'gegen', 'ohne', 'um', 'zwischen', 'hinter', 'neben',
+      // Deutsche Adverbien
+      'hier', 'da', 'dort', 'dann', 'nun', 'nur', 'auch', 'noch', 'schon', 'sehr', 'so', 'doch',
+      'ja', 'nein', 'nicht', 'nie', 'immer', 'oft', 'selten', 'manchmal',
+      // Englische Grundwörter
+      'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+      'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should', 'could', 'can', 'may', 'might',
+      'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'about', 'as', 'into', 'through', 'during',
+      'and', 'or', 'but', 'if', 'then', 'than', 'that', 'this', 'these', 'those',
+      'not', 'no', 'yes', 'all', 'any', 'some', 'more', 'most', 'very', 'so', 'too', 'also'
+    ]);
+
+    // v2.6.1: Technische Begriff-Patterns (werden nicht als Organisationen erkannt)
+    this.technicalTermPatterns = [
+      /^[A-Z][a-z]+-[A-Z][a-z]+$/, // Quality-Assurance, Memory-Management
+      /^[A-Za-z]+-[A-Za-z]+-[A-Za-z]+$/, // Multi-part technical terms
+      /^\w+\.\w+$/, // file.extension
+      /^[A-Z_]{5,}$/, // CONSTANT_NAMES (aber nicht kurze Akronyme wie IBM, UBS)
+      /^[a-z]+[A-Z][a-z]+$/ // camelCase
+    ];
+
+    console.log('[AI Compliance Checker] CompromiseNER v2.6.1 initialisiert (mit Stopword-Filter)');
+  }
+
+  /**
+   * v2.6.1: Prüft, ob ein Text ein Stopword oder technischer Begriff ist
+   */
+  isStopwordOrTechnical(text) {
+    const normalized = text.toLowerCase().trim();
+
+    // Check stopwords
+    if (this.stopwords.has(normalized)) {
+      return true;
+    }
+
+    // Check technical patterns
+    for (const pattern of this.technicalTermPatterns) {
+      if (pattern.test(text.trim())) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -59,8 +118,13 @@ export class CompromiseNER {
           .replace(/[.,;!?]+$/, '')
           .trim();
 
-        // Zusätzliche Validierung: Filtere sehr kurze "Namen" (1 Buchstabe)
-        if (personText.length < 2) {
+        // v2.6.1: Filtere Stopwords und technische Begriffe
+        if (this.isStopwordOrTechnical(personText)) {
+          continue;
+        }
+
+        // Zusätzliche Validierung: Filtere sehr kurze "Namen" (< 3 Zeichen)
+        if (personText.length < 3) {
           continue;
         }
 
@@ -251,9 +315,14 @@ export class CompromiseNER {
       for (const place of allPlaces) {
         const placeText = place.text.trim().replace(/[.,!?]+$/, ''); // Entferne Satzzeichen am Ende
 
-        // v2.6.0 FIX: Filtere sehr kurze Orte (< 3 Zeichen) um False Positives zu vermeiden
-        // Beispiel: "ist", "am", "im" werden oft fälschlich als Ort erkannt
-        if (placeText.length < 3) {
+        // v2.6.1: Filtere Stopwords und technische Begriffe
+        if (this.isStopwordOrTechnical(placeText)) {
+          continue;
+        }
+
+        // v2.6.1: Filtere sehr kurze Orte (< 4 Zeichen) um False Positives zu vermeiden
+        // Beispiel: "ist", "den", "den" werden oft fälschlich als Ort erkannt
+        if (placeText.length < 4) {
           continue;
         }
 
@@ -352,8 +421,15 @@ export class CompromiseNER {
       for (const org of allOrgs) {
         const orgText = org.text.trim().replace(/[.,!?]+$/, ''); // Entferne Satzzeichen am Ende
 
-        // Filtere sehr kurze Namen
-        if (orgText.length < 2) {
+        // v2.6.1: Filtere Stopwords und technische Begriffe
+        if (this.isStopwordOrTechnical(orgText)) {
+          continue;
+        }
+
+        // v2.6.1: Filtere sehr kurze Namen (< 4 Zeichen)
+        // AUSNAHME: ALL-CAPS Akronyme wie "IBM", "UBS", "SAP" werden durchgelassen
+        const isAcronym = /^[A-Z]{2,4}$/.test(orgText);
+        if (orgText.length < 4 && !isAcronym) {
           continue;
         }
 
