@@ -5,9 +5,14 @@
  * Update this file when releasing new versions.
  */
 
-export const VERSION = '2.6.0';
+export const VERSION = '2.7.0';
 export const VERSION_LABEL = 'BETA';
 export const VERSION_FULL = `${VERSION} ${VERSION_LABEL}`;
+
+// Storage Keys
+export const STORAGE_KEYS = {
+  DEVELOPER_MODE: 'aicc_developer_mode'
+};
 
 // Export for use in manifest.json generation (if needed)
 export const VERSION_INFO = {

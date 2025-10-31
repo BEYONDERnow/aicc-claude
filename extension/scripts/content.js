@@ -1104,10 +1104,19 @@ class ComplianceMonitor {
   /**
    * Zeigt Overlay mit detaillierter Analyse
    */
-  showOverlay(element) {
+  async showOverlay(element) {
     const analysis = this.currentAnalysis.get(element);
     if (!analysis || analysis.detections.length === 0) {
       return;
+    }
+
+    // v2.7.0: Lade Developer Mode Setting
+    let isDeveloperMode = false;
+    try {
+      const result = await chrome.storage.local.get(['aicc_developer_mode']);
+      isDeveloperMode = result.aicc_developer_mode || false;
+    } catch (error) {
+      console.error('[AI Compliance Checker] Error loading developer mode:', error);
     }
 
     // WICHTIG: Blende alle Highlight-Overlays aus während Info-Overlay offen ist
@@ -1118,6 +1127,28 @@ class ComplianceMonitor {
     if (existingOverlay) {
       existingOverlay.remove();
     }
+
+    // v2.7.0: Conditional Report Section
+    const reportSection = isDeveloperMode ? `
+          <div class="aicc-validation-report-section">
+            <h3>
+              ${this.currentLang === 'de' ? '📋 Validierungs-Report für Claude (Entwicklermodus)' : '📋 Validation Report for Claude (Developer Mode)'}
+            </h3>
+            <p style="margin: 8px 0; font-size: 13px; color: #666;">
+              ${this.currentLang === 'de'
+                ? 'Kopiere diesen erweiterten Report und sende ihn an Claude zum Überprüfen der Erkennungen:'
+                : 'Copy this extended report and send it to Claude to validate the detections:'}
+            </p>
+            <div class="aicc-code-window">
+              <div class="aicc-code-header">
+                <span class="aicc-code-label">Markdown</span>
+                <button class="aicc-copy-btn-overlay" data-copy-target="validation-report-overlay">
+                  ${this.currentLang === 'de' ? '📋 Kopieren' : '📋 Copy'}
+                </button>
+              </div>
+              <pre class="aicc-code-content" id="aicc-validation-report-overlay"><code>${this.escapeHtml(this.generateValidationReport(analysis, element, isDeveloperMode))}</code></pre>
+            </div>
+          </div>` : '';
 
     const overlay = document.createElement('div');
     overlay.className = 'aicc-overlay';
@@ -1133,26 +1164,7 @@ class ComplianceMonitor {
         </div>
         <div class="aicc-overlay-body">
           ${this.generateOverlayTable(analysis)}
-
-          <div class="aicc-validation-report-section">
-            <h3>
-              ${this.currentLang === 'de' ? '📋 Validierungs-Report für Claude' : '📋 Validation Report for Claude'}
-            </h3>
-            <p style="margin: 8px 0; font-size: 13px; color: #666;">
-              ${this.currentLang === 'de'
-                ? 'Kopiere diesen Report und sende ihn an Claude zum Überprüfen der Erkennungen:'
-                : 'Copy this report and send it to Claude to validate the detections:'}
-            </p>
-            <div class="aicc-code-window">
-              <div class="aicc-code-header">
-                <span class="aicc-code-label">Markdown</span>
-                <button class="aicc-copy-btn-overlay" data-copy-target="validation-report-overlay">
-                  ${this.currentLang === 'de' ? '📋 Kopieren' : '📋 Copy'}
-                </button>
-              </div>
-              <pre class="aicc-code-content" id="aicc-validation-report-overlay"><code>${this.escapeHtml(this.generateValidationReport(analysis, element))}</code></pre>
-            </div>
-          </div>
+          ${reportSection}
         </div>
         <div class="aicc-overlay-footer">
           <div class="aicc-overlay-branding">
@@ -1189,11 +1201,11 @@ class ComplianceMonitor {
       e.stopPropagation();
     });
 
-    // Copy button handler
+    // Copy button handler (v2.7.0: uses isDeveloperMode)
     const copyBtn = overlay.querySelector('.aicc-copy-btn-overlay');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
-        const reportText = this.generateValidationReport(analysis, element);
+        const reportText = this.generateValidationReport(analysis, element, isDeveloperMode);
         navigator.clipboard.writeText(reportText).then(() => {
           const originalText = copyBtn.textContent;
           copyBtn.textContent = this.currentLang === 'de' ? '✅ Kopiert!' : '✅ Copied!';
@@ -1210,89 +1222,124 @@ class ComplianceMonitor {
 
   /**
    * Generiert Validierungs-Report für Claude
+   * v2.7.0: Erweitert mit allen Prüfkriterien und vollem Prompt
    */
-  generateValidationReport(analysis, element = null) {
+  generateValidationReport(analysis, element = null, isDeveloperMode = true) {
     const lang = this.currentLang;
 
-    // Gruppiere wie in der Tabelle
-    const grouped = {};
-    analysis.detections.forEach(detection => {
-      const key = detection.match.toLowerCase().trim();
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(detection);
-    });
-
-    const sortedGroups = Object.entries(grouped).sort((a, b) => {
-      const aSeverity = a[1].some(d => d.severity === 'critical') ? 0 : 1;
-      const bSeverity = b[1].some(d => d.severity === 'critical') ? 0 : 1;
-      return aSeverity - bSeverity;
-    });
-
-    // Extrahiere eingegebenen Text
+    // Extrahiere eingegebenen Text (OHNE Kürzung in v2.7.0)
     const inputText = element ? this.getElementText(element) : '';
-    const textPreview = inputText.length > 1000
-      ? inputText.substring(0, 1000) + '\n\n[... Text gekürzt, insgesamt ' + inputText.length + ' Zeichen ...]'
-      : inputText;
+
+    // v2.7.0: Hole alle verfügbaren Prüfkriterien
+    const allCriteria = this.detector.getAllCriteria(lang);
+
+    // Erstelle Map für schnelle Lookups welche Kriterien erkannt wurden
+    const detectedCriteriaMap = new Map();
+    analysis.detections.forEach(detection => {
+      const key = detection.id || detection.type;
+      if (!detectedCriteriaMap.has(key)) {
+        detectedCriteriaMap.set(key, []);
+      }
+      detectedCriteriaMap.get(key).push(detection);
+    });
 
     // Erstelle Markdown-Tabelle
-    let report = `# AI Compliance Checker - Validierungsreport
+    let report = `# AI Compliance Checker - Validierungsreport v2.7.0
 
 ## Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
 
 ## Aufgabe
-Überprüfe die folgenden ${analysis.detections.length} erkannten sensiblen Daten und validiere ob die Erkennungen korrekt sind.
+Überprüfe die folgenden Prüfkriterien und validiere ob die Erkennungen korrekt sind.
 
-Zähle am Ende wie viele Erkennungen korrekt (✅) und wie viele falsch (❌) sind.
+Der Report zeigt ALLE ${allCriteria.critical.length + allCriteria.warning.length} geprüften Kriterien an:
+- ✅ = Kriterium wurde erkannt mit konkretem Wert
+- ⬜ = Kriterium wurde geprüft aber nicht gefunden
 
-## Eingegebener Prompt
+Zähle am Ende wie viele Erkennungen korrekt (True Positives) und wie viele falsch (False Positives) sind.
 
-Der Benutzer hat folgenden Text eingegeben:
+## Eingegebener Prompt (vollständig)
+
+Der Benutzer hat folgenden Text eingegeben (${inputText.length} Zeichen):
 
 \`\`\`
-${textPreview}
+${inputText}
 \`\`\`
 
-## Erkannte Daten
+## Geprüfte Kriterien
 
-| # | Typ | Wert | Kategorie | Beschreibung | Risiko | Korrekt? |
-|---|-----|------|-----------|--------------|--------|----------|
+### 🔴 Kritische Daten (${allCriteria.critical.length} Kriterien)
+
+| # | Kriterium | Status | Wert | Kategorie | Beschreibung | Korrekt? |
+|---|-----------|--------|------|-----------|--------------|----------|
 `;
 
+    // Kritische Kriterien
     let counter = 1;
-    sortedGroups.forEach(([matchKey, detections]) => {
-      const maxSeverity = detections.some(d => d.severity === 'critical') ? 'critical' : 'warning';
-      const types = [...new Set(detections.map(d => d.name))].join(', ');
-      const categories = [...new Set(detections.map(d => d.category))];
-      const categoryText = categories.map(cat =>
-        this.detector.t(`categories.${cat}`, lang)
-      ).join(', ');
-      const descriptions = [...new Set(detections.map(d => d.description))].join(' • ');
-      const riskText = this.detector.t(maxSeverity, lang);
-
-      report += `| ${counter} | ${types} | \`${detections[0].match}\` | ${categoryText} | ${descriptions} | ${riskText} | ⬜ |\n`;
-      counter++;
+    allCriteria.critical.forEach(criterion => {
+      const detections = detectedCriteriaMap.get(criterion.id);
+      if (detections && detections.length > 0) {
+        // Gruppiere gleiche Werte
+        const uniqueValues = [...new Set(detections.map(d => d.match))];
+        uniqueValues.forEach(value => {
+          report += `| ${counter} | ${criterion.name} | ✅ | \`${value}\` | ${criterion.categoryLabel} | ${criterion.description} | ⬜ |\n`;
+          counter++;
+        });
+      } else {
+        report += `| ${counter} | ${criterion.name} | ⬜ | - | ${criterion.categoryLabel} | ${criterion.description} | - |\n`;
+        counter++;
+      }
     });
+
+    report += `\n### 🟠 Warnungen (${allCriteria.warning.length} Kriterien)
+
+| # | Kriterium | Status | Wert | Kategorie | Beschreibung | Korrekt? |
+|---|-----------|--------|------|-----------|--------------|----------|
+`;
+
+    // Warning Kriterien
+    allCriteria.warning.forEach(criterion => {
+      const detections = detectedCriteriaMap.get(criterion.id);
+      if (detections && detections.length > 0) {
+        const uniqueValues = [...new Set(detections.map(d => d.match))];
+        uniqueValues.forEach(value => {
+          report += `| ${counter} | ${criterion.name} | ✅ | \`${value}\` | ${criterion.categoryLabel} | ${criterion.description} | ⬜ |\n`;
+          counter++;
+        });
+      } else {
+        report += `| ${counter} | ${criterion.name} | ⬜ | - | ${criterion.categoryLabel} | ${criterion.description} | - |\n`;
+        counter++;
+      }
+    });
+
+    const detectedCount = analysis.detections.length;
+    const notDetectedCount = (allCriteria.critical.length + allCriteria.warning.length) - detectedCount;
 
     report += `
 ## Anweisungen
-1. **Prüfe jeden Eintrag** ob er tatsächlich sensible Daten enthält
-2. **Ersetze ⬜** mit:
-   - ✅ wenn korrekt erkannt (True Positive)
-   - ❌ wenn falsch erkannt (False Positive)
+1. **Prüfe jeden Eintrag mit Status ✅**:
+   - Ersetze ⬜ in der "Korrekt?"-Spalte mit:
+     - ✅ wenn korrekt erkannt (True Positive)
+     - ❌ wenn falsch erkannt (False Positive)
+2. **Prüfe Einträge mit Status ⬜**:
+   - Sind wirklich keine Daten vorhanden?
+   - Oder wurden sie übersehen? (False Negative)
 3. **Ergänze Kommentare** bei:
    - Fehlenden Erkennungen (False Negatives)
    - Zweifelhaften Fällen
 4. **Zähle am Ende**:
-   - Anzahl ✅ (korrekt)
-   - Anzahl ❌ (falsch)
+   - Anzahl ✅ (True Positives)
+   - Anzahl ❌ (False Positives)
+   - Anzahl False Negatives
    - Accuracy = ✅ / (✅ + ❌)
 
 ## Kontext
-- **Tool**: AI Compliance Checker v2.2.2
+- **Tool**: AI Compliance Checker v2.7.0
 - **Sprache**: ${lang === 'de' ? 'Deutsch' : 'English'}
 - **Textlänge**: ${inputText.length} Zeichen
-- **Erkennungen**: ${analysis.detections.length} total (${analysis.detections.filter(d => d.severity === 'critical').length} kritisch, ${analysis.detections.filter(d => d.severity === 'warning').length} Warnungen)
+- **Geprüfte Kriterien**: ${allCriteria.critical.length + allCriteria.warning.length} total (${allCriteria.critical.length} kritisch, ${allCriteria.warning.length} Warnungen)
+- **Erkannte Daten**: ${detectedCount} (${analysis.detections.filter(d => d.severity === 'critical').length} kritisch, ${analysis.detections.filter(d => d.severity === 'warning').length} Warnungen)
+- **Nicht erkannte**: ${notDetectedCount}
 - **Status**: ${analysis.status === 'critical' ? '🔴 Kritisch' : '🟠 Warnung'}
 
 ---
@@ -1362,16 +1409,49 @@ Beginne mit der Validierung!`;
 
   /**
    * Zeigt Warning Modal vor dem Absenden
+   * v2.7.0: Conditional rendering basierend auf Developer Mode
    * @param {Object} analysis - Analyse-Ergebnis
    * @param {HTMLElement} element - Das Textfeld
    * @param {HTMLElement} submitButton - Optional: Der Submit-Button (falls vom Button geklickt)
    */
-  showWarningModal(analysis, element, submitButton = null) {
+  async showWarningModal(analysis, element, submitButton = null) {
     if (this.isModalShown) return;
     this.isModalShown = true;
 
+    // v2.7.0: Lade Developer Mode Setting
+    let isDeveloperMode = false;
+    try {
+      const result = await chrome.storage.local.get(['aicc_developer_mode']);
+      isDeveloperMode = result.aicc_developer_mode || false;
+      console.log('[AI Compliance Checker] Developer Mode:', isDeveloperMode);
+    } catch (error) {
+      console.error('[AI Compliance Checker] Error loading developer mode:', error);
+    }
+
     // WICHTIG: Blende alle Highlight-Overlays aus während Modal offen ist
     document.body.classList.add('aicc-modal-open');
+
+    // v2.7.0: Conditional Report Section
+    const reportSection = isDeveloperMode ? `
+          <div class="aicc-validation-report-section">
+            <h3>
+              ${this.currentLang === 'de' ? '📋 Validierungs-Report für Claude (Entwicklermodus)' : '📋 Validation Report for Claude (Developer Mode)'}
+            </h3>
+            <p style="margin: 8px 0; font-size: 13px; color: #666;">
+              ${this.currentLang === 'de'
+                ? 'Kopiere diesen erweiterten Report und sende ihn an Claude zum Überprüfen der Erkennungen:'
+                : 'Copy this extended report and send it to Claude to validate the detections:'}
+            </p>
+            <div class="aicc-code-window">
+              <div class="aicc-code-header">
+                <span class="aicc-code-label">Markdown</span>
+                <button class="aicc-copy-btn" data-copy-target="validation-report">
+                  ${this.currentLang === 'de' ? '📋 Kopieren' : '📋 Copy'}
+                </button>
+              </div>
+              <pre class="aicc-code-content" id="aicc-validation-report"><code>${this.escapeHtml(this.generateValidationReport(analysis, element, isDeveloperMode))}</code></pre>
+            </div>
+          </div>` : '';
 
     const modal = document.createElement('div');
     modal.className = 'aicc-modal';
@@ -1398,26 +1478,7 @@ Beginne mit der Validierung!`;
           </div>
           ${analysis.attachedFiles && analysis.attachedFiles.length > 0 ? this.generateFileWarningSection(analysis.attachedFiles) : ''}
           ${this.generateOverlayTable(analysis)}
-
-          <div class="aicc-validation-report-section">
-            <h3>
-              ${this.currentLang === 'de' ? '📋 Validierungs-Report für Claude' : '📋 Validation Report for Claude'}
-            </h3>
-            <p style="margin: 8px 0; font-size: 13px; color: #666;">
-              ${this.currentLang === 'de'
-                ? 'Kopiere diesen Report und sende ihn an Claude zum Überprüfen der Erkennungen:'
-                : 'Copy this report and send it to Claude to validate the detections:'}
-            </p>
-            <div class="aicc-code-window">
-              <div class="aicc-code-header">
-                <span class="aicc-code-label">Markdown</span>
-                <button class="aicc-copy-btn" data-copy-target="validation-report">
-                  ${this.currentLang === 'de' ? '📋 Kopieren' : '📋 Copy'}
-                </button>
-              </div>
-              <pre class="aicc-code-content" id="aicc-validation-report"><code>${this.escapeHtml(this.generateValidationReport(analysis, element))}</code></pre>
-            </div>
-          </div>
+          ${reportSection}
         </div>
         <div class="aicc-modal-footer">
           <div class="aicc-modal-branding">
@@ -1517,11 +1578,11 @@ Beginne mit der Validierung!`;
       });
     }
 
-    // Copy button handler
+    // Copy button handler (v2.7.0: uses isDeveloperMode)
     const copyBtn = modal.querySelector('.aicc-copy-btn');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
-        const reportText = this.generateValidationReport(analysis, element);
+        const reportText = this.generateValidationReport(analysis, element, isDeveloperMode);
         navigator.clipboard.writeText(reportText).then(() => {
           const originalText = copyBtn.textContent;
           copyBtn.textContent = this.currentLang === 'de' ? '✅ Kopiert!' : '✅ Copied!';
