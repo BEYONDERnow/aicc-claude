@@ -324,15 +324,29 @@ class ComplianceMonitor {
           return false;
         }
 
-        // v2.6.0 FIX: Blockiere wenn KEINE Analyse vorhanden ODER wenn Warnungen/kritische Daten erkannt
+        // v2.6.0 FIX: Wenn KEINE Analyse vorhanden ODER Warnungen erkannt
         if (!analysis || analysis.status === 'critical' || analysis.status === 'warning') {
+          console.log('[AICC Submit] BLOCKING - Analysis:', analysis ? analysis.status : 'NONE');
+
           // Blockiere den originalen Click
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
 
-          // Zeige Modal (nur wenn Analyse vorhanden)
-          if (analysis) {
+          // Wenn keine Analyse vorhanden, führe sie jetzt durch
+          if (!analysis) {
+            console.log('[AICC Submit] No analysis found - running analysis...');
+            this.analyzeElement(element).then(() => {
+              const newAnalysis = this.currentAnalysis.get(element);
+              if (newAnalysis && (newAnalysis.status === 'critical' || newAnalysis.status === 'warning')) {
+                this.showWarningModal(newAnalysis, element, submitButton);
+              } else {
+                // Keine Warnungen, sende normal
+                this.simulateSubmit(element);
+              }
+            });
+          } else {
+            // Analyse vorhanden mit Warnungen - zeige Modal
             this.showWarningModal(analysis, element, submitButton);
           }
 
