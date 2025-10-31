@@ -324,15 +324,17 @@ class ComplianceMonitor {
           return false;
         }
 
-        // Wenn Warnungen oder kritische Daten erkannt wurden
-        if (analysis && (analysis.status === 'critical' || analysis.status === 'warning')) {
+        // v2.6.0 FIX: Blockiere wenn KEINE Analyse vorhanden ODER wenn Warnungen/kritische Daten erkannt
+        if (!analysis || analysis.status === 'critical' || analysis.status === 'warning') {
           // Blockiere den originalen Click
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
 
-          // Zeige Modal
-          this.showWarningModal(analysis, element, submitButton);
+          // Zeige Modal (nur wenn Analyse vorhanden)
+          if (analysis) {
+            this.showWarningModal(analysis, element, submitButton);
+          }
 
           return false;
         }
