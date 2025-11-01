@@ -38,15 +38,23 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 ### Version 2.9.1 (Vorherige) - 2025-11-01
 
-**🔧 Fix: Vollständige Prompt-Extraktion für Validierungsreports**
+**🔧 Fixes: Vollständige Prompt-Extraktion & chrome.storage Bugfix**
 
-#### 🐛 Problem gelöst
-- **Lange Prompts wurden abgeschnitten:** Bei Prompts >10k Zeichen zeigte der Validierungsreport nur einen Teil des Textes
-- **Ursache:** `innerText` gibt nur gerenderten/sichtbaren Text zurück (lazy rendering Problem)
+#### 🐛 Problem 1: Lange Prompts wurden abgeschnitten
+- Bei Prompts >10k Zeichen zeigte der Validierungsreport nur einen Teil des Textes
+- **Ursache:** `innerText` gibt nur gerenderten/sichtbaren Text zurück (lazy rendering)
+- **Lösung:** Neue Methode `getFullElementText()` verwendet `textContent` statt `innerText`
 
-#### ✅ Lösung
-- **Neue Methode `getFullElementText()`:** Verwendet `textContent` statt `innerText`
-- **Garantiert vollständiger Text:** Unabhängig von DOM-Rendering oder virtuellem Scrolling
+#### 🐛 Problem 2: chrome.storage undefined Error
+- **TypeError: Cannot read properties of undefined (reading 'local')**
+- Content-Script versuchte auf `chrome.storage.local` zuzugreifen, aber `chrome.storage` war `undefined`
+- **Ursache:** Race Condition bei Extension-Initialisierung oder Reload
+- **Lösung:** Defensive try-catch Prüfung mit silentFail Fallback
+
+#### ✅ Auswirkung
+- ✅ Reports enthalten **vollständigen Prompt** (auch bei 15k+ Zeichen)
+- ✅ Keine Truncation durch Browser-Optimierungen
+- ✅ Verhindert TypeError komplett mit Graceful Degradation
 
 > **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#291---2025-11-01)
 
@@ -929,4 +937,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.9.2** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Enhanced Icon Visibility & Hybrid Approach!
+**Version 2.9.2** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Optimized Validation Reports with Context & Annotation!

@@ -1226,7 +1226,8 @@ class ComplianceMonitor {
       const result = await chrome.storage.local.get(['aicc_developer_mode']);
       isDeveloperMode = result.aicc_developer_mode || false;
     } catch (error) {
-      console.error('[AI Compliance Checker] Error loading developer mode:', error);
+      // Silently handle - developer mode defaults to false
+      // This can happen in contexts where chrome.storage is not available
     }
 
     // WICHTIG: Blende alle Highlight-Overlays aus während Info-Overlay offen ist
@@ -1619,7 +1620,8 @@ Prüfe ob folgende Kategorien übersehen wurden:
       isDeveloperMode = result.aicc_developer_mode || false;
       console.log('[AI Compliance Checker] Developer Mode:', isDeveloperMode);
     } catch (error) {
-      console.error('[AI Compliance Checker] Error loading developer mode:', error);
+      // Silently handle - developer mode defaults to false
+      // This can happen in contexts where chrome.storage is not available
     }
 
     // WICHTIG: Blende alle Highlight-Overlays aus während Modal offen ist
