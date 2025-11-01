@@ -17,6 +17,22 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 ### Version 2.9.1 (Aktuell) - 2025-11-01
 
+**🔧 Fix: Vollständige Prompt-Extraktion für Validierungsreports**
+
+#### 🐛 Problem gelöst
+- **Lange Prompts wurden abgeschnitten:** Bei Prompts >10k Zeichen zeigte der Validierungsreport nur einen Teil des Textes
+- **Ursache:** `innerText` gibt nur gerenderten/sichtbaren Text zurück (lazy rendering Problem)
+- **Auswirkung:** Claude konnte nicht alle Erkennungen vollständig validieren
+
+#### ✅ Lösung
+- **Neue Methode `getFullElementText()`:** Verwendet `textContent` statt `innerText`
+- **Garantiert vollständiger Text:** Unabhängig von DOM-Rendering oder virtuellem Scrolling
+- **Nur für Reports:** Detection-Performance bleibt unverändert (weiterhin schnell)
+
+#### 🎯 Auswirkung
+- ✅ Reports enthalten **vollständigen Prompt** (auch bei 15k+ Zeichen)
+- ✅ Keine Truncation durch Browser-Optimierungen
+- ✅ Präzisere Validierung durch Claude möglich
 **🐛 Critical Bugfix: chrome.storage undefined**
 
 #### 🎯 Problem gelöst
@@ -47,6 +63,7 @@ if (chrome && chrome.storage && chrome.storage.local) {
 
 ---
 
+### Version 2.9.0 (Vorherige) - 2025-11-01
 ### Version 2.9.0 - 2025-11-01
 
 **🔧 Zentrale Versionsverwaltung**
@@ -924,4 +941,5 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
+**Version 2.9.1** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Enhanced Icon Visibility & Hybrid Approach!
 **Version 2.9.1** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Chrome Storage Bugfix!
