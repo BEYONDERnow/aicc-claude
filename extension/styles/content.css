@@ -240,8 +240,8 @@ body.aicc-modal-open .aicc-overlay-container {
 .aicc-tooltip {
   position: absolute;
   bottom: calc(100% + 12px);
-  left: 50%;
-  transform: translateX(-50%);
+  right: 0;
+  left: auto;
   padding: 12px 16px;
   background: var(--beyonder-midnight);
   color: var(--beyonder-white);
@@ -259,13 +259,12 @@ body.aicc-modal-open .aicc-overlay-container {
   line-height: 1.5;
 }
 
-/* Tooltip Arrow */
+/* Tooltip Arrow - rechts positioniert für Fixed Icon */
 .aicc-tooltip::after {
   content: '';
   position: absolute;
   top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 16px;
   border: 6px solid transparent;
   border-top-color: var(--beyonder-midnight);
 }
@@ -274,7 +273,7 @@ body.aicc-modal-open .aicc-overlay-container {
 .aicc-status-icon:hover .aicc-tooltip {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(-4px);
+  transform: translateY(-4px);
 }
 
 /* Tooltip variants by status */
@@ -372,6 +371,30 @@ body.aicc-modal-open .aicc-overlay-container {
     0 0 0 1px white,
     0 0 0 2px rgba(16, 30, 53, 0.3),
     0 2px 12px rgba(16, 30, 53, 0.3);
+}
+
+/* Tooltip für In-Field Badge */
+.aicc-infield-badge .aicc-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  right: auto;
+  padding: 8px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.aicc-infield-badge .aicc-tooltip::after {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.aicc-infield-badge:hover .aicc-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-4px);
 }
 
 /* Badge status colors */

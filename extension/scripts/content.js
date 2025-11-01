@@ -490,6 +490,10 @@ class ComplianceMonitor {
         <circle cx="12" cy="12" r="10" fill="white" opacity="0.3"/>
         <path d="M8 12l3 3 5-5" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
+      <div class="aicc-tooltip aicc-tooltip-safe">
+        <span class="aicc-tooltip-icon">✓</span>
+        <span class="aicc-tooltip-text">Keine sensiblen Daten erkannt</span>
+      </div>
     `;
 
     // Positioniere Badge innerhalb des Input-Feldes
@@ -599,6 +603,9 @@ class ComplianceMonitor {
     // Update ARIA label
     const ariaLabel = this.getAriaLabel(analysis);
     badge.setAttribute('aria-label', ariaLabel);
+
+    // Update Tooltip für In-Field Badge
+    this.updateTooltip(badge, analysis);
   }
 
   /**
@@ -1080,8 +1087,8 @@ class ComplianceMonitor {
     if (count > 0) {
       html += `<span class="aicc-tooltip-count">${count}</span>`;
 
-      // Sammle unique Kategorien
-      const categories = [...new Set(analysis.detections.map(d => d.category))];
+      // Sammle unique Kategorien (nutze 'name' statt 'category' für verständliche deutsche Texte)
+      const categories = [...new Set(analysis.detections.map(d => d.name || d.category))];
       const categoryText = categories.slice(0, 3).join(', ');
 
       if (categoryText) {
