@@ -28,6 +28,59 @@ Bei langen Prompts (>10k Zeichen) wurde der Text im Validierungsreport durch laz
 ✅ Validierungsreports enthalten jetzt **immer den vollständigen Prompt**, auch bei 15k+ Zeichen
 ✅ Keine Truncation durch virtuelles Scrolling oder Lazy Loading
 ✅ Präzisere Validierung durch Claude möglich
+### 🐛 Critical Bugfix: chrome.storage undefined
+
+#### Zusammenfassung
+
+Behebt einen kritischen TypeError der auftrat, wenn `chrome.storage` während der Extension-Initialisierung nicht verfügbar war. Die Extension versuchte auf `chrome.storage.local` zuzugreifen, ohne zu prüfen ob die API bereits geladen ist.
+
+#### 🎯 Problem
+
+**TypeError: Cannot read properties of undefined (reading 'local')**
+- Content-Script versuchte auf `chrome.storage.local` zuzugreifen
+- `chrome.storage` war `undefined` in zwei Funktionen:
+  - `showWarningModal()` (Zeile 1524)
+  - `showOverlay()` (Zeile 1212)
+- **Ursache:** Race Condition bei Extension-Initialisierung, Extension-Reload, oder isolierten Kontexten
+
+#### 🔧 Implementierte Lösung
+
+**Defensive API-Prüfung vor Zugriff**
+
+```javascript
+// v2.9.1: DEFENSIVE - Prüfe ob chrome.storage verfügbar ist
+if (chrome && chrome.storage && chrome.storage.local) {
+  const result = await chrome.storage.local.get(['aicc_developer_mode']);
+  isDeveloperMode = result.aicc_developer_mode || false;
+}
+```
+
+**Änderungen in:**
+- `content.js:1212-1216` - `showOverlay()` Methode
+- `content.js:1523-1528` - `showWarningModal()` Methode
+
+#### ✅ Benefits
+
+- ✅ **TypeError komplett verhindert** - keine Konsolen-Fehler mehr
+- ✅ **Graceful Degradation** - Feature funktioniert mit Fallback (`developerMode=false`)
+- ✅ **Keine Breaking Changes** - Extension funktioniert weiterhin einwandfrei
+- ✅ **Logging erhalten** - Andere Fehler werden weiterhin geloggt
+- ✅ **Robustheit** - Funktioniert auch bei Extension-Reloads und Race Conditions
+
+#### 📊 Technische Details
+
+- **Manifest V3 Kompatibilität:** Berücksichtigt Chrome Extension Lifecycle
+- **Defensive Programming:** Null-Check-Chain vor API-Zugriff
+- **Fallback-Wert:** `isDeveloperMode = false` wenn Storage nicht verfügbar
+- **Try/Catch erhalten:** Andere Storage-Fehler werden weiterhin gefangen
+
+#### 🎯 Testing
+
+**Verifiziert in folgenden Szenarien:**
+- ✅ Extension-Reload in Chrome DevTools
+- ✅ Normaler Extension-Load beim Browser-Start
+- ✅ Content-Script-Injektion bei schneller Tab-Wechslung
+- ✅ Entwicklermodus ON/OFF Toggle funktioniert normal
 
 ---
 

@@ -33,12 +33,38 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 - ✅ Reports enthalten **vollständigen Prompt** (auch bei 15k+ Zeichen)
 - ✅ Keine Truncation durch Browser-Optimierungen
 - ✅ Präzisere Validierung durch Claude möglich
+**🐛 Critical Bugfix: chrome.storage undefined**
+
+#### 🎯 Problem gelöst
+
+**TypeError: Cannot read properties of undefined (reading 'local')** ✅ BEHOBEN
+- Content-Script versuchte auf `chrome.storage.local` zuzugreifen, aber `chrome.storage` war `undefined`
+- Trat auf in `showWarningModal()` (Zeile 1524) und `showOverlay()` (Zeile 1212)
+- **Ursache:** Race Condition bei Extension-Initialisierung oder Reload
+
+#### 🔧 Implementierte Lösung
+
+**Defensive Prüfung vor Chrome API Zugriff**
+```javascript
+// v2.9.1: DEFENSIVE - Prüfe ob chrome.storage verfügbar ist
+if (chrome && chrome.storage && chrome.storage.local) {
+  const result = await chrome.storage.local.get(['aicc_developer_mode']);
+  isDeveloperMode = result.aicc_developer_mode || false;
+}
+```
+
+#### ✅ Benefits
+- Verhindert TypeError komplett
+- Graceful Degradation: Feature funktioniert mit Fallback (developerMode=false)
+- Keine Breaking Changes
+- Logging bleibt für andere Fehler erhalten
 
 > **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#291---2025-11-01)
 
 ---
 
 ### Version 2.9.0 (Vorherige) - 2025-11-01
+### Version 2.9.0 - 2025-11-01
 
 **🔧 Zentrale Versionsverwaltung**
 
@@ -916,3 +942,4 @@ Bei Fragen, Problemen oder Feedback:
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
 **Version 2.9.1** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Enhanced Icon Visibility & Hybrid Approach!
+**Version 2.9.1** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Chrome Storage Bugfix!
