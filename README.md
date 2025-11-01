@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.8.0** • by BEYONDER
+**Version 2.9.0** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -15,7 +15,46 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.8.0 (Aktuell) - 2025-11-01
+### Version 2.9.0 (Aktuell) - 2025-11-01
+
+**🔧 Zentrale Versionsverwaltung**
+
+#### 🚀 Neue Features
+
+**1. Single Source of Truth für Versionierung** 🎯
+- **Zentrale Version:** `extension/scripts/version.js` ist die einzige Versionsdefinition
+- **Automatische Synchronisation:** Alle 6 Dateien werden automatisch aktualisiert
+- **Kein manuelles Copy-Paste:** Eliminiert Inkonsistenzen und Fehler
+
+**2. NPM-Scripts für einfache Versionsverwaltung** ⚙️
+- `npm run version:patch` → Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` → Features (2.9.0 → 2.10.0)
+- `npm run version:major` → Breaking (2.9.0 → 3.0.0)
+- `npm run version:sync` → Synchronisiert aktuelle Version
+
+**3. Smart Build-Script mit Feedback** 💬
+- Farbcodierte Console-Ausgabe
+- Zeigt geänderte Dateien mit Zeilennummern
+- Git-Tag-Integration für professionelle Releases
+- Klare "Next Steps" Anweisungen
+
+#### 📊 Workflow
+
+**Vorher:** 6 Dateien manuell öffnen & ändern (fehleranfällig!)
+**Nachher:** `npm run version:minor` → Fertig! ✅
+
+#### 🎨 Benefits
+- ✅ Konsistente Versionierung (manifest.json, package.json, popup.html, version.js, README.md, CHANGELOG.md)
+- ✅ Zeitersparnis (~5 Min. pro Release)
+- ✅ Fehlerprävention (keine manuellen Fehler)
+- ✅ Semantic Versioning (SemVer 2.0)
+- ✅ Developer Experience (farbcodierte Ausgabe)
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#290---2025-11-01)
+
+---
+
+### Version 2.8.0 - 2025-11-01
 
 **🎨 Verbesserte Icon-Sichtbarkeit & Hybrid-Ansatz**
 
@@ -853,4 +892,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.8.0** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Enhanced Icon Visibility & Hybrid Approach!
+**Version 2.9.0** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Enhanced Icon Visibility & Hybrid Approach!
