@@ -7,6 +7,132 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.7.0] - 2025-10-31
+
+### 🔧 Entwicklermodus & Optimierter Validierungsreport
+
+#### Zusammenfassung
+
+Neue Einstellung im Extension-Popup ermöglicht Entwicklern, einen erweiterten Validierungsreport mit ALLEN geprüften Kriterien zu sehen. Der Report zeigt den vollständigen Eingabetext und markiert, welche der 33 Prüfkriterien erkannt wurden und welche nicht.
+
+#### ✅ Neue Features
+
+**1. Entwicklermodus-Toggle** ⚙️
+- Neuer Settings-Bereich im Extension-Popup (Klick auf Extension-Icon)
+- Toggle-Switch zum Ein-/Ausschalten des Entwicklermodus
+- Einstellung wird persistent in `chrome.storage.local` gespeichert
+- Visuelles Feedback beim Umschalten (✅ Aktiviert/Deaktiviert)
+- Modernes Design mit animiertem Toggle-Switch
+
+**2. Optimierter Validierungsreport** 📋
+- **Conditional Rendering:** Report-Sektion nur sichtbar bei aktiviertem Entwicklermodus
+- **Vollständiger Prompt:** Keine Kürzung mehr (vorher: max. 1000 Zeichen)
+- **ALLE Prüfkriterien angezeigt:**
+  - 12 kritische Pattern (E-Mail, IBAN, Kreditkarte, AHV, Passport, API Keys, Passwort)
+  - 10 Warning Pattern (Telefon CH/DE/Intl, IP, PLZ, Adresse, Geburtsdatum, Vertraulich, Gehalt, Geldbeträge)
+  - 5 NER-basierte Pattern (Namen, Geburtsdaten, Standorte, Geldbeträge, Organisationen)
+- **Neue Spalte "Status":**
+  - ✅ = Kriterium erkannt mit konkretem Wert
+  - ⬜ = Kriterium geprüft aber nicht gefunden
+- **Gruppierung:** Kritische Daten (🔴) und Warnungen (🟠) separat
+- **Erweiterte Statistiken:**
+  - Geprüfte Kriterien: 33 total
+  - Erkannte Daten: X (Y kritisch, Z Warnungen)
+  - Nicht erkannte: N
+
+**3. Technische Verbesserungen** 🎯
+- Neue Methode `getAllCriteria()` in `ComplianceDetector` liefert vollständige Kriterien-Liste
+- Async/await für Storage-Operationen in Modal und Overlay
+- Template-basiertes Conditional Rendering für sauberen Code
+- Storage-Key: `aicc_developer_mode`
+
+#### 📊 Benutzerfluss
+
+**Standardnutzer (developerMode=false):**
+1. Extension funktioniert wie gewohnt
+2. Modal zeigt nur Tabelle mit erkannten Daten
+3. Kein Validierungsreport sichtbar
+
+**Entwickler (developerMode=true):**
+1. Extension-Icon klicken → Popup öffnet
+2. Toggle "Entwicklermodus" aktivieren
+3. Bei Warnungen: Modal zeigt zusätzlich erweiterten Report
+4. Report kopieren und an Claude senden zur Validierung
+
+#### 🔧 Technische Änderungen
+
+**Neue Dateien:**
+- Keine
+
+**Modifizierte Dateien:**
+- `extension/scripts/version.js`
+  - Version auf 2.7.0 erhöht
+  - Storage-Key Konstante hinzugefügt: `STORAGE_KEYS.DEVELOPER_MODE`
+- `extension/popup.html`
+  - Neuer Settings-Bereich mit Toggle-Switch
+  - CSS für Toggle-Switch und Settings-Box
+  - Version auf 2.7.0 aktualisiert
+- `extension/popup.js`
+  - Laden/Speichern von Developer Mode Setting
+  - Event-Listener für Toggle-Switch
+  - Visuelles Feedback beim Umschalten
+- `extension/scripts/detector.js`
+  - Neue Methode: `getAllCriteria(lang)` liefert alle 33 Prüfkriterien
+  - Inkludiert NER-basierte Pattern wenn aktiviert
+- `extension/scripts/content.js`
+  - `generateValidationReport()`: Erweitert mit allen Kriterien + Status-Spalte
+  - `showWarningModal()`: Async, lädt Developer Mode, conditional Report
+  - `showOverlay()`: Async, lädt Developer Mode, conditional Report
+  - Copy-Button Handler nutzen `isDeveloperMode` Parameter
+- `extension/manifest.json`
+  - Version auf 2.7.0 erhöht
+
+#### 🎨 UI/UX Änderungen
+
+**Popup:**
+```
+⚙️ Einstellungen
+┌─────────────────────────────────┐
+│ 🔧 Entwicklermodus              │
+│ Zeigt erweiterten Validierungs- │
+│ report mit allen Prüfkriterien  │
+│                          [○───]  │ OFF
+└─────────────────────────────────┘
+```
+
+**Validierungsreport:**
+```markdown
+## Geprüfte Kriterien
+
+### 🔴 Kritische Daten (12 Kriterien)
+| # | Kriterium | Status | Wert | Kategorie | Beschreibung | Korrekt? |
+|---|-----------|--------|------|-----------|--------------|----------|
+| 1 | E-Mail    | ✅     | `test@email.com` | Personenbezogen | ... | ⬜ |
+| 2 | IBAN      | ⬜     | -    | Finanzdaten | ... | - |
+...
+
+### 🟠 Warnungen (21 Kriterien)
+| # | Kriterium | Status | Wert | Kategorie | Beschreibung | Korrekt? |
+|---|-----------|--------|------|-----------|--------------|----------|
+| 13 | CH Telefon | ✅    | `079 123 45 67` | Personenbezogen | ... | ⬜ |
+| 14 | IP-Adresse | ⬜    | -    | Technische Daten | ... | - |
+...
+```
+
+#### 🐛 Behobene Probleme
+- Keine (neue Features)
+
+#### ⚠️ Breaking Changes
+- Keine
+
+#### 📝 Hinweise für Entwickler
+- Storage-Key `aicc_developer_mode` wird verwendet
+- Default-Wert: `false` (Entwicklermodus deaktiviert)
+- Kompatibel mit allen existierenden Features
+- Keine Performance-Auswirkungen (Report wird nur bei Bedarf generiert)
+
+---
+
 ## [2.6.0] - 2025-10-30
 
 ### 🎯 4 Neue Compromise.js Entity-Erkennungen

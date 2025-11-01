@@ -1710,6 +1710,99 @@ class ComplianceDetector {
   }
 
   /**
+   * Gibt alle verfügbaren Prüfkriterien zurück
+   * v2.7.0: Für erweiterten Validierungsreport im Entwicklermodus
+   */
+  getAllCriteria(lang = 'de') {
+    const result = {
+      critical: [],
+      warning: []
+    };
+
+    // Kritische Patterns
+    this.patterns.critical.forEach(pattern => {
+      result.critical.push({
+        id: pattern.id,
+        name: lang === 'de' ? pattern.nameDE : pattern.nameEN,
+        description: lang === 'de' ? pattern.descDE : pattern.descEN,
+        category: pattern.category,
+        categoryLabel: this.t(`categories.${pattern.category}`, lang)
+      });
+    });
+
+    // Warning Patterns
+    this.patterns.warning.forEach(pattern => {
+      result.warning.push({
+        id: pattern.id,
+        name: lang === 'de' ? pattern.nameDE : pattern.nameEN,
+        description: lang === 'de' ? pattern.descDE : pattern.descEN,
+        category: pattern.category,
+        categoryLabel: this.t(`categories.${pattern.category}`, lang)
+      });
+    });
+
+    // NER-basierte Patterns hinzufügen (wenn aktiviert)
+    if (this.nerEnabled && this.nerAvailable) {
+      // Name NER
+      result.warning.push({
+        id: 'name_ner',
+        name: lang === 'de' ? 'Name (NER)' : 'Name (NER)',
+        description: lang === 'de'
+          ? 'Personennamen erkannt durch Named Entity Recognition'
+          : 'Person names detected by Named Entity Recognition',
+        category: 'pii',
+        categoryLabel: this.t('categories.pii', lang)
+      });
+
+      // Geburtsdaten NER
+      result.warning.push({
+        id: 'birthdate_nlp',
+        name: lang === 'de' ? 'Geburtsdatum (NER)' : 'Date of Birth (NER)',
+        description: lang === 'de'
+          ? 'Geburtsdaten erkannt durch Natural Language Processing'
+          : 'Birthdates detected by Natural Language Processing',
+        category: 'pii',
+        categoryLabel: this.t('categories.pii', lang)
+      });
+
+      // Standorte NER
+      result.warning.push({
+        id: 'location_nlp',
+        name: lang === 'de' ? 'Standort/Adresse (NER)' : 'Location/Address (NER)',
+        description: lang === 'de'
+          ? 'Standorte und Adressen erkannt durch NER'
+          : 'Locations and addresses detected by NER',
+        category: 'pii',
+        categoryLabel: this.t('categories.pii', lang)
+      });
+
+      // Geldbeträge NER
+      result.warning.push({
+        id: 'money_nlp',
+        name: lang === 'de' ? 'Geldbetrag (NER)' : 'Currency Amount (NER)',
+        description: lang === 'de'
+          ? 'Geldbeträge erkannt durch NLP'
+          : 'Currency amounts detected by NLP',
+        category: 'business',
+        categoryLabel: this.t('categories.business', lang)
+      });
+
+      // Organisationen NER
+      result.warning.push({
+        id: 'organization_nlp',
+        name: lang === 'de' ? 'Organisation (NER)' : 'Organization (NER)',
+        description: lang === 'de'
+          ? 'Organisationen erkannt durch NER'
+          : 'Organizations detected by NER',
+        category: 'business',
+        categoryLabel: this.t('categories.business', lang)
+      });
+    }
+
+    return result;
+  }
+
+  /**
    * Holt Übersetzung für gegebenen Schlüssel
    */
   t(key, lang = 'de') {

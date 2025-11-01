@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.6.0** • by BEYONDER
+**Version 2.7.0** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -15,7 +15,43 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.6.0 (Aktuell) - 2025-10-30
+### Version 2.7.0 (Aktuell) - 2025-10-31
+
+**🔧 Entwicklermodus & Optimierter Validierungsreport**
+
+#### 🚀 Neue Features
+
+**1. Entwicklermodus-Toggle im Popup** ⚙️
+- Einstellung im Extension-Popup (Klick auf Extension-Icon)
+- Toggle-Switch zum Aktivieren/Deaktivieren
+- Persistent gespeichert in chrome.storage.local
+- Visuelles Feedback beim Umschalten
+
+**2. Optimierter Validierungsreport** 📋
+- **Nur bei aktiviertem Entwicklermodus sichtbar**
+- **Vollständiger Prompt ohne Kürzung** (vorher: max. 1000 Zeichen)
+- **ALLE Prüfkriterien angezeigt** (28 Patterns + 5 NER-basierte)
+  - ✅ = Kriterium erkannt mit Wert
+  - ⬜ = Kriterium geprüft aber nicht gefunden
+- Gruppierung nach Kritisch/Warnung
+- Erweiterte Statistiken (erkannt vs. nicht erkannt)
+
+**3. Conditional Rendering** 🎯
+- Report-Sektion nur bei developerMode=true
+- Modal und Overlay nutzen gemeinsame Logik
+- Keine unnötige Code-Anzeige für normale User
+
+#### 📊 Technische Details
+- Neue `getAllCriteria()` Methode in detector.js
+- Storage-Key: `aicc_developer_mode`
+- Async/await für Storage-Operationen
+- Template-basiertes Conditional Rendering
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#270---2025-10-31)
+
+---
+
+### Version 2.6.0 - 2025-10-30
 
 **🎯 4 Neue Compromise.js Entity-Erkennungen**
 

@@ -319,6 +319,95 @@
       margin: 24px 0;
     }
 
+    /* ===== SETTINGS ===== */
+    .settings-box {
+      background: var(--white-smoke);
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid var(--grey-light);
+    }
+
+    .setting-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .setting-info {
+      flex: 1;
+    }
+
+    .setting-info h4 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 14px;
+      color: var(--midnight-blue);
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .setting-info p {
+      font-size: 12px;
+      color: var(--grey-dark);
+      line-height: 1.5;
+      font-weight: 500;
+      margin: 0;
+    }
+
+    /* ===== TOGGLE SWITCH ===== */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 28px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--grey-light);
+      transition: all 0.3s ease;
+      border-radius: 28px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: all 0.3s ease;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: var(--gradient-highlight);
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+
+    .toggle-switch:hover .toggle-slider {
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.15), 0 0 8px rgba(227, 58, 116, 0.3);
+    }
+
     /* ===== FOOTER ===== */
     .footer {
       background: var(--midnight-blue);
@@ -378,6 +467,24 @@
         <p>Extension läuft im Hintergrund</p>
       </div>
     </div>
+
+    <div class="section">
+      <h2>⚙️ Einstellungen</h2>
+      <div class="settings-box">
+        <div class="setting-item">
+          <div class="setting-info">
+            <h4>🔧 Entwicklermodus</h4>
+            <p>Zeigt erweiterten Validierungsreport mit allen Prüfkriterien im Modal</p>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="developer-mode-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
 
     <div class="section">
       <h2>Unterstützte Plattformen</h2>
@@ -460,7 +567,7 @@
       DSGVO & DSG konform • 100% lokal • Keine Telemetrie
     </div>
     <div class="version">
-      Version 2.3.4 BETA
+      Version 2.7.0 BETA
     </div>
   </div>
 
