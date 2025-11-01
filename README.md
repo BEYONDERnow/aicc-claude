@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.9.1** • by BEYONDER
+**Version 2.9.2** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -15,55 +15,51 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.9.1 (Aktuell) - 2025-11-01
+### Version 2.9.2 (Aktuell) - 2025-11-01
 
-**🔧 Fix: Vollständige Prompt-Extraktion für Validierungsreports**
+**🚀 Feature: Optimierter Validierungsreport mit Kontext, Position & Annotation**
 
-#### 🐛 Problem gelöst
-- **Lange Prompts wurden abgeschnitten:** Bei Prompts >10k Zeichen zeigte der Validierungsreport nur einen Teil des Textes
-- **Ursache:** `innerText` gibt nur gerenderten/sichtbaren Text zurück (lazy rendering Problem)
-- **Auswirkung:** Claude konnte nicht alle Erkennungen vollständig validieren
+#### 🎯 Neue Features
+- **Kontext bei Erkennungen**: ±50 Zeichen um jede Erkennung + Position im Text
+- **Annotierter Prompt**: Erkennungen markiert als `[1:NAME]`, `[2:IBAN]` im Text
+- **False-Negative-Prüfung**: Strukturierte Checkliste aller nicht erkannten Kriterien
+- **Erkennungsmethode**: Zeigt ob NER/KI, Regex, Pattern oder Lexikon verwendet wurde
+- **Metriken-Anleitung**: Precision, Recall, F1-Score Formeln für objektive Bewertung
 
-#### ✅ Lösung
-- **Neue Methode `getFullElementText()`:** Verwendet `textContent` statt `innerText`
-- **Garantiert vollständiger Text:** Unabhängig von DOM-Rendering oder virtuellem Scrolling
-- **Nur für Reports:** Detection-Performance bleibt unverändert (weiterhin schnell)
+#### 📊 Vorteile
+- ✅ Schnellere Validierung durch sofort erkennbaren Kontext
+- ✅ False Negatives einfacher zu finden (annotierter Prompt + Checkliste)
+- ✅ Bessere Verbesserungs-Insights durch strukturierte Pattern-Analyse
+- ✅ Objektive Metriken für Qualitätsvergleich zwischen Versionen
 
-#### 🎯 Auswirkung
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#292---2025-11-01)
+
+---
+
+### Version 2.9.1 (Vorherige) - 2025-11-01
+
+**🔧 Fixes: Vollständige Prompt-Extraktion & chrome.storage Bugfix**
+
+#### 🐛 Problem 1: Lange Prompts wurden abgeschnitten
+- Bei Prompts >10k Zeichen zeigte der Validierungsreport nur einen Teil des Textes
+- **Ursache:** `innerText` gibt nur gerenderten/sichtbaren Text zurück (lazy rendering)
+- **Lösung:** Neue Methode `getFullElementText()` verwendet `textContent` statt `innerText`
+
+#### 🐛 Problem 2: chrome.storage undefined Error
+- **TypeError: Cannot read properties of undefined (reading 'local')**
+- Content-Script versuchte auf `chrome.storage.local` zuzugreifen, aber `chrome.storage` war `undefined`
+- **Ursache:** Race Condition bei Extension-Initialisierung oder Reload
+- **Lösung:** Defensive try-catch Prüfung mit silentFail Fallback
+
+#### ✅ Auswirkung
 - ✅ Reports enthalten **vollständigen Prompt** (auch bei 15k+ Zeichen)
 - ✅ Keine Truncation durch Browser-Optimierungen
-- ✅ Präzisere Validierung durch Claude möglich
-**🐛 Critical Bugfix: chrome.storage undefined**
-
-#### 🎯 Problem gelöst
-
-**TypeError: Cannot read properties of undefined (reading 'local')** ✅ BEHOBEN
-- Content-Script versuchte auf `chrome.storage.local` zuzugreifen, aber `chrome.storage` war `undefined`
-- Trat auf in `showWarningModal()` (Zeile 1524) und `showOverlay()` (Zeile 1212)
-- **Ursache:** Race Condition bei Extension-Initialisierung oder Reload
-
-#### 🔧 Implementierte Lösung
-
-**Defensive Prüfung vor Chrome API Zugriff**
-```javascript
-// v2.9.1: DEFENSIVE - Prüfe ob chrome.storage verfügbar ist
-if (chrome && chrome.storage && chrome.storage.local) {
-  const result = await chrome.storage.local.get(['aicc_developer_mode']);
-  isDeveloperMode = result.aicc_developer_mode || false;
-}
-```
-
-#### ✅ Benefits
-- Verhindert TypeError komplett
-- Graceful Degradation: Feature funktioniert mit Fallback (developerMode=false)
-- Keine Breaking Changes
-- Logging bleibt für andere Fehler erhalten
+- ✅ Verhindert TypeError komplett mit Graceful Degradation
 
 > **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#291---2025-11-01)
 
 ---
 
-### Version 2.9.0 (Vorherige) - 2025-11-01
 ### Version 2.9.0 - 2025-11-01
 
 **🔧 Zentrale Versionsverwaltung**
@@ -941,5 +937,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.9.1** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Enhanced Icon Visibility & Hybrid Approach!
-**Version 2.9.1** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Chrome Storage Bugfix!
+**Version 2.9.2** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Optimized Validation Reports with Context & Annotation!

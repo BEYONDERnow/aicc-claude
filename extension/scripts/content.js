@@ -1335,6 +1335,7 @@ class ComplianceMonitor {
    * Generiert Validierungs-Report für Claude
    * v2.7.0: Erweitert mit allen Prüfkriterien und vollem Prompt
    * v2.9.1: Verwendet getFullElementText() für vollständige Prompt-Extraktion
+   * v2.9.2: Erweitert mit Kontext, Position, Methode, annotiertem Prompt & False-Negative-Prüfung
    */
   generateValidationReport(analysis, element = null, isDeveloperMode = true) {
     const lang = this.currentLang;
@@ -1346,118 +1347,199 @@ class ComplianceMonitor {
     // v2.7.0: Hole alle verfügbaren Prüfkriterien
     const allCriteria = this.detector.getAllCriteria(lang);
 
+    // Helper: Extrahiere Kontext um Erkennung (±50 Zeichen)
+    const getContext = (text, start, end, contextLength = 50) => {
+      const before = text.substring(Math.max(0, start - contextLength), start);
+      const match = text.substring(start, end);
+      const after = text.substring(end, Math.min(text.length, end + contextLength));
+      return `${before.length < contextLength ? '' : '...'}${before}**${match}**${after}${after.length < contextLength ? '' : '...'}`;
+    };
+
+    // Helper: Bestimme Erkennungsmethode
+    const getMethod = (detection) => {
+      const id = detection.id || detection.type || '';
+      if (id.includes('_ner') || id.includes('_nlp')) return 'NER/KI';
+      if (id.includes('regex') || id.includes('pattern')) return 'Regex';
+      if (id.includes('lexicon')) return 'Lexikon';
+      return 'Pattern';
+    };
+
     // Erstelle Map für schnelle Lookups welche Kriterien erkannt wurden
     const detectedCriteriaMap = new Map();
+    const allDetections = []; // Alle Detections mit Details
+
     analysis.detections.forEach(detection => {
       const key = detection.id || detection.type;
       if (!detectedCriteriaMap.has(key)) {
         detectedCriteriaMap.set(key, []);
       }
       detectedCriteriaMap.get(key).push(detection);
+
+      // Sammle Detection mit Kontext
+      if (detection.start !== undefined && detection.end !== undefined) {
+        allDetections.push({
+          ...detection,
+          context: getContext(inputText, detection.start, detection.end),
+          method: getMethod(detection),
+          position: `${detection.start}-${detection.end}`
+        });
+      }
     });
 
-    // Erstelle Markdown-Tabelle
-    let report = `# AI Compliance Checker - Validierungsreport v2.9.1
+    // Sortiere Detections nach Position für annotierten Prompt
+    allDetections.sort((a, b) => a.start - b.start);
 
-## Rolle
+    // Erstelle Markdown-Report
+    let report = `# AI Compliance Checker - Validierungsreport v2.9.2
+
+## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
 
-## Aufgabe
-Überprüfe die folgenden Prüfkriterien und validiere ob die Erkennungen korrekt sind.
+## 📋 Aufgabe
+Validiere die Erkennungen des AI Compliance Checkers auf:
+1. **True Positives**: Korrekt erkannte sensible Daten
+2. **False Positives**: Fälschlicherweise markierte Inhalte
+3. **False Negatives**: Übersehene sensible Daten
 
-Der Report zeigt ALLE ${allCriteria.critical.length + allCriteria.warning.length} geprüften Kriterien an:
-- ✅ = Kriterium wurde erkannt mit konkretem Wert
-- ⬜ = Kriterium wurde geprüft aber nicht gefunden
-
-Zähle am Ende wie viele Erkennungen korrekt (True Positives) und wie viele falsch (False Positives) sind.
-
-## Eingegebener Prompt (vollständig)
-
-Der Benutzer hat folgenden Text eingegeben (${inputText.length} Zeichen):
-
-\`\`\`
-${inputText}
-\`\`\`
-
-## Geprüfte Kriterien
-
-### 🔴 Kritische Daten (${allCriteria.critical.length} Kriterien)
-
-| # | Kriterium | Status | Wert | Kategorie | Beschreibung | Korrekt? |
-|---|-----------|--------|------|-----------|--------------|----------|
-`;
-
-    // Kritische Kriterien
-    let counter = 1;
-    allCriteria.critical.forEach(criterion => {
-      const detections = detectedCriteriaMap.get(criterion.id);
-      if (detections && detections.length > 0) {
-        // Gruppiere gleiche Werte
-        const uniqueValues = [...new Set(detections.map(d => d.match))];
-        uniqueValues.forEach(value => {
-          report += `| ${counter} | ${criterion.name} | ✅ | \`${value}\` | ${criterion.categoryLabel} | ${criterion.description} | ⬜ |\n`;
-          counter++;
-        });
-      } else {
-        report += `| ${counter} | ${criterion.name} | ⬜ | - | ${criterion.categoryLabel} | ${criterion.description} | - |\n`;
-        counter++;
-      }
-    });
-
-    report += `\n### 🟠 Warnungen (${allCriteria.warning.length} Kriterien)
-
-| # | Kriterium | Status | Wert | Kategorie | Beschreibung | Korrekt? |
-|---|-----------|--------|------|-----------|--------------|----------|
-`;
-
-    // Warning Kriterien
-    allCriteria.warning.forEach(criterion => {
-      const detections = detectedCriteriaMap.get(criterion.id);
-      if (detections && detections.length > 0) {
-        const uniqueValues = [...new Set(detections.map(d => d.match))];
-        uniqueValues.forEach(value => {
-          report += `| ${counter} | ${criterion.name} | ✅ | \`${value}\` | ${criterion.categoryLabel} | ${criterion.description} | ⬜ |\n`;
-          counter++;
-        });
-      } else {
-        report += `| ${counter} | ${criterion.name} | ⬜ | - | ${criterion.categoryLabel} | ${criterion.description} | - |\n`;
-        counter++;
-      }
-    });
-
-    const detectedCount = analysis.detections.length;
-    const notDetectedCount = (allCriteria.critical.length + allCriteria.warning.length) - detectedCount;
-
-    report += `
-## Anweisungen
-1. **Prüfe jeden Eintrag mit Status ✅**:
-   - Ersetze ⬜ in der "Korrekt?"-Spalte mit:
-     - ✅ wenn korrekt erkannt (True Positive)
-     - ❌ wenn falsch erkannt (False Positive)
-2. **Prüfe Einträge mit Status ⬜**:
-   - Sind wirklich keine Daten vorhanden?
-   - Oder wurden sie übersehen? (False Negative)
-3. **Ergänze Kommentare** bei:
-   - Fehlenden Erkennungen (False Negatives)
-   - Zweifelhaften Fällen
-4. **Zähle am Ende**:
-   - Anzahl ✅ (True Positives)
-   - Anzahl ❌ (False Positives)
-   - Anzahl False Negatives
-   - Accuracy = ✅ / (✅ + ❌)
-
-## Kontext
-- **Tool**: AI Compliance Checker v2.9.1
-- **Sprache**: ${lang === 'de' ? 'Deutsch' : 'English'}
+## 📊 Übersicht
 - **Textlänge**: ${inputText.length} Zeichen
-- **Geprüfte Kriterien**: ${allCriteria.critical.length + allCriteria.warning.length} total (${allCriteria.critical.length} kritisch, ${allCriteria.warning.length} Warnungen)
-- **Erkannte Daten**: ${detectedCount} (${analysis.detections.filter(d => d.severity === 'critical').length} kritisch, ${analysis.detections.filter(d => d.severity === 'warning').length} Warnungen)
-- **Nicht erkannte**: ${notDetectedCount}
-- **Status**: ${analysis.status === 'critical' ? '🔴 Kritisch' : '🟠 Warnung'}
+- **Geprüfte Kriterien**: ${allCriteria.critical.length + allCriteria.warning.length} (${allCriteria.critical.length} kritisch, ${allCriteria.warning.length} Warnungen)
+- **Erkennungen**: ${allDetections.length} (${analysis.detections.filter(d => d.severity === 'critical').length} kritisch, ${analysis.detections.filter(d => d.severity === 'warning').length} Warnungen)
 
 ---
 
-Beginne mit der Validierung!`;
+## ✅ Erkennungen mit Kontext
+
+`;
+
+    // Erkennungen mit Details in Tabelle
+    if (allDetections.length > 0) {
+      report += `| # | Kriterium | Wert | Kontext (±50 Zeichen) | Position | Methode | Korrekt? |
+|---|-----------|------|-----------------------|----------|---------|----------|
+`;
+
+      allDetections.forEach((detection, index) => {
+        const criterion = [...allCriteria.critical, ...allCriteria.warning].find(c => c.id === detection.id);
+        const name = criterion ? criterion.name : (detection.name || detection.id);
+        report += `| ${index + 1} | ${name} | \`${detection.match}\` | ${detection.context} | ${detection.position} | ${detection.method} | ⬜ |\n`;
+      });
+    } else {
+      report += `Keine Erkennungen.\n`;
+    }
+
+    report += `\n**Legende:**
+- **Position**: Zeichen-Offset im Text (start-end)
+- **Methode**: Erkennungstechnik (NER/KI, Regex, Pattern, Lexikon)
+- **Korrekt?**: ✅ = True Positive, ❌ = False Positive
+
+---
+
+## 📝 Eingegebener Prompt (annotiert)
+
+`;
+
+    // Annotierter Prompt
+    if (allDetections.length > 0 && inputText.length > 0) {
+      let annotatedText = '';
+      let lastIndex = 0;
+
+      allDetections.forEach((detection, index) => {
+        // Text vor der Erkennung
+        annotatedText += inputText.substring(lastIndex, detection.start);
+
+        // Erkannte Stelle markieren
+        const criterion = [...allCriteria.critical, ...allCriteria.warning].find(c => c.id === detection.id);
+        const label = criterion ? criterion.name : detection.id;
+        annotatedText += `[${index + 1}:${label.toUpperCase()}]`;
+
+        lastIndex = detection.end;
+      });
+
+      // Rest des Textes
+      annotatedText += inputText.substring(lastIndex);
+
+      report += `\`\`\`\n${annotatedText}\n\`\`\`\n\n`;
+      report += `**Markierungen**: \`[#:TYP]\` zeigt Position der Erkennung im Text.\n`;
+    } else {
+      report += `\`\`\`\n${inputText}\n\`\`\`\n\n`;
+    }
+
+    report += `\n---
+
+## 🔍 False-Negative-Prüfung
+
+Prüfe ob folgende Kategorien übersehen wurden:
+
+`;
+
+    // Liste aller nicht erkannten Kriterien mit Beispielen
+    const notDetectedCriteria = [];
+    [...allCriteria.critical, ...allCriteria.warning].forEach(criterion => {
+      if (!detectedCriteriaMap.has(criterion.id)) {
+        notDetectedCriteria.push(criterion);
+      }
+    });
+
+    if (notDetectedCriteria.length > 0) {
+      report += `### 🔴 Kritische Daten (nicht erkannt)\n\n`;
+      const criticalNotDetected = notDetectedCriteria.filter(c => c.severity === 'critical');
+      if (criticalNotDetected.length > 0) {
+        criticalNotDetected.forEach(criterion => {
+          report += `- [ ] **${criterion.name}**: ${criterion.description}\n`;
+        });
+      } else {
+        report += `✅ Alle kritischen Kategorien geprüft.\n`;
+      }
+
+      report += `\n### 🟠 Warnungen (nicht erkannt)\n\n`;
+      const warningNotDetected = notDetectedCriteria.filter(c => c.severity !== 'critical');
+      if (warningNotDetected.length > 0) {
+        warningNotDetected.forEach(criterion => {
+          report += `- [ ] **${criterion.name}**: ${criterion.description}\n`;
+        });
+      } else {
+        report += `✅ Alle Warning-Kategorien geprüft.\n`;
+      }
+    } else {
+      report += `🎉 Alle ${allCriteria.critical.length + allCriteria.warning.length} Kriterien wurden erkannt!\n`;
+    }
+
+    report += `\n---
+
+## 📊 Anweisungen für die Validierung
+
+1. **Erkennungen validieren** (Tabelle oben):
+   - Nutze den Kontext um zu prüfen ob die Erkennung korrekt ist
+   - Markiere in "Korrekt?"-Spalte: ✅ (True Positive) oder ❌ (False Positive)
+   - Nutze Position und annotierten Prompt zur Orientierung
+
+2. **False Negatives finden** (Checkliste oben):
+   - Lies den vollständigen Prompt durch
+   - Prüfe ob Kategorien mit \`[ ]\` übersehen wurden
+   - Notiere gefundene False Negatives mit Position
+
+3. **Zusammenfassung erstellen**:
+   - Anzahl True Positives: ___
+   - Anzahl False Positives: ___
+   - Anzahl False Negatives: ___
+   - **Precision** = TP / (TP + FP) = ___
+   - **Recall** = TP / (TP + FN) = ___
+   - **F1-Score** = 2 × (Precision × Recall) / (Precision + Recall) = ___
+
+4. **Verbesserungsvorschläge**:
+   - Welche False Positives treten auf? (Pattern zu breit?)
+   - Welche False Negatives wurden übersehen? (Pattern fehlt?)
+   - Wie kann die Detection verbessert werden?
+
+---
+
+**Tool**: AI Compliance Checker v2.9.2
+**Sprache**: ${lang === 'de' ? 'Deutsch' : 'English'}
+**Status**: ${analysis.status === 'critical' ? '🔴 Kritisch' : analysis.status === 'warning' ? '🟠 Warnung' : '✅ Sicher'}
+
+---
+
+🚀 **Beginne mit der Validierung!**`;
 
     return report;
   }
