@@ -1,6 +1,6 @@
 /**
  * AI Compliance Checker - Compromise.js NER Integration
- * Version: 2.6.1 - ML-quality NER without ML dependencies + Stopword Filter
+ * Version: 2.9.2 - ML-quality NER without ML dependencies + Enhanced Filtering
  *
  * Verwendet Compromise.js für Named Entity Recognition:
  * - Keine Lexikon-Abhängigkeit (erkennt auch unbekannte Namen)
@@ -14,7 +14,11 @@
  * ✅ "Der Große Erfolg" → NICHT als Name erkannt (vorher False Positive)
  * ✅ "Hans-Peter Schmidt" → als EINEN Namen erkannt (vorher 2 separate)
  *
- * v2.6.1 Improvements:
+ * v2.9.2 Improvements:
+ * ✅ Erweiterte Stopword-Liste (110+ Wörter inkl. "information über")
+ * ✅ Integration mit detector.js Cleanup-Pipeline
+ *
+ * v2.6.1:
  * ✅ Stopword-Filter (100+ deutsche/englische Wörter werden nicht erkannt)
  * ✅ Technische Begriff-Filter ("Quality-Assurance" nicht als Organisation)
  * ✅ Erhöhte Mindestlänge (Namen/Orte/Orgs >= 3-4 Zeichen)
@@ -29,7 +33,7 @@ export class CompromiseNER {
     this.nerEnabled = true;
     this.nerReady = true;
 
-    // v2.6.1: Stopword-Liste für häufige deutsche/englische Wörter
+    // v2.9.2: Erweiterte Stopword-Liste für häufige deutsche/englische Wörter
     // Diese Wörter werden NIEMALS als sensible Daten erkannt
     this.stopwords = new Set([
       // Deutsche Artikel, Pronomen, Konjunktionen
@@ -50,7 +54,10 @@ export class CompromiseNER {
       'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should', 'could', 'can', 'may', 'might',
       'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'about', 'as', 'into', 'through', 'during',
       'and', 'or', 'but', 'if', 'then', 'than', 'that', 'this', 'these', 'those',
-      'not', 'no', 'yes', 'all', 'any', 'some', 'more', 'most', 'very', 'so', 'too', 'also'
+      'not', 'no', 'yes', 'all', 'any', 'some', 'more', 'most', 'very', 'so', 'too', 'also',
+      // v2.9.2: Zusätzliche häufige Wörter
+      'information', 'information über', 'über', 'about', 'regarding', 'concerning',
+      'tel', 'email', 'mail', 'phone', 'telefon'
     ]);
 
     // v2.6.1: Technische Begriff-Patterns (werden nicht als Organisationen erkannt)
