@@ -10,6 +10,7 @@ class ComplianceMonitor {
     this.currentLang = this.detectLanguage();
     this.monitoredElements = new Map();
     this.statusIcons = new Map();
+    this.inFieldBadges = new Map(); // v2.8.0: In-Field Badges (Hybrid)
     this.isModalShown = false;
 
     // Debounce Timer für Performance
@@ -414,12 +415,16 @@ class ComplianceMonitor {
     iconWrapper.setAttribute('data-status', 'safe');
 
     iconWrapper.innerHTML = `
-      <div class="aicc-status-icon" data-status="safe">
+      <div class="aicc-status-icon" data-status="safe" tabindex="0" role="button" aria-label="Compliance-Status: Sicher">
         <svg width="24" height="24" viewBox="0 0 24 24" class="aicc-icon-svg">
           <circle cx="12" cy="12" r="10" class="aicc-icon-circle"/>
           <path d="M8 12l3 3 5-5" class="aicc-icon-check" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <div class="aicc-badge" style="display: none;">0</div>
+        <div class="aicc-tooltip aicc-tooltip-safe">
+          <span class="aicc-tooltip-icon">✓</span>
+          <span class="aicc-tooltip-text">Keine sensiblen Daten erkannt</span>
+        </div>
       </div>
     `;
 
@@ -434,7 +439,19 @@ class ComplianceMonitor {
       this.showOverlay(element);
     });
 
+    // Keyboard navigation (Enter/Space to open)
+    icon.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        this.showOverlay(element);
+      }
+    });
+
     this.statusIcons.set(element, iconWrapper);
+
+    // v2.8.0: Erstelle In-Field Badge für Hybrid-Ansatz
+    this.createInFieldBadge(element);
 
     // Update Position bei Scroll/Resize
     const updatePosition = () => this.positionIcon(element, iconWrapper);
@@ -452,6 +469,136 @@ class ComplianceMonitor {
       }
     };
     setInterval(checkVisibility, 500);
+  }
+
+  /**
+   * v2.8.0: Erstellt In-Field Badge (Hybrid-Ansatz)
+   */
+  createInFieldBadge(element) {
+    if (this.inFieldBadges.has(element)) return;
+
+    // Erstelle Badge-Element
+    const badge = document.createElement('div');
+    badge.className = 'aicc-infield-badge';
+    badge.setAttribute('data-status', 'safe');
+    badge.setAttribute('tabindex', '0');
+    badge.setAttribute('role', 'button');
+    badge.setAttribute('aria-label', 'Compliance-Status: Sicher');
+
+    badge.innerHTML = `
+      <svg width="12" height="12" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10" fill="white" opacity="0.3"/>
+        <path d="M8 12l3 3 5-5" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+
+    // Positioniere Badge innerhalb des Input-Feldes
+    this.positionInFieldBadge(element, badge);
+
+    // Füge Badge zum Parent des Elements hinzu
+    const parent = element.parentElement;
+    if (parent) {
+      parent.style.position = parent.style.position || 'relative';
+      parent.appendChild(badge);
+    }
+
+    // Click handler - öffnet das Overlay
+    badge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.showOverlay(element);
+    });
+
+    // Keyboard navigation
+    badge.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        this.showOverlay(element);
+      }
+    });
+
+    this.inFieldBadges.set(element, badge);
+
+    // Update Position bei Scroll/Resize/Input
+    const updateBadgePosition = () => this.positionInFieldBadge(element, badge);
+    window.addEventListener('scroll', updateBadgePosition, true);
+    window.addEventListener('resize', updateBadgePosition);
+    element.addEventListener('input', updateBadgePosition);
+
+    // Prüfe Sichtbarkeit
+    const checkBadgeVisibility = () => {
+      const rect = element.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0 || !document.body.contains(element)) {
+        badge.style.display = 'none';
+      } else {
+        badge.style.display = 'flex';
+        updateBadgePosition();
+      }
+    };
+    setInterval(checkBadgeVisibility, 500);
+  }
+
+  /**
+   * v2.8.0: Positioniert In-Field Badge innerhalb des Input-Feldes
+   */
+  positionInFieldBadge(element, badge) {
+    const rect = element.getBoundingClientRect();
+
+    // Prüfe Sichtbarkeit
+    if (rect.width === 0 || rect.height === 0 || !document.body.contains(element)) {
+      badge.style.display = 'none';
+      return;
+    }
+
+    badge.style.display = 'flex';
+
+    // Berechne Position: Rechts oben im Input-Feld
+    // Verwende absolute Positionierung relativ zum Parent
+    const parent = element.parentElement;
+    if (!parent) return;
+
+    const parentRect = parent.getBoundingClientRect();
+    const relativeTop = rect.top - parentRect.top;
+    const relativeRight = parentRect.right - rect.right;
+
+    badge.style.position = 'absolute';
+    badge.style.top = `${relativeTop + 8}px`;
+    badge.style.right = `${relativeRight + 8}px`;
+    badge.style.zIndex = '100';
+  }
+
+  /**
+   * v2.8.0: Aktualisiert In-Field Badge Status
+   */
+  updateInFieldBadge(element, analysis) {
+    const badge = this.inFieldBadges.get(element);
+    if (!badge) return;
+
+    // Update Status
+    badge.setAttribute('data-status', analysis.status);
+
+    // Update SVG Icon basierend auf Status
+    let iconPath;
+    switch (analysis.status) {
+      case 'safe':
+        iconPath = 'M8 12l3 3 5-5';
+        break;
+      case 'warning':
+        iconPath = 'M12 8v4M12 16h.01';
+        break;
+      case 'critical':
+        iconPath = 'M8 8l8 8M8 16l8-8';
+        break;
+    }
+
+    const svg = badge.querySelector('svg path');
+    if (svg) {
+      svg.setAttribute('d', iconPath);
+    }
+
+    // Update ARIA label
+    const ariaLabel = this.getAriaLabel(analysis);
+    badge.setAttribute('aria-label', ariaLabel);
   }
 
   /**
@@ -869,9 +1016,95 @@ class ComplianceMonitor {
     const checkPath = svg.querySelector('.aicc-icon-check');
     checkPath.setAttribute('d', iconPath);
 
-    // Tooltip
-    const statusText = this.detector.t(`status.${analysis.status}`, this.currentLang);
-    icon.title = `${statusText} (${analysis.detections.length})`;
+    // Update Rich Tooltip
+    this.updateTooltip(icon, analysis);
+
+    // Update ARIA label
+    const ariaLabel = this.getAriaLabel(analysis);
+    icon.setAttribute('aria-label', ariaLabel);
+
+    // v2.8.0: Update In-Field Badge
+    this.updateInFieldBadge(element, analysis);
+  }
+
+  /**
+   * v2.8.0: Aktualisiert Rich Tooltip-Content basierend auf Analysis
+   */
+  updateTooltip(icon, analysis) {
+    let tooltip = icon.querySelector('.aicc-tooltip');
+
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.className = 'aicc-tooltip';
+      icon.appendChild(tooltip);
+    }
+
+    // Tooltip-Klasse basierend auf Status
+    tooltip.className = `aicc-tooltip aicc-tooltip-${analysis.status}`;
+
+    // Generiere Tooltip-Content
+    const tooltipContent = this.generateTooltipContent(analysis);
+    tooltip.innerHTML = tooltipContent;
+  }
+
+  /**
+   * v2.8.0: Generiert Rich Tooltip-Content mit Kategorien
+   */
+  generateTooltipContent(analysis) {
+    const count = analysis.detections.length;
+
+    // Icons für jeden Status
+    const statusIcons = {
+      'safe': '✓',
+      'warning': '⚠️',
+      'critical': '🚨'
+    };
+
+    // Tooltip-Texte (Deutsch)
+    const statusMessages = {
+      'safe': 'Keine sensiblen Daten erkannt',
+      'warning': 'Warnungen erkannt',
+      'critical': 'Kritische Daten erkannt'
+    };
+
+    const icon = statusIcons[analysis.status] || '•';
+    const message = statusMessages[analysis.status] || 'Status unbekannt';
+
+    // Basis-Tooltip
+    let html = `
+      <span class="aicc-tooltip-icon">${icon}</span>
+      <span class="aicc-tooltip-text">${message}</span>
+    `;
+
+    // Füge Count und Kategorien hinzu, wenn Detections vorhanden
+    if (count > 0) {
+      html += `<span class="aicc-tooltip-count">${count}</span>`;
+
+      // Sammle unique Kategorien
+      const categories = [...new Set(analysis.detections.map(d => d.category))];
+      const categoryText = categories.slice(0, 3).join(', ');
+
+      if (categoryText) {
+        html += `<span class="aicc-tooltip-details">${categoryText}</span>`;
+      }
+    }
+
+    return html;
+  }
+
+  /**
+   * v2.8.0: Generiert ARIA-Label für Accessibility
+   */
+  getAriaLabel(analysis) {
+    const count = analysis.detections.length;
+
+    const statusLabels = {
+      'safe': 'Compliance-Status: Sicher. Keine sensiblen Daten erkannt.',
+      'warning': `Compliance-Status: Warnung. ${count} Warnung${count > 1 ? 'en' : ''} erkannt.`,
+      'critical': `Compliance-Status: Kritisch. ${count} kritische Daten erkannt.`
+    };
+
+    return statusLabels[analysis.status] || 'Compliance-Status unbekannt';
   }
 
   /**

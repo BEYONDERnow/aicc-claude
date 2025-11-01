@@ -85,41 +85,72 @@ body.aicc-modal-open .aicc-overlay-container {
 
 .aicc-status-icon {
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(16, 30, 53, 0.2);
+  /* Kontrast-Schatten für bessere Sichtbarkeit auf hellen Websites */
+  box-shadow:
+    0 0 0 2px white,
+    0 0 0 4px rgba(16, 30, 53, 0.2),
+    0 4px 16px rgba(16, 30, 53, 0.3);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: var(--beyonder-white);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-/* Safe state = smaller */
+/* Safe state = slightly smaller but still visible */
 .aicc-status-icon[data-status="safe"] {
+  width: 36px;
+  height: 36px;
+}
+
+.aicc-status-icon[data-status="safe"] svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Warning/Critical = larger for better visibility */
+.aicc-status-icon[data-status="warning"],
+.aicc-status-icon[data-status="critical"] {
+  width: 48px;
+  height: 48px;
+}
+
+.aicc-status-icon[data-status="warning"] svg,
+.aicc-status-icon[data-status="critical"] svg {
   width: 28px;
   height: 28px;
 }
 
-.aicc-status-icon[data-status="safe"] svg {
-  width: 18px;
-  height: 18px;
-}
-
 .aicc-status-icon:hover {
   transform: scale(1.15);
-  box-shadow: 0 6px 24px rgba(16, 30, 53, 0.3);
+  box-shadow:
+    0 0 0 2px white,
+    0 0 0 4px rgba(16, 30, 53, 0.3),
+    0 6px 24px rgba(16, 30, 53, 0.4);
 }
 
 .aicc-status-icon:active {
   transform: scale(0.95);
 }
 
+.aicc-status-icon:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 2px white,
+    0 0 0 4px rgba(70, 191, 237, 0.6),
+    0 4px 20px rgba(70, 191, 237, 0.4);
+}
+
 /* Icon Colors (BEYONDER) */
 .aicc-status-icon[data-status="safe"] .aicc-icon-circle {
   fill: var(--status-ok);
+  animation: pulse-safe 3s ease-in-out infinite;
 }
 
 .aicc-status-icon[data-status="warning"] .aicc-icon-circle {
@@ -154,21 +185,240 @@ body.aicc-modal-open .aicc-overlay-container {
 }
 
 /* Pulse Animations */
-@keyframes pulse-warning {
+@keyframes pulse-safe {
   0%, 100% {
-    box-shadow: 0 4px 16px rgba(16, 30, 53, 0.2);
+    box-shadow:
+      0 0 0 2px white,
+      0 0 0 4px rgba(16, 30, 53, 0.2),
+      0 4px 16px rgba(16, 30, 53, 0.3);
   }
   50% {
-    box-shadow: 0 4px 24px rgba(252, 192, 1, 0.6), 0 0 20px rgba(252, 192, 1, 0.3);
+    box-shadow:
+      0 0 0 2px white,
+      0 0 0 4px rgba(113, 208, 51, 0.3),
+      0 4px 20px rgba(113, 208, 51, 0.4),
+      0 0 16px rgba(113, 208, 51, 0.2);
+  }
+}
+
+@keyframes pulse-warning {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px white,
+      0 0 0 4px rgba(16, 30, 53, 0.2),
+      0 4px 16px rgba(16, 30, 53, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px white,
+      0 0 0 4px rgba(252, 192, 1, 0.4),
+      0 4px 24px rgba(252, 192, 1, 0.6),
+      0 0 20px rgba(252, 192, 1, 0.3);
   }
 }
 
 @keyframes pulse-critical {
   0%, 100% {
-    box-shadow: 0 4px 16px rgba(16, 30, 53, 0.2);
+    box-shadow:
+      0 0 0 2px white,
+      0 0 0 4px rgba(16, 30, 53, 0.2),
+      0 4px 16px rgba(16, 30, 53, 0.3);
   }
   50% {
-    box-shadow: 0 4px 28px rgba(227, 58, 78, 0.7), 0 0 24px rgba(227, 58, 78, 0.4);
+    box-shadow:
+      0 0 0 2px white,
+      0 0 0 4px rgba(227, 58, 78, 0.5),
+      0 4px 28px rgba(227, 58, 78, 0.7),
+      0 0 24px rgba(227, 58, 78, 0.4);
+  }
+}
+
+/* ===========================
+   Rich Tooltip (Status Icon Hover)
+   =========================== */
+
+.aicc-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 16px;
+  background: var(--beyonder-midnight);
+  color: var(--beyonder-white);
+  border-radius: 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+  z-index: 1000000;
+  box-shadow: 0 8px 24px rgba(16, 30, 53, 0.4);
+  line-height: 1.5;
+}
+
+/* Tooltip Arrow */
+.aicc-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--beyonder-midnight);
+}
+
+/* Show tooltip on hover */
+.aicc-status-icon:hover .aicc-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+/* Tooltip variants by status */
+.aicc-tooltip-safe {
+  background: linear-gradient(135deg, var(--status-ok) 0%, #5CB829 100%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.aicc-tooltip-safe::after {
+  border-top-color: #5CB829;
+}
+
+.aicc-tooltip-warning {
+  background: linear-gradient(135deg, var(--status-warning) 0%, #FFB800 100%);
+  color: var(--beyonder-midnight);
+  border: 2px solid rgba(16, 30, 53, 0.2);
+}
+
+.aicc-tooltip-warning::after {
+  border-top-color: #FFB800;
+}
+
+.aicc-tooltip-critical {
+  background: linear-gradient(135deg, var(--status-error) 0%, #C42E3F 100%);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.aicc-tooltip-critical::after {
+  border-top-color: #C42E3F;
+}
+
+/* Tooltip icon */
+.aicc-tooltip-icon {
+  display: inline-block;
+  margin-right: 6px;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+/* Tooltip badge count */
+.aicc-tooltip-count {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.aicc-tooltip-warning .aicc-tooltip-count {
+  background: rgba(16, 30, 53, 0.15);
+}
+
+/* Tooltip details (categories) */
+.aicc-tooltip-details {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
+/* ===========================
+   In-Field Badge (Hybrid Approach)
+   =========================== */
+
+.aicc-infield-badge {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.2s ease;
+  pointer-events: all;
+  /* Kontrast-Schatten für Sichtbarkeit */
+  box-shadow:
+    0 0 0 1px white,
+    0 0 0 2px rgba(16, 30, 53, 0.15),
+    0 2px 8px rgba(16, 30, 53, 0.2);
+}
+
+.aicc-infield-badge svg {
+  width: 12px;
+  height: 12px;
+}
+
+.aicc-infield-badge:hover {
+  transform: scale(1.2);
+  box-shadow:
+    0 0 0 1px white,
+    0 0 0 2px rgba(16, 30, 53, 0.3),
+    0 2px 12px rgba(16, 30, 53, 0.3);
+}
+
+/* Badge status colors */
+.aicc-infield-badge[data-status="safe"] {
+  background: var(--status-ok);
+}
+
+.aicc-infield-badge[data-status="warning"] {
+  background: var(--status-warning);
+  animation: pulse-infield-warning 2s ease-in-out infinite;
+}
+
+.aicc-infield-badge[data-status="critical"] {
+  background: var(--status-error);
+  animation: pulse-infield-critical 1.5s ease-in-out infinite;
+}
+
+/* In-field badge pulse animations */
+@keyframes pulse-infield-warning {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px white,
+      0 0 0 2px rgba(16, 30, 53, 0.15),
+      0 2px 8px rgba(16, 30, 53, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px white,
+      0 0 0 2px rgba(252, 192, 1, 0.4),
+      0 2px 12px rgba(252, 192, 1, 0.6),
+      0 0 12px rgba(252, 192, 1, 0.3);
+  }
+}
+
+@keyframes pulse-infield-critical {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px white,
+      0 0 0 2px rgba(16, 30, 53, 0.15),
+      0 2px 8px rgba(16, 30, 53, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px white,
+      0 0 0 2px rgba(227, 58, 78, 0.5),
+      0 2px 16px rgba(227, 58, 78, 0.7),
+      0 0 16px rgba(227, 58, 78, 0.4);
   }
 }
 

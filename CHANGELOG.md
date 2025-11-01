@@ -7,6 +7,150 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.8.0] - 2025-11-01
+
+### 🎨 Verbesserte Icon-Sichtbarkeit & Hybrid-Ansatz
+
+#### Zusammenfassung
+
+Massive UX-Verbesserungen für die Icon-Sichtbarkeit, insbesondere auf hellen Websites. Neues Hybrid-System mit In-Field Badge + Fixed Icon für maximale Erkennbarkeit. Rich Tooltips mit deutschen Texten und vollständige Accessibility-Unterstützung.
+
+#### ✅ Neue Features
+
+**1. Maximale Sichtbarkeit auf hellen Websites** 👁️
+
+- **Problem:** Icon verschmolz mit hellem Website-Hintergrund und war schwer zu erkennen
+- **Lösung 1 - Kontrast-Schatten:**
+  - Weißer Ring (2px) + dunkler Schatten (4px) für bessere Abgrenzung
+  - Dreifach-Schatten-System: `0 0 0 2px white, 0 0 0 4px rgba(16,30,53,0.2), 0 4px 16px rgba(16,30,53,0.3)`
+  - **Ergebnis:** Icon hebt sich deutlich vom Hintergrund ab
+- **Lösung 2 - Backdrop-Filter:**
+  - Semi-transparenter Hintergrund mit `backdrop-filter: blur(8px)`
+  - Background: `rgba(255, 255, 255, 0.95)` statt `solid white`
+  - **Ergebnis:** Icon "schwebt" über dem Content
+- **Lösung 3 - Größenanpassung:**
+  - Safe: 28px → **36px** (+29%)
+  - Warning: 36px → **48px** (+33%)
+  - Critical: 36px → **48px** (+33%)
+  - **Ergebnis:** Bessere Erkennbarkeit, besonders bei Warnungen
+
+**2. Rich Tooltip-System** 💬
+
+- **Deutsche Tooltips** mit Status-Informationen:
+  - Safe: `"✓ Keine sensiblen Daten erkannt"`
+  - Warning: `"⚠️ 3 Warnungen: Name, Telefon, Betrag"`
+  - Critical: `"🚨 2 kritische Treffer: E-Mail, IBAN"`
+- **Position:** Oberhalb des Icons (darüber) mit Arrow
+- **Verhalten:**
+  - Erscheint bei Hover (opacity 0 → 1, transform translateY(-4px))
+  - Verschwindet nur bei Mouse-out (nicht automatisch)
+- **Design:**
+  - Farb-kodiert (Grün-Gradient, Orange-Gradient, Rot-Gradient)
+  - Mit Icons (✓, ⚠️, 🚨) und Kategorien
+  - Tooltip-Count Badge zeigt Anzahl der Detections
+  - Tooltip-Details zeigen bis zu 3 Kategorien
+
+**3. In-Field Badge (Hybrid-Ansatz)** 🎯
+
+- **Problem:** Fixed Icon unten rechts wird übersehen, wenn Input oben ist
+- **Lösung:** Dual-System
+  - **In-Field Badge:** Kleines Icon (20x20px) innerhalb des Input-Feldes (rechts oben)
+  - **Fixed Icon:** Bleibt unten rechts bestehen (36-48px)
+- **Position:**
+  - Relativ zum Parent-Element des Inputs
+  - 8px vom rechten Rand, 8px vom oberen Rand
+  - Dynamische Neuberechnung bei Scroll/Resize/Input
+- **Pulse-Animationen:**
+  - Warning: Pulsiert orange (2s Zyklus)
+  - Critical: Pulsiert rot (1.5s Zyklus, schneller!)
+- **Interaktivität:**
+  - Klickbar (öffnet Overlay)
+  - Keyboard-Navigation (Tab + Enter/Space)
+  - Hover-Effekt (scale 1.2)
+
+**4. Safe-Status Animation** 🟢
+
+- **Vorher:** Keine Animation bei "Safe" Status
+- **Nachher:** Subtile Pulse-Animation (3s Zyklus, langsamer als Warnungen)
+- **Effekt:** Grüner Glow-Ring pulsiert sanft
+- **Zweck:** Zeigt User, dass Extension aktiv ist und prüft
+
+**5. Accessibility-Verbesserungen** ♿
+
+- **ARIA-Labels:**
+  - Safe: `"Compliance-Status: Sicher. Keine sensiblen Daten erkannt."`
+  - Warning: `"Compliance-Status: Warnung. 3 Warnungen erkannt."`
+  - Critical: `"Compliance-Status: Kritisch. 2 kritische Daten erkannt."`
+- **Keyboard-Navigation:**
+  - Icons mit `tabindex="0"` und `role="button"`
+  - Enter/Space öffnet Overlay
+  - Focus-States mit blauem Glow (BEYONDER Sky Blue)
+- **Screen-Reader:**
+  - Dynamische ARIA-Labels basierend auf Detections
+  - Pluralisierung ("Warnung" vs. "Warnungen")
+
+#### 🔧 Technische Details
+
+**Neue CSS-Klassen:**
+- `.aicc-tooltip` - Basis-Tooltip-Container
+- `.aicc-tooltip-safe/warning/critical` - Status-spezifische Varianten
+- `.aicc-tooltip-icon/text/count/details` - Tooltip-Elemente
+- `.aicc-infield-badge` - In-Field Badge Container
+- `@keyframes pulse-safe` - Safe-Status Animation
+- `@keyframes pulse-infield-warning/critical` - In-Field Badge Animationen
+
+**Neue JavaScript-Funktionen:**
+- `updateTooltip(icon, analysis)` - Aktualisiert Tooltip-Content
+- `generateTooltipContent(analysis)` - Generiert Rich-HTML für Tooltips
+- `getAriaLabel(analysis)` - Generiert ARIA-Labels
+- `createInFieldBadge(element)` - Erstellt In-Field Badge
+- `positionInFieldBadge(element, badge)` - Positioniert Badge dynamisch
+- `updateInFieldBadge(element, analysis)` - Aktualisiert Badge Status
+
+**Performance:**
+- Tooltips sind CSS-only (keine Performance-Auswirkung)
+- In-Field Badge nutzt absolute Positionierung (kein Reflow)
+- Position-Updates mit Debouncing (Scroll/Resize)
+
+**Kompatibilität:**
+- Funktioniert auf allen AI-Plattformen (ChatGPT, Claude, Gemini)
+- Verschiedene Input-Typen (contenteditable, textarea)
+- Parent-Element wird automatisch `position: relative` gesetzt
+
+#### 📊 UX-Verbesserungen
+
+**Vorher (v2.7.0):**
+- Icon 28-36px, schwer zu erkennen auf hellen Backgrounds
+- Nur einfaches `title`-Attribut für Tooltips
+- Keine Animation im Safe-Status
+- Nur Fixed Icon unten rechts
+- Keine ARIA-Labels
+
+**Nachher (v2.8.0):**
+- Icon 36-48px mit Kontrast-Schatten und Backdrop
+- Rich Tooltips mit Icons, Farben, Kategorien
+- Safe-Status pulsiert subtil (grüner Glow)
+- Hybrid: In-Field Badge + Fixed Icon
+- Vollständige ARIA-Unterstützung + Keyboard-Navigation
+
+#### 🐛 Behobene Probleme
+
+- ✅ Icon auf hellen Websites (weiß auf weiß) schwer erkennbar
+- ✅ Keine Rückmeldung im Safe-Status ("funktioniert die Extension?")
+- ✅ Icon übersehen wenn Input oben, Icon unten rechts
+- ✅ Keine Screen-Reader-Unterstützung
+- ✅ Keine Keyboard-Navigation
+
+#### 📁 Geänderte Dateien
+
+- `extension/manifest.json` - Version 2.7.0 → 2.8.0
+- `extension/styles/content.css` - Neue Tooltip/Badge Styles, Größenanpassung, Animationen
+- `extension/scripts/content.js` - Tooltip/Badge-Funktionen, ARIA-Labels, Keyboard-Handler
+- `README.md` - Version aktualisiert, v2.8.0 Abschnitt hinzugefügt
+- `CHANGELOG.md` - Dieser Eintrag
+
+---
+
 ## [2.7.0] - 2025-10-31
 
 ### 🔧 Entwicklermodus & Optimierter Validierungsreport
