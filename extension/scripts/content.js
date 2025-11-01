@@ -1209,8 +1209,11 @@ class ComplianceMonitor {
     // v2.7.0: Lade Developer Mode Setting
     let isDeveloperMode = false;
     try {
-      const result = await chrome.storage.local.get(['aicc_developer_mode']);
-      isDeveloperMode = result.aicc_developer_mode || false;
+      // v2.9.1: DEFENSIVE - Prüfe ob chrome.storage verfügbar ist
+      if (chrome && chrome.storage && chrome.storage.local) {
+        const result = await chrome.storage.local.get(['aicc_developer_mode']);
+        isDeveloperMode = result.aicc_developer_mode || false;
+      }
     } catch (error) {
       console.error('[AI Compliance Checker] Error loading developer mode:', error);
     }
@@ -1517,9 +1520,12 @@ Beginne mit der Validierung!`;
     // v2.7.0: Lade Developer Mode Setting
     let isDeveloperMode = false;
     try {
-      const result = await chrome.storage.local.get(['aicc_developer_mode']);
-      isDeveloperMode = result.aicc_developer_mode || false;
-      console.log('[AI Compliance Checker] Developer Mode:', isDeveloperMode);
+      // v2.9.1: DEFENSIVE - Prüfe ob chrome.storage verfügbar ist
+      if (chrome && chrome.storage && chrome.storage.local) {
+        const result = await chrome.storage.local.get(['aicc_developer_mode']);
+        isDeveloperMode = result.aicc_developer_mode || false;
+        console.log('[AI Compliance Checker] Developer Mode:', isDeveloperMode);
+      }
     } catch (error) {
       console.error('[AI Compliance Checker] Error loading developer mode:', error);
     }
