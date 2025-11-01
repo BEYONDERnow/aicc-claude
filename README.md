@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.7.0** • by BEYONDER
+**Version 2.8.0** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -15,7 +15,57 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.7.0 (Aktuell) - 2025-10-31
+### Version 2.8.0 (Aktuell) - 2025-11-01
+
+**🎨 Verbesserte Icon-Sichtbarkeit & Hybrid-Ansatz**
+
+#### 🚀 Neue Features
+
+**1. Maximale Sichtbarkeit auf hellen Websites** 👁️
+- **Kontrast-Schatten:** Weißer Ring + dunkler Schatten für bessere Erkennbarkeit
+- **Backdrop-Filter:** Semi-transparenter Hintergrund (backdrop-blur) für Kontrast
+- **Größenanpassung:** Safe 36px, Warning/Critical 48px (vorher: 28px/36px)
+- **Safe-Status Animation:** Subtile Pulse-Animation auch im sicheren Zustand
+- **Problem gelöst:** Icon verschmilzt nicht mehr mit hellem Website-Hintergrund
+
+**2. Rich Tooltip-System** 💬
+- **Deutsche Tooltips:** Hover zeigt Status-Informationen
+  - Safe: "✓ Keine sensiblen Daten erkannt"
+  - Warning: "⚠️ 3 Warnungen: Name, Telefon, Betrag"
+  - Critical: "🚨 2 kritische Treffer: E-Mail, IBAN"
+- **Position:** Oberhalb des Icons (darüber)
+- **Verhalten:** Nur bei Mouse-out ausgeblendet
+- **Design:** Farb-kodiert (Grün/Orange/Rot), mit Icons und Details
+
+**3. In-Field Badge (Hybrid-Ansatz)** 🎯
+- **Position:** Kleines Badge (20x20px) innerhalb des Input-Feldes (rechts oben)
+- **Maximale Sichtbarkeit:** Immer nahe am relevanten Input
+- **Pulse-Animationen:** Warning/Critical pulsieren für Aufmerksamkeit
+- **Dual-System:** In-Field Badge + Fixed Icon unten rechts (beste UX)
+
+**4. Accessibility-Verbesserungen** ♿
+- **ARIA-Labels:** Vollständige Screen-Reader-Unterstützung
+- **Keyboard-Navigation:** Tab + Enter/Space zum Öffnen des Overlays
+- **Focus-States:** Visuelles Feedback bei Keyboard-Navigation
+- **Rolle:** Icons als `role="button"` markiert
+
+#### 📊 Technische Details
+- Neue CSS-Klassen: `.aicc-tooltip`, `.aicc-infield-badge`
+- JavaScript-Funktionen: `updateTooltip()`, `generateTooltipContent()`, `createInFieldBadge()`
+- Performance: Keine spürbare Auswirkung (Tooltips sind CSS-only)
+- Kompatibilität: Funktioniert auf allen AI-Plattformen (ChatGPT, Claude, Gemini)
+
+#### 🎨 Design-Verbesserungen
+- Pulse-Animationen mit Kontrast-Ringen
+- Gradient-Tooltips (Safe: Grün, Warning: Orange, Critical: Rot)
+- Tooltip-Arrow für bessere UX
+- Smooth transitions (0.2s ease)
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#280---2025-11-01)
+
+---
+
+### Version 2.7.0 - 2025-10-31
 
 **🔧 Entwicklermodus & Optimierter Validierungsreport**
 
@@ -803,4 +853,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.6.0** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Now with 6 Entity Types!
+**Version 2.8.0** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Enhanced Icon Visibility & Hybrid Approach!
