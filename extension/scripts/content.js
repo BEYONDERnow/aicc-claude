@@ -672,6 +672,20 @@ class ComplianceMonitor {
   }
 
   /**
+   * v2.9.1: Holt VOLLSTÄNDIGEN Text aus Element für Report-Zwecke
+   * Verwendet textContent ZUERST um Truncation durch lazy rendering zu vermeiden
+   * Besonders wichtig für lange Prompts (>10k Zeichen) bei Claude.ai/ChatGPT
+   */
+  getFullElementText(element) {
+    if (element.contentEditable === 'true') {
+      // textContent gibt IMMER den kompletten Text zurück, unabhängig vom Rendering
+      // Bei virtuellen Scrolling/Lazy Loading werden sonst Teile abgeschnitten
+      return element.textContent || element.innerText || '';
+    }
+    return element.value || '';
+  }
+
+  /**
    * v2.3.4: Normalisiert Text mit Leerzeichen zwischen Block-Elementen
    * Verhindert Wort-Zusammenführung wie bei innerText, aber behält Offset-Konsistenz
    */
@@ -1319,12 +1333,14 @@ class ComplianceMonitor {
   /**
    * Generiert Validierungs-Report für Claude
    * v2.7.0: Erweitert mit allen Prüfkriterien und vollem Prompt
+   * v2.9.1: Verwendet getFullElementText() für vollständige Prompt-Extraktion
    */
   generateValidationReport(analysis, element = null, isDeveloperMode = true) {
     const lang = this.currentLang;
 
-    // Extrahiere eingegebenen Text (OHNE Kürzung in v2.7.0)
-    const inputText = element ? this.getElementText(element) : '';
+    // v2.9.1: Extrahiere VOLLSTÄNDIGEN Text für Report (textContent statt innerText)
+    // Verhindert Truncation bei langen Prompts (>10k Zeichen) durch lazy rendering
+    const inputText = element ? this.getFullElementText(element) : '';
 
     // v2.7.0: Hole alle verfügbaren Prüfkriterien
     const allCriteria = this.detector.getAllCriteria(lang);
@@ -1340,7 +1356,7 @@ class ComplianceMonitor {
     });
 
     // Erstelle Markdown-Tabelle
-    let report = `# AI Compliance Checker - Validierungsreport v2.7.0
+    let report = `# AI Compliance Checker - Validierungsreport v2.9.1
 
 ## Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
@@ -1430,7 +1446,7 @@ ${inputText}
    - Accuracy = ✅ / (✅ + ❌)
 
 ## Kontext
-- **Tool**: AI Compliance Checker v2.7.0
+- **Tool**: AI Compliance Checker v2.9.1
 - **Sprache**: ${lang === 'de' ? 'Deutsch' : 'English'}
 - **Textlänge**: ${inputText.length} Zeichen
 - **Geprüfte Kriterien**: ${allCriteria.critical.length + allCriteria.warning.length} total (${allCriteria.critical.length} kritisch, ${allCriteria.warning.length} Warnungen)
