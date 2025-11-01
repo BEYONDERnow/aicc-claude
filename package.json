@@ -1,12 +1,16 @@
 {
   "name": "ai-compliance-checker",
-  "version": "2.7.0",
+  "version": "2.9.0",
   "description": "Enhanced compliance checker for ChatGPT, Claude, Gemini with Compromise.js NER (ML-quality without ML) - Now with dates, places, money, organizations",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c -w",
-    "dev": "rollup -c -w"
+    "dev": "rollup -c -w",
+    "version:patch": "node scripts/update-version.js patch",
+    "version:minor": "node scripts/update-version.js minor",
+    "version:major": "node scripts/update-version.js major",
+    "version:sync": "node scripts/update-version.js sync"
   },
   "dependencies": {
     "compromise": "^14.14.4"

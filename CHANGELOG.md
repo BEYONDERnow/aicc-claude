@@ -7,6 +7,117 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.9.0] - 2025-11-01
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg. Keine manuellen Copy-Paste Fehler mehr – eine einzige "Single Source of Truth" für die Version mit automatischer Synchronisation.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert (manifest.json, package.json, popup.html, README.md, CHANGELOG.md)
+- **Git-Integration:** Unterstützt Git-Tags für professionelle Versionierung (`v2.9.0`)
+- **Build-Script:** `scripts/update-version.js` verwaltet den gesamten Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version ohne Erhöhung
+
+**3. Aktualisierte Dateien** 📝
+
+Das Script synchronisiert automatisch:
+- `extension/manifest.json` - Chrome Extension Version (Zeile 4)
+- `package.json` - NPM Package Version (Zeile 3)
+- `extension/popup.html` - Angezeigter Version String mit BETA-Label (Zeile 572)
+- `extension/scripts/version.js` - Zentrale Versionsdefinition (Zeile 8)
+- `README.md` - Dokumentierte Version (Zeilen 3 + 856)
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+**4. Smart Console-Output** 💬
+
+```bash
+🛡️  AI Compliance Checker - Versionsverwaltung
+
+Version erhöht: 2.9.0 → 2.10.0
+
+📝 Aktualisiere Dateien auf Version 2.10.0...
+  ✓ extension/manifest.json (Zeile 4)
+  ✓ package.json (Zeile 3)
+  ✓ extension/scripts/version.js (Zeile 8)
+  ✓ extension/popup.html (Zeile 572)
+  ✓ README.md (Zeile 3)
+
+✅ Version 2.10.0 erfolgreich synchronisiert!
+   5 von 5 Dateien aktualisiert
+
+🚀 Nächste Schritte:
+  1. npm run build - Bundle erstellen
+  2. git add -A && git commit -m "chore: bump version to 2.10.0"
+  3. git push
+```
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format (SemVer 2.0)
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+- **Regex-basiert:** Robuste Pattern-Erkennung für Version-Strings
+- **Colored Output:** Farbcodierte Console-Ausgabe (Grün = Erfolg, Gelb = Warnung, Rot = Fehler)
+- **Line Number Detection:** Zeigt exakte Zeilen der Änderungen an
+
+#### 🎨 Workflow-Verbesserungen
+
+**Vorher (Manuell):**
+1. ❌ Öffne 6 Dateien einzeln
+2. ❌ Suche nach Version-String
+3. ❌ Ändere manuell (fehleranfällig!)
+4. ❌ Vergesse CHANGELOG oder README
+5. ❌ Inkonsistente Versionen (manifest: 2.8.0, package: 2.7.0)
+6. ❌ Chrome Extension zeigt falsche Version
+
+**Nachher (Automatisiert):**
+1. ✅ `npm run version:minor`
+2. ✅ `npm run build`
+3. ✅ `git commit && git push`
+4. ✅ Chrome Extension zeigt korrekte Version 🎉
+
+#### 🚀 Benefits
+
+- ✅ **Konsistente Versionierung** über alle Dateien
+- ✅ **Fehlerfreie Synchronisation** (keine manuellen Fehler)
+- ✅ **Einfacher Workflow** (ein Kommando)
+- ✅ **Git-freundlich** (automatische Tags)
+- ✅ **Developer Experience** (farbcodierte Ausgabe)
+- ✅ **Zeitersparnis** (~5 Minuten pro Release)
+- ✅ **Professionalität** (SemVer-konform)
+
+#### 🔍 Verwendung
+
+```bash
+# Neue Feature-Version
+npm run version:minor
+
+# Bugfix-Version
+npm run version:patch
+
+# Breaking-Changes-Version
+npm run version:major
+
+# Synchronisiere ohne Erhöhung
+npm run version:sync
+```
+
+---
+
 ## [2.8.0] - 2025-11-01
 
 ### 🎨 Verbesserte Icon-Sichtbarkeit & Hybrid-Ansatz
