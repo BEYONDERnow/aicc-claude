@@ -7,6 +7,75 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.9.2] - 2025-11-01
+
+### 🚀 Feature: Optimierter Validierungsreport mit Kontext, Position & Annotation
+
+#### Zusammenfassung
+Der Validierungsreport wurde komplett überarbeitet für eine **optimale Analyse durch Claude**. Statt nur erkannte Werte zu zeigen, enthält der Report jetzt Kontext, Positionen, Erkennungsmethoden, einen annotierten Prompt und eine strukturierte False-Negative-Prüfung.
+
+#### 🎯 Neue Features
+
+**1. Erkennungen mit Kontext-Informationen** 📍
+- **Kontext anzeigen**: ±50 Zeichen um jede Erkennung
+- **Position im Text**: Zeichen-Offset (z.B. 234-248)
+- **Erkennungsmethode**: NER/KI, Regex, Pattern, Lexikon
+- **Beispiel**: `...mein Kollege **Max Mustermann** arbeitet... | Position 234-248 | NER/KI`
+
+**2. Annotierter Prompt** 🏷️
+- Erkennungen werden direkt im Prompt markiert: `[1:NAME]`, `[2:IBAN]`, etc.
+- Ermöglicht sofortige visuelle Erfassung aller Erkennungen
+- False Negatives (nicht markierte sensible Daten) werden sofort sichtbar
+
+**3. False-Negative-Prüfung** ✅
+- Strukturierte Checkliste aller nicht erkannten Kriterien
+- Getrennt nach kritischen Daten und Warnungen
+- Inklusive Beschreibung was gesucht werden sollte
+
+**4. Verbesserte Validierungs-Anweisungen** 📊
+- Klare Schritte für True/False Positive Validierung
+- Formeln für Precision, Recall & F1-Score
+- Anforderung für Verbesserungsvorschläge
+
+#### Technische Details
+- `content.js:1349-1555` - Komplett überarbeitete `generateValidationReport()` Methode
+- Helper-Funktion `getContext()` - Extrahiert Kontext um Erkennungen
+- Helper-Funktion `getMethod()` - Bestimmt Erkennungsmethode aus ID
+- Annotation-Algorithmus verhindert Überlappungen
+
+#### Vorher vs. Nachher
+
+**Vorher (v2.9.1)**:
+```markdown
+| # | Kriterium | Wert |
+|---|-----------|------|
+| 1 | Name | `Max Mustermann` |
+```
+
+**Nachher (v2.9.2)**:
+```markdown
+| # | Kriterium | Wert | Kontext | Position | Methode |
+|---|-----------|------|---------|----------|---------|
+| 1 | Name | `Max Mustermann` | ...Kollege **Max Mustermann** arbeitet... | 234-248 | NER/KI |
+
+## Prompt (annotiert)
+```
+...mein Kollege [1:NAME] arbeitet seit...
+```
+
+## False-Negative-Prüfung
+- [ ] **Telefonnummer**: Prüfe auf +41 79 123 45 67
+- [ ] **Adresse**: Prüfe auf Straße, PLZ, Ort
+```
+
+#### Auswirkung
+- ✅ **Schnellere Validierung**: Kontext macht True/False Positives sofort erkennbar
+- ✅ **Bessere False-Negative-Erkennung**: Annotierter Prompt + Checkliste
+- ✅ **Präzisere Metriken**: Precision, Recall, F1-Score für objektive Bewertung
+- ✅ **Verbesserungs-Insights**: Strukturierte Erfassung von Pattern-Problemen
+
+---
+
 ## [2.9.1] - 2025-11-01
 
 ### 🔧 Fix: Vollständige Prompt-Extraktion für Validierungsreports
@@ -30,6 +99,60 @@ Bei langen Prompts (>10k Zeichen) wurde der Text im Validierungsreport durch laz
 ✅ Präzisere Validierung durch Claude möglich
 
 ---
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
+- **Git-Integration:** Unterstützt Git-Tags für Versionierung
+- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version
+
+**3. Aktualisierte Dateien** 📝
+
+- `extension/manifest.json` - Chrome Extension Version
+- `package.json` - NPM Package Version
+- `extension/popup.html` - Angezeigter Version String
+- `extension/scripts/version.js` - Zentrale Versionsdefinition
+- `README.md` - Dokumentierte Version
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
 
 ## [2.9.0] - 2025-11-01
 

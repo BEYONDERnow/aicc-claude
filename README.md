@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.9.1** • by BEYONDER
+**Version 2.9.2** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -15,30 +15,44 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.9.1 (Aktuell) - 2025-11-01
+### Version 2.9.2 (Aktuell) - 2025-11-01
+
+**🚀 Feature: Optimierter Validierungsreport mit Kontext, Position & Annotation**
+
+#### 🎯 Neue Features
+- **Kontext bei Erkennungen**: ±50 Zeichen um jede Erkennung + Position im Text
+- **Annotierter Prompt**: Erkennungen markiert als `[1:NAME]`, `[2:IBAN]` im Text
+- **False-Negative-Prüfung**: Strukturierte Checkliste aller nicht erkannten Kriterien
+- **Erkennungsmethode**: Zeigt ob NER/KI, Regex, Pattern oder Lexikon verwendet wurde
+- **Metriken-Anleitung**: Precision, Recall, F1-Score Formeln für objektive Bewertung
+
+#### 📊 Vorteile
+- ✅ Schnellere Validierung durch sofort erkennbaren Kontext
+- ✅ False Negatives einfacher zu finden (annotierter Prompt + Checkliste)
+- ✅ Bessere Verbesserungs-Insights durch strukturierte Pattern-Analyse
+- ✅ Objektive Metriken für Qualitätsvergleich zwischen Versionen
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#292---2025-11-01)
+
+---
+
+### Version 2.9.1 (Vorherige) - 2025-11-01
 
 **🔧 Fix: Vollständige Prompt-Extraktion für Validierungsreports**
 
 #### 🐛 Problem gelöst
 - **Lange Prompts wurden abgeschnitten:** Bei Prompts >10k Zeichen zeigte der Validierungsreport nur einen Teil des Textes
 - **Ursache:** `innerText` gibt nur gerenderten/sichtbaren Text zurück (lazy rendering Problem)
-- **Auswirkung:** Claude konnte nicht alle Erkennungen vollständig validieren
 
 #### ✅ Lösung
 - **Neue Methode `getFullElementText()`:** Verwendet `textContent` statt `innerText`
 - **Garantiert vollständiger Text:** Unabhängig von DOM-Rendering oder virtuellem Scrolling
-- **Nur für Reports:** Detection-Performance bleibt unverändert (weiterhin schnell)
-
-#### 🎯 Auswirkung
-- ✅ Reports enthalten **vollständigen Prompt** (auch bei 15k+ Zeichen)
-- ✅ Keine Truncation durch Browser-Optimierungen
-- ✅ Präzisere Validierung durch Claude möglich
 
 > **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#291---2025-11-01)
 
 ---
 
-### Version 2.9.0 (Vorherige) - 2025-11-01
+### Version 2.9.0 - 2025-11-01
 
 **🔧 Zentrale Versionsverwaltung**
 
@@ -915,4 +929,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.9.1** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Enhanced Icon Visibility & Hybrid Approach!
+**Version 2.9.2** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Enhanced Icon Visibility & Hybrid Approach!
