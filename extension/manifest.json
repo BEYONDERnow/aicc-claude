@@ -24,6 +24,7 @@
       ],
       "js": [
         "dist/detector.bundle.js",
+        "scripts/config.js",
         "scripts/github-feedback.js",
         "scripts/screenshot-capture.js",
         "scripts/feedback-modal.js",

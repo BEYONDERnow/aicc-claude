@@ -28,5 +28,7 @@ build/
 extension/fonts/Poppins/*.ttf
 extension/fonts/Montserrat/*.ttf
 
-# GitHub Token Configuration (NIEMALS COMMITTEN!)
-extension/scripts/config.js
+# GitHub Token Configuration
+# HINWEIS: config.js wird mit Default-Werten committed
+# User können lokale Änderungen vornehmen (Token eintragen)
+# Git wird Änderungen tracken - bei Bedarf mit: git update-index --assume-unchanged extension/scripts/config.js

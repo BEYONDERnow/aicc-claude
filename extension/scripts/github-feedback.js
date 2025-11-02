@@ -3,22 +3,41 @@
  * Sendet Feedback als GitHub Issues
  *
  * MODI:
- * 1. GitHub App (EMPFOHLEN): OAuth-Flow, für Public Beta
- * 2. Personal Access Token: Einfach für Entwicklung
- * 3. Fallback: Direkter Link zu GitHub Issues (keine API)
+ * 1. Fallback (DEFAULT): Öffnet vorausgefülltes GitHub Issue im Browser
+ * 2. GitHub App (OPTIONAL): OAuth-Flow, für Public Beta
+ * 3. Personal Access Token (OPTIONAL): Einfach für Entwicklung
  *
- * SETUP:
- * - GitHub App: Siehe GITHUB_APP_SETUP.md
- * - PAT: Siehe FEEDBACK_SETUP.md
+ * SETUP (optional):
+ * 1. Kopiere scripts/config.example.js zu scripts/config.js
+ * 2. Siehe GITHUB_APP_SETUP.md oder FEEDBACK_SETUP.md
+ * 3. Ohne Setup: Fallback-Modus wird verwendet (funktioniert sofort!)
  */
 
-// Import Config (wird von config.js geladen, NICHT von config.example.js)
-import { GITHUB_CONFIG } from './config.js';
+// Default Config (Fallback-Modus)
+const DEFAULT_GITHUB_CONFIG = {
+  owner: 'chrisbeyeler',
+  repo: 'aicc-claude',
+  apiUrl: 'https://api.github.com',
+  useGitHubApp: false,
+  githubApp: {
+    clientId: ''
+  },
+  oauthCallbackUrl: 'https://chrisbeyeler.github.io/aicc-claude/oauth-callback',
+  token: ''
+};
 
 class GitHubFeedbackService {
   constructor() {
-    // Verwende Config aus config.js
-    this.config = GITHUB_CONFIG;
+    // Verwende Default-Config (Fallback-Modus)
+    // Kann durch window.GITHUB_CONFIG überschrieben werden (falls config.js geladen)
+    this.config = window.GITHUB_CONFIG || DEFAULT_GITHUB_CONFIG;
+
+    // Log Modus
+    if (this.config === DEFAULT_GITHUB_CONFIG) {
+      console.log('[GitHub Feedback] Using Fallback mode (no config.js) - Issues will open in browser');
+    } else {
+      console.log('[GitHub Feedback] Custom config loaded');
+    }
 
     // OAuth State (für GitHub App)
     this.oauthWindow = null;

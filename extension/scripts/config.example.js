@@ -41,7 +41,8 @@
  * - Speichere und lade Extension neu
  */
 
-export const GITHUB_CONFIG = {
+// Setze globale Config (wird von github-feedback.js gelesen)
+window.GITHUB_CONFIG = {
   // GitHub Repository
   owner: 'chrisbeyeler',
   repo: 'aicc-claude',
