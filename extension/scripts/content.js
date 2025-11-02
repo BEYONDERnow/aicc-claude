@@ -431,15 +431,16 @@ class ComplianceMonitor {
 
     document.body.appendChild(iconWrapper);
 
-    // Click handler für Icon (zeigt ALLE Inputs in Tabs)
+    // Event handler für Icon (zeigt ALLE Inputs in Tabs)
     const icon = iconWrapper.querySelector('.aicc-status-icon');
+
+    // Click handler
     icon.addEventListener('click', (e) => {
       e.stopPropagation();
       this.showOverlay(); // Kein spezifisches Element mehr
     });
 
     // Keyboard navigation (Enter/Space to open)
-    const icon = iconWrapper.querySelector('.aicc-status-icon');
     icon.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
