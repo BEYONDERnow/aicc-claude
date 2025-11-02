@@ -2,10 +2,14 @@
  * GitHub Feedback Service
  * Sendet Feedback als GitHub Issues
  *
+ * MODI:
+ * 1. GitHub App (EMPFOHLEN): OAuth-Flow, für Public Beta
+ * 2. Personal Access Token: Einfach für Entwicklung
+ * 3. Fallback: Direkter Link zu GitHub Issues (keine API)
+ *
  * SETUP:
- * 1. Kopiere scripts/config.example.js zu scripts/config.js
- * 2. Trage deinen GitHub Personal Access Token in config.js ein
- * 3. Siehe config.example.js für detaillierte Anleitung
+ * - GitHub App: Siehe GITHUB_APP_SETUP.md
+ * - PAT: Siehe FEEDBACK_SETUP.md
  */
 
 // Import Config (wird von config.js geladen, NICHT von config.example.js)
@@ -15,6 +19,9 @@ class GitHubFeedbackService {
   constructor() {
     // Verwende Config aus config.js
     this.config = GITHUB_CONFIG;
+
+    // OAuth State (für GitHub App)
+    this.oauthWindow = null;
 
     // Labels für verschiedene Feedback-Typen
     this.labels = {
@@ -29,7 +36,53 @@ class GitHubFeedbackService {
    * Prüft ob GitHub API konfiguriert ist
    */
   isConfigured() {
+    // GitHub App oder PAT muss konfiguriert sein
+    if (this.config.useGitHubApp) {
+      return this.config.githubApp && this.config.githubApp.clientId;
+    }
     return this.config.token && this.config.token.length > 0;
+  }
+
+  /**
+   * Generiert GitHub Issues URL (Fallback wenn keine API verfügbar)
+   */
+  generateIssueUrl(feedbackData) {
+    const { type, comment, email, context, detection } = feedbackData;
+
+    // Titel generieren
+    const title = this.generateTitle(type, detection);
+
+    // Body generieren (vereinfacht für URL)
+    let body = `## 📝 Beschreibung\n\n${comment}\n\n`;
+
+    if (detection) {
+      body += `## 🔍 Erkennungs-Details\n\n`;
+      body += `- **Erkannter Wert:** \`${detection.value}\`\n`;
+      body += `- **Erkannt als:** ${detection.type}\n`;
+      if (detection.context) {
+        body += `- **Kontext:** "${detection.context}"\n`;
+      }
+      body += '\n';
+    }
+
+    body += `## 📊 System-Informationen\n\n`;
+    body += `- **Extension Version:** ${context.version || 'Unbekannt'}\n`;
+    body += `- **Platform:** ${context.platform || 'Unbekannt'}\n`;
+    body += `- **Browser:** ${context.browser || 'Chrome'}\n\n`;
+
+    if (email) {
+      body += `## 📧 Kontakt\n\n- **E-Mail:** ${email}\n\n`;
+    }
+
+    body += `*Feedback gesendet via AI Compliance Checker Beta*`;
+
+    // URL encoden
+    const encodedTitle = encodeURIComponent(title);
+    const encodedBody = encodeURIComponent(body);
+    const labels = this.labels[type] || ['beta-feedback'];
+    const encodedLabels = labels.join(',');
+
+    return `https://github.com/${this.config.owner}/${this.config.repo}/issues/new?title=${encodedTitle}&body=${encodedBody}&labels=${encodedLabels}`;
   }
 
   /**
@@ -45,8 +98,20 @@ class GitHubFeedbackService {
    * @returns {Promise<Object>} - GitHub Issue Response
    */
   async createIssue(feedbackData) {
+    // Fallback: Wenn keine API konfiguriert, öffne GitHub Issues direkt
     if (!this.isConfigured()) {
-      throw new Error('GitHub API Token nicht konfiguriert. Bitte Token in github-feedback.js eintragen.');
+      console.log('[GitHub Feedback] No API configured, using fallback (open GitHub Issues URL)');
+      const issueUrl = this.generateIssueUrl(feedbackData);
+
+      // Öffne GitHub Issues in neuem Tab
+      window.open(issueUrl, '_blank');
+
+      // Return mock response für UI
+      return {
+        html_url: issueUrl,
+        fallback: true,
+        message: 'Opened GitHub Issues in new tab'
+      };
     }
 
     try {
@@ -73,7 +138,17 @@ class GitHubFeedbackService {
 
     } catch (error) {
       console.error('[GitHub Feedback] Failed to create issue:', error);
-      throw error;
+
+      // Fallback bei API-Fehler: Öffne GitHub Issues URL
+      console.log('[GitHub Feedback] API failed, using fallback');
+      const issueUrl = this.generateIssueUrl(feedbackData);
+      window.open(issueUrl, '_blank');
+
+      return {
+        html_url: issueUrl,
+        fallback: true,
+        message: 'API failed, opened GitHub Issues as fallback'
+      };
     }
   }
 

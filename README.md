@@ -33,6 +33,14 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 - ✅ Screenshots helfen bei der Fehleranalyse
 - ✅ GitHub Issues für strukturiertes Tracking
 - ✅ Transparente Datenübertragung (DSGVO-konform)
+- ✅ **Fallback-Modus**: Funktioniert auch ohne API-Konfiguration (öffnet vorausgefülltes GitHub Issue)
+
+#### 🔧 Setup (für Entwickler)
+Das Feedback-System funktioniert sofort im **Fallback-Modus** (öffnet GitHub Issues im Browser).
+
+**Optional:** Für automatische Issue-Erstellung via API:
+- **GitHub App** (empfohlen für Public Beta): Siehe [GITHUB_APP_SETUP.md](./GITHUB_APP_SETUP.md)
+- **Personal Access Token** (schnell für Tests): Siehe [FEEDBACK_SETUP.md](./FEEDBACK_SETUP.md)
 
 > **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#2100---2025-11-02)
 

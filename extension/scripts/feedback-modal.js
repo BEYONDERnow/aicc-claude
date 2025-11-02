@@ -340,7 +340,7 @@ class FeedbackModal {
       const result = await this.githubService.createIssue(feedbackData);
 
       // Success State
-      this.showSuccess(result.html_url);
+      this.showSuccess(result.html_url, result.fallback);
 
     } catch (error) {
       console.error('[Feedback Modal] Submit failed:', error);
@@ -354,12 +354,52 @@ class FeedbackModal {
 
   /**
    * Zeigt Success Message
+   * @param {string} issueUrl - GitHub Issue URL
+   * @param {boolean} isFallback - Ob Fallback-Modus (kein API, nur Link)
    */
-  showSuccess(issueUrl) {
+  showSuccess(issueUrl, isFallback = false) {
     const overlay = document.querySelector('.aicc-feedback-overlay');
     if (!overlay) return;
 
     const modal = overlay.querySelector('.aicc-feedback-modal');
+
+    // Fallback-Modus: Nur GitHub Issues Link geöffnet
+    if (isFallback) {
+      modal.innerHTML = `
+        <div class="aicc-feedback-header">
+          <div class="aicc-feedback-header-content">
+            <div class="aicc-feedback-icon">🚀</div>
+            <h2 class="aicc-feedback-title">GitHub Issues geöffnet!</h2>
+            <p class="aicc-feedback-subtitle">Vervollständige dein Feedback auf GitHub</p>
+          </div>
+        </div>
+        <div class="aicc-feedback-body">
+          <div class="aicc-feedback-success">
+            <div class="aicc-feedback-success-icon">📝</div>
+            <h3 class="aicc-feedback-success-title">Fast geschafft!</h3>
+            <p class="aicc-feedback-success-text">
+              Wir haben ein vorausgefülltes GitHub Issue für dich geöffnet.<br>
+              Bitte vervollständige und sende es dort ab.
+            </p>
+            <p style="font-size: 13px; color: #61666D; margin-bottom: 20px;">
+              <strong>Warum?</strong> Das Feedback-System ist noch nicht vollständig konfiguriert.
+              Du kannst dein Feedback trotzdem über GitHub Issues senden!
+            </p>
+            <a href="${issueUrl}" target="_blank" class="aicc-feedback-success-link">
+              📝 Zum GitHub Issue
+            </a>
+            <div style="margin-top: 24px;">
+              <button class="aicc-feedback-cancel" onclick="document.querySelector('.aicc-feedback-overlay').remove()">
+                Schließen
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    // Normal-Modus: Issue erfolgreich via API erstellt
     modal.innerHTML = `
       <div class="aicc-feedback-header">
         <div class="aicc-feedback-header-content">

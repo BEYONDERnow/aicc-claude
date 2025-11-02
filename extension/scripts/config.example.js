@@ -46,11 +46,38 @@ export const GITHUB_CONFIG = {
   owner: 'chrisbeyeler',
   repo: 'aicc-claude',
 
-  // Personal Access Token (hier eintragen!)
-  token: 'HIER_DEINEN_TOKEN_EINFÜGEN',  // Format: ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
   // API Endpoint (nicht ändern)
-  apiUrl: 'https://api.github.com'
+  apiUrl: 'https://api.github.com',
+
+  // ========================================
+  // OPTION 1: GitHub App (EMPFOHLEN für Public Beta)
+  // ========================================
+  // Vorteile:
+  // - Beta-Nutzer können selbst Feedback senden
+  // - OAuth-Flow (User autorisiert App)
+  // - Sicherer (nur Issues-Zugriff)
+  //
+  // Setup: Siehe GITHUB_APP_SETUP.md
+
+  useGitHubApp: false,  // ← Auf true setzen wenn GitHub App konfiguriert
+
+  githubApp: {
+    clientId: 'DEINE_GITHUB_APP_CLIENT_ID',        // z.B. Iv1.xxxxxxxxxxxxxxxxxxxx
+    // Client Secret und Private Key werden zur Laufzeit aus Chrome Storage geladen (nicht hier!)
+  },
+
+  // OAuth Callback URL (für GitHub App)
+  oauthCallbackUrl: 'https://chrisbeyeler.github.io/aicc-claude/oauth-callback',
+
+  // ========================================
+  // OPTION 2: Personal Access Token (Einfach für Entwicklung)
+  // ========================================
+  // Vorteil: Schnelles Setup (5 Minuten)
+  // Nachteil: Nur du kannst Feedback senden
+  //
+  // Setup: Siehe FEEDBACK_SETUP.md
+
+  token: '',  // Personal Access Token (nur wenn useGitHubApp = false)
 };
 
 /**
