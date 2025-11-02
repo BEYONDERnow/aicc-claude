@@ -1205,24 +1205,35 @@ class ComplianceMonitor {
   }
 
   /**
-   * Zeigt Overlay mit detaillierter Analyse
+   * Zeigt Overlay mit detaillierter Analyse (Multi-Input mit Tabs)
    */
   async showOverlay(element = null) {
-    // Fallback: Wenn kein Element übergeben, nimm erstes mit Detections
-    if (!element) {
-      for (const [el, info] of this.monitoredElements.entries()) {
-        if (info.lastAnalysis && info.lastAnalysis.detections.length > 0) {
-          element = el;
-          break;
-        }
+    // Sammle alle Inputs mit Detections
+    const inputsWithDetections = [];
+    let inputIndex = 0;
+
+    for (const [el, info] of this.monitoredElements.entries()) {
+      const analysis = info.lastAnalysis;
+      if (analysis && analysis.detections.length > 0) {
+        inputsWithDetections.push({
+          element: el,
+          analysis,
+          index: inputIndex,
+          label: `Input ${inputIndex + 1}`
+        });
+        inputIndex++;
       }
     }
 
-    if (!element) return; // Keine Inputs mit Detections
+    if (inputsWithDetections.length === 0) {
+      return; // Keine Detections
+    }
 
-    const analysis = this.currentAnalysis.get(element);
-    if (!analysis || analysis.detections.length === 0) {
-      return;
+    // Wenn spezifisches Element übergeben, setze es als aktiv
+    let activeIndex = 0;
+    if (element) {
+      const foundIndex = inputsWithDetections.findIndex(i => i.element === element);
+      if (foundIndex >= 0) activeIndex = foundIndex;
     }
 
     // v2.7.0: Lade Developer Mode Setting
@@ -1232,11 +1243,11 @@ class ComplianceMonitor {
         const result = await chrome.storage.local.get(['aicc_developer_mode']);
         isDeveloperMode = result.aicc_developer_mode || false;
       } catch (error) {
-        // Silently handle - developer mode defaults to false
+        // Silently handle
       }
     }
 
-    // WICHTIG: Blende alle Highlight-Overlays aus während Info-Overlay offen ist
+    // WICHTIG: Blende alle Highlight-Overlays aus
     document.body.classList.add('aicc-modal-open');
 
     // Entferne existierendes Overlay
@@ -1245,27 +1256,56 @@ class ComplianceMonitor {
       existingOverlay.remove();
     }
 
-    // v2.7.0: Conditional Report Section
-    const reportSection = isDeveloperMode ? `
-          <div class="aicc-validation-report-section">
-            <h3>
-              ${this.currentLang === 'de' ? '📋 Validierungs-Report für Claude (Entwicklermodus)' : '📋 Validation Report for Claude (Developer Mode)'}
-            </h3>
-            <p style="margin: 8px 0; font-size: 13px; color: #666;">
-              ${this.currentLang === 'de'
-                ? 'Kopiere diesen erweiterten Report und sende ihn an Claude zum Überprüfen der Erkennungen:'
-                : 'Copy this extended report and send it to Claude to validate the detections:'}
-            </p>
-            <div class="aicc-code-window">
-              <div class="aicc-code-header">
-                <span class="aicc-code-label">Markdown</span>
-                <button class="aicc-copy-btn-overlay" data-copy-target="validation-report-overlay">
-                  ${this.currentLang === 'de' ? '📋 Kopieren' : '📋 Copy'}
-                </button>
-              </div>
-              <pre class="aicc-code-content" id="aicc-validation-report-overlay"><code>${this.escapeHtml(this.generateValidationReport(analysis, element, isDeveloperMode))}</code></pre>
+    // Generiere Tab-Header (nur wenn mehr als 1 Input)
+    const tabsHeader = inputsWithDetections.length > 1 ? `
+      <div class="aicc-tabs-header">
+        ${inputsWithDetections.map((input, idx) => {
+          const badgeClass = input.analysis.status === 'critical' ? '' :
+                            input.analysis.status === 'warning' ? 'warning' : 'safe';
+          return `
+            <button class="aicc-tab-button ${idx === activeIndex ? 'active' : ''}" data-tab="${idx}">
+              ${input.label}
+              <span class="aicc-tab-badge ${badgeClass}">${input.analysis.detections.length}</span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    ` : '';
+
+    // Generiere Tab-Contents
+    const tabsContent = inputsWithDetections.map((input, idx) => {
+      const reportSection = isDeveloperMode ? `
+        <div class="aicc-validation-report-section">
+          <h3>
+            ${this.currentLang === 'de' ? '📋 Validierungs-Report für Claude (Entwicklermodus)' : '📋 Validation Report for Claude (Developer Mode)'}
+          </h3>
+          <p style="margin: 8px 0; font-size: 13px; color: #666;">
+            ${this.currentLang === 'de'
+              ? 'Kopiere diesen erweiterten Report und sende ihn an Claude zum Überprüfen der Erkennungen:'
+              : 'Copy this extended report and send it to Claude to validate the detections:'}
+          </p>
+          <div class="aicc-code-window">
+            <div class="aicc-code-header">
+              <span class="aicc-code-label">Markdown</span>
+              <button class="aicc-copy-btn-overlay" data-tab-index="${idx}">
+                ${this.currentLang === 'de' ? '📋 Kopieren' : '📋 Copy'}
+              </button>
             </div>
-          </div>` : '';
+            <pre class="aicc-code-content"><code>${this.escapeHtml(this.generateValidationReport(input.analysis, input.element, isDeveloperMode))}</code></pre>
+          </div>
+        </div>
+      ` : '';
+
+      return `
+        <div class="aicc-tab-content ${idx === activeIndex ? 'active' : ''}" data-tab-content="${idx}">
+          ${this.generateOverlayTable(input.analysis)}
+          ${reportSection}
+        </div>
+      `;
+    }).join('');
+
+    // Ermittle schlimmsten Status
+    const worstStatus = inputsWithDetections.some(i => i.analysis.status === 'critical') ? 'critical' : 'warning';
 
     const overlay = document.createElement('div');
     overlay.className = 'aicc-overlay';
@@ -1274,14 +1314,15 @@ class ComplianceMonitor {
       <div class="aicc-overlay-content">
         <div class="aicc-overlay-header">
           <h2>
-            ${analysis.status === 'critical' ? '🔴' : '🟠'}
+            ${worstStatus === 'critical' ? '🔴' : '🟠'}
             ${this.currentLang === 'de' ? 'Erkannte sensible Daten' : 'Detected Sensitive Data'}
+            ${inputsWithDetections.length > 1 ? ` (${inputsWithDetections.length} Inputs)` : ''}
           </h2>
           <button class="aicc-overlay-close">&times;</button>
         </div>
         <div class="aicc-overlay-body">
-          ${this.generateOverlayTable(analysis)}
-          ${reportSection}
+          ${tabsHeader}
+          ${tabsContent}
         </div>
         <div class="aicc-overlay-footer">
           <div class="aicc-overlay-branding">
@@ -1306,35 +1347,57 @@ class ComplianceMonitor {
     // Event handlers
     const close = () => {
       overlay.remove();
-      // Zeige Highlight-Overlays wieder an
       document.body.classList.remove('aicc-modal-open');
     };
     overlay.querySelector('.aicc-overlay-close').addEventListener('click', close);
     overlay.querySelector('.aicc-overlay-backdrop').addEventListener('click', close);
     overlay.querySelector('.aicc-overlay-ok').addEventListener('click', close);
 
+    // Tab-Switching (nur wenn mehrere Tabs)
+    if (inputsWithDetections.length > 1) {
+      const tabButtons = overlay.querySelectorAll('.aicc-tab-button');
+      const tabContents = overlay.querySelectorAll('.aicc-tab-content');
+
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const tabIndex = button.getAttribute('data-tab');
+
+          // Remove active from all
+          tabButtons.forEach(b => b.classList.remove('active'));
+          tabContents.forEach(c => c.classList.remove('active'));
+
+          // Add active to clicked
+          button.classList.add('active');
+          overlay.querySelector(`[data-tab-content="${tabIndex}"]`).classList.add('active');
+        });
+      });
+    }
+
     // Prevent close on content click
     overlay.querySelector('.aicc-overlay-content').addEventListener('click', (e) => {
       e.stopPropagation();
     });
 
-    // Copy button handler (v2.7.0: uses isDeveloperMode)
-    const copyBtn = overlay.querySelector('.aicc-copy-btn-overlay');
-    if (copyBtn) {
-      copyBtn.addEventListener('click', () => {
-        const reportText = this.generateValidationReport(analysis, element, isDeveloperMode);
+    // Copy button handlers
+    const copyBtns = overlay.querySelectorAll('.aicc-copy-btn-overlay');
+    copyBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabIndex = parseInt(btn.getAttribute('data-tab-index'));
+        const input = inputsWithDetections[tabIndex];
+        const reportText = this.generateValidationReport(input.analysis, input.element, isDeveloperMode);
+
         navigator.clipboard.writeText(reportText).then(() => {
-          const originalText = copyBtn.textContent;
-          copyBtn.textContent = this.currentLang === 'de' ? '✅ Kopiert!' : '✅ Copied!';
+          const originalText = btn.textContent;
+          btn.textContent = this.currentLang === 'de' ? '✅ Kopiert!' : '✅ Copied!';
           setTimeout(() => {
-            copyBtn.textContent = originalText;
+            btn.textContent = originalText;
           }, 2000);
         }).catch(err => {
           console.error('Failed to copy:', err);
-          copyBtn.textContent = this.currentLang === 'de' ? '❌ Fehler' : '❌ Error';
+          btn.textContent = this.currentLang === 'de' ? '❌ Fehler' : '❌ Error';
         });
       });
-    }
+    });
   }
 
   /**
@@ -1396,7 +1459,7 @@ class ComplianceMonitor {
     allDetections.sort((a, b) => a.start - b.start);
 
     // Erstelle Markdown-Report
-    let report = `# AI Compliance Checker - Validierungsreport v2.9.9
+    let report = `# AI Compliance Checker - Validierungsreport v2.9.10
 
 ## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
@@ -1669,6 +1732,12 @@ Prüfe ob folgende Kategorien übersehen wurden:
           <button class="aicc-modal-close">&times;</button>
         </div>
         <div class="aicc-modal-body">
+          <div class="aicc-info-box">
+            <strong>ℹ️ ${this.currentLang === 'de' ? 'Hinweis:' : 'Notice:'}</strong>
+            ${this.currentLang === 'de'
+              ? 'Nur dieser Input wird analysiert. Andere Inputs auf der Seite werden nicht berücksichtigt.'
+              : 'Only this input is being analyzed. Other inputs on the page are not considered.'}
+          </div>
           <div class="aicc-modal-warning-box ${analysis.status === 'critical' ? 'aicc-critical-box' : 'aicc-warning-box'}">
             <strong>${this.currentLang === 'de' ? 'Warnung:' : 'Warning:'}</strong>
             ${analysis.status === 'critical'

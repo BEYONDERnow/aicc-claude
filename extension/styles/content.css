@@ -827,6 +827,22 @@ body.aicc-modal-open .aicc-overlay-container {
   color: #996C00;
 }
 
+.aicc-info-box {
+  background: linear-gradient(135deg, rgba(52, 152, 219, 0.1) 0%, rgba(52, 152, 219, 0.15) 100%);
+  border: 2px solid var(--beyonder-sky);
+  color: #2874A6;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.aicc-info-box strong {
+  font-weight: 700;
+  margin-right: 4px;
+}
+
 .aicc-modal-footer {
   padding: 24px 32px;
   border-top: 1px solid var(--beyonder-grey-light);
