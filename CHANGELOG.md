@@ -7,6 +7,146 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.10.0] - 2025-11-02
+
+### 🎉 Feature: Public Beta Feedback-System mit GitHub Issues Integration
+
+#### Zusammenfassung
+Umfassendes **Beta-Feedback-System** für einfache Bug-Reports, False-Positive/Negative-Meldungen und Feature-Requests. Nutzer können Feedback mit automatischen Screenshots und vollständigem Kontext direkt als GitHub Issues senden - **DSGVO-konform mit explizitem Opt-In**.
+
+#### 🚀 Neue Features
+
+**1. GitHub Issues API Integration** 📝
+- Automatische Issue-Erstellung auf GitHub mit strukturierten Templates
+- Labels: `bug`, `false-positive`, `false-negative`, `feature-request`, `beta-feedback`
+- Screenshot-Upload als Base64 in Markdown
+- System-Informationen (Version, Platform, Browser) automatisch erfasst
+- Datei: `scripts/github-feedback.js`
+
+**2. Screenshot-Capture System** 📸
+- Automatische Screenshot-Erstellung beim Öffnen des Feedback-Modals
+- Compression (JPEG 80%, max 2MB) für optimale Dateigröße
+- Canvas-basierte Verarbeitung mit max. 1920px Breite
+- Service Worker Integration für chrome.tabs.captureVisibleTab()
+- Dateien: `scripts/screenshot-capture.js`, `background.js`
+
+**3. Modernes Feedback-Modal** 💬
+- **Typ-Auswahl**: Bug / False-Positive / False-Negative / Feature-Request
+- **Formular-Felder**:
+  - Beschreibung (Pflicht)
+  - E-Mail (optional für Rückfragen)
+  - Screenshot-Preview mit Toggle
+- **Detection-Context** (bei False-Positive/Negative):
+  - Zeigt erkannten Wert, Typ, Schweregrad, Kontext
+  - Automatisch befüllt beim Klick auf "Falsch erkannt melden"
+- **Privacy Notice**: Transparente Info über übertragene Daten
+- **Opt-In Checkbox**: Explizite Zustimmung erforderlich (DSGVO-konform)
+- **Success-State**: Bestätigung mit Link zum erstellten GitHub Issue
+- Dateien: `scripts/feedback-modal.js`, `styles/feedback.css`
+
+**4. Feedback-Buttons überall** 🎯
+- **Extension-Popup**: Prominenter "💬 Feedback senden" Button
+- **Modal-Overlay**: "💬 Falsch erkannt melden" Button im Footer
+- **Context-Integration**: Erkennung wird als Context übergeben (Wert, Typ, ±50 Zeichen Kontext)
+- Intelligentes Routing:
+  - Auf AI-Plattformen: Öffnet Feedback-Modal
+  - Auf anderen Seiten: Öffnet GitHub Issues direkt
+
+**5. Manifest V3 Service Worker** ⚙️
+- Background Service Worker für Screenshot-Capture
+- Message-Passing zwischen Content Script und Service Worker
+- Permissions: `activeTab`, `https://api.github.com/*`
+- Datei: `background.js`
+
+#### 🔧 Technische Details
+
+**Neue Dateien**:
+- `extension/scripts/github-feedback.js` - GitHub API Service
+- `extension/scripts/screenshot-capture.js` - Screenshot-Capture Modul
+- `extension/scripts/feedback-modal.js` - Feedback-Modal Manager
+- `extension/styles/feedback.css` - BEYONDER Design für Feedback-UI
+- `extension/background.js` - Manifest V3 Service Worker
+
+**Erweiterte Dateien**:
+- `extension/manifest.json` - Permissions (`activeTab`), Service Worker, neue Content Scripts
+- `extension/popup.html` - Feedback-Button Section
+- `extension/popup.js` - Message-Passing an Content Script
+- `extension/scripts/content.js` - Message Listener, Feedback-Button im Overlay, `extractContext()` Methode
+
+**GitHub API Configuration**:
+```javascript
+// In scripts/github-feedback.js
+this.config = {
+  owner: 'chrisbeyeler',
+  repo: 'aicc-claude',
+  token: '',  // PAT muss eingetragen werden
+};
+```
+
+**Setup-Anleitung** (für Entwickler):
+1. GitHub Personal Access Token erstellen mit `public_repo` oder `repo` scope
+2. Token in `scripts/github-feedback.js` → `config.token` eintragen
+3. **WICHTIG**: Token NICHT committen (im .gitignore oder Environment Variable)
+4. Extension neu laden
+
+#### 📊 User Experience
+
+**Feedback-Flow (Beispiel False-Positive)**:
+1. User sieht orange Warnung bei "Hans" (fälschlicherweise als Name erkannt)
+2. Klickt auf Status-Icon → Overlay öffnet sich
+3. Klickt "💬 Falsch erkannt melden" im Footer
+4. Feedback-Modal öffnet sich:
+   - Typ: "False Positive" (vorselektiert)
+   - Detection: "Hans" + Kontext automatisch befüllt
+   - Screenshot bereits erstellt (Preview sichtbar)
+   - User gibt Kommentar ein: "Das ist kein Name, sondern..."
+   - User akzeptiert Privacy Notice
+5. Submit → GitHub Issue erstellt
+6. Success-Message mit Link zum Issue
+
+**DSGVO-Konformität**:
+- ✅ Explizites Opt-In vor Datenübertragung (Checkbox Pflicht)
+- ✅ Transparente Privacy-Notice (welche Daten, wohin, warum)
+- ✅ Optional: E-Mail-Angabe
+- ✅ Optional: Screenshot-Upload (Toggle)
+- ✅ Link zu GitHub Issues (User kann Issues einsehen)
+- ✅ Kein automatisches Tracking oder Telemetrie
+
+#### 🎨 Design
+
+**BEYONDER Design System**:
+- Gradient-Header: Aquamarine → Midnight Blue
+- Primary-Button: Pink → Orange → Gold Gradient
+- Privacy-Notice: Grün mit Icon
+- Opt-In Box: Gelb hervorgehoben
+- Responsive Layout (max 600px Modal, 90vh)
+- Smooth Animations (Fade-in, Slide-up)
+- Custom Scrollbar mit Gradient
+
+#### ⚠️ Bekannte Limitationen
+
+1. **GitHub Token Management**: Token muss manuell in Code eingetragen werden (keine UI-Option)
+2. **Screenshot Permissions**: activeTab permission erforderlich (User wird beim Update gefragt)
+3. **GitHub Rate Limits**: 5000 requests/hour (ausreichend für Beta)
+4. **Issue-Size**: Screenshots max 2MB (GitHub API Limit)
+
+#### 🔜 Nächste Schritte (v2.11+)
+
+- [ ] Token-Management via Extension-Popup (ohne Code-Edit)
+- [ ] Screenshot-Blur-Tool für sensible Bereiche
+- [ ] Multi-Detection-Auswahl (mehrere Erkennungen gleichzeitig melden)
+- [ ] Offline-Queue (Feedback später senden wenn offline)
+- [ ] Alternative Backends (Supabase, Tally, Email)
+
+#### 📄 Commit Details
+- `feat: GitHub Issues API integration for beta feedback`
+- `feat: Screenshot capture with Service Worker`
+- `feat: Feedback Modal with privacy opt-in`
+- `feat: Feedback buttons in popup and overlay`
+- `chore: bump version to 2.10.0`
+
+---
+
 ## [2.9.2] - 2025-11-01
 
 ### 🚀 Feature: Optimierter Validierungsreport mit Kontext, Position & Annotation
@@ -50,7 +190,7 @@ Der Validierungsreport wurde komplett überarbeitet für eine **optimale Analyse
 | # | Kriterium | Wert |
 |---
 
-## [2.9.9] - 2025-11-02
+## [2.10.0] - 2025-11-02
 
 ### 🔧 Zentrale Versionsverwaltung
 

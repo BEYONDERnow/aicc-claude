@@ -1354,9 +1354,14 @@ class ComplianceMonitor {
                 : '100% local • GDPR compliant • No data transmission'}
             </div>
           </div>
-          <button class="aicc-btn aicc-btn-primary aicc-overlay-ok">
-            ${this.currentLang === 'de' ? 'Verstanden' : 'Got it'}
-          </button>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <button class="aicc-btn aicc-btn-secondary aicc-feedback-report" data-element-id="${Date.now()}">
+              ${this.currentLang === 'de' ? '💬 Falsch erkannt melden' : '💬 Report false detection'}
+            </button>
+            <button class="aicc-btn aicc-btn-primary aicc-overlay-ok">
+              ${this.currentLang === 'de' ? 'Verstanden' : 'Got it'}
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -1395,6 +1400,44 @@ class ComplianceMonitor {
         });
       });
     }
+
+    // Feedback Report button handler (v2.10.0)
+    const feedbackBtn = overlay.querySelector('.aicc-feedback-report');
+    if (feedbackBtn) {
+      feedbackBtn.addEventListener('click', () => {
+        close(); // Overlay schließen
+
+        // Ersten/kritischsten Detection als Context nehmen
+        const firstDetection = analysis.detections[0];
+        const detectionContext = {
+          value: firstDetection.match,
+          type: firstDetection.name,
+          severity: firstDetection.severity,
+          description: firstDetection.description,
+          context: this.extractContext(element, firstDetection.match)
+        };
+
+        // Feedback-Modal öffnen
+        const feedbackModal = new FeedbackModal();
+        feedbackModal.open({
+          preselectedType: 'false-positive',
+          detection: detectionContext
+        });
+      });
+    }
+  }
+
+  /**
+   * Extrahiert Kontext um einen erkannten Wert (±50 Zeichen)
+   */
+  extractContext(element, match) {
+    const text = this.getElementText(element);
+    const index = text.indexOf(match);
+    if (index === -1) return '';
+
+    const start = Math.max(0, index - 50);
+    const end = Math.min(text.length, index + match.length + 50);
+    return '...' + text.substring(start, end) + '...';
   }
 
   /**
@@ -1456,7 +1499,7 @@ class ComplianceMonitor {
     allDetections.sort((a, b) => a.start - b.start);
 
     // Erstelle Markdown-Report
-    let report = `# AI Compliance Checker - Validierungsreport v2.9.9
+    let report = `# AI Compliance Checker - Validierungsreport v2.10.0
 
 ## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
@@ -1980,3 +2023,25 @@ if (document.readyState === 'loading') {
 } else {
   new ComplianceMonitor();
 }
+
+/**
+ * Message Listener für Feedback-System
+ * Empfängt Messages von Popup und öffnet Feedback-Modal
+ */
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'openFeedbackModal') {
+    try {
+      // Feedback-Modal initialisieren und öffnen
+      const feedbackModal = new FeedbackModal();
+      feedbackModal.open(message.options || {});
+
+      sendResponse({ success: true });
+    } catch (error) {
+      console.error('[AI Compliance Checker] Error opening feedback modal:', error);
+      sendResponse({ success: false, error: error.message });
+    }
+  }
+
+  // Return true für asynchrone Antwort
+  return true;
+});

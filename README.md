@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.9.9** • by BEYONDER
+**Version 2.10.0** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -15,7 +15,38 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.9.3 (Aktuell) - 2025-11-02
+### Version 2.10.0 (Aktuell) - 2025-11-02
+
+**🎉 Feature: Public Beta Feedback-System mit GitHub Issues Integration**
+
+#### 🚀 Neue Features
+- **GitHub Issues API**: Automatische Issue-Erstellung mit strukturierten Templates (Bug, False-Positive, False-Negative, Feature-Request)
+- **Screenshot-Capture**: Automatische Screenshots mit Compression (JPEG 80%, max 2MB)
+- **Feedback-Modal**: Modernes UI mit Typ-Auswahl, Detection-Context, Privacy-Notice und Opt-In
+- **Feedback-Buttons**: Im Extension-Popup und Modal-Overlay ("Falsch erkannt melden")
+- **Service Worker**: Manifest V3 Background Script für Screenshot-Capture
+- **DSGVO-konform**: Explizites Opt-In, transparente Privacy-Notice, optionale E-Mail/Screenshot
+
+#### 📊 Vorteile
+- ✅ Einfaches Bug-Reporting direkt aus der Extension
+- ✅ False-Positive/Negative-Meldungen mit automatischem Kontext (Wert, Typ, ±50 Zeichen)
+- ✅ Screenshots helfen bei der Fehleranalyse
+- ✅ GitHub Issues für strukturiertes Tracking
+- ✅ Transparente Datenübertragung (DSGVO-konform)
+- ✅ **Fallback-Modus**: Funktioniert auch ohne API-Konfiguration (öffnet vorausgefülltes GitHub Issue)
+
+#### 🔧 Setup (für Entwickler)
+Das Feedback-System funktioniert sofort im **Fallback-Modus** (öffnet GitHub Issues im Browser).
+
+**Optional:** Für automatische Issue-Erstellung via API:
+- **GitHub App** (empfohlen für Public Beta): Siehe [GITHUB_APP_SETUP.md](./GITHUB_APP_SETUP.md)
+- **Personal Access Token** (schnell für Tests): Siehe [FEEDBACK_SETUP.md](./FEEDBACK_SETUP.md)
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#2100---2025-11-02)
+
+---
+
+### Version 2.9.3 (Vorherige) - 2025-11-02
 
 **🚀 Feature: Optimierter Validierungsreport mit Kontext, Position & Annotation**
 
@@ -36,7 +67,7 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 ---
 
-### Version 2.9.1 (Vorherige) - 2025-11-01
+### Version 2.9.1 - 2025-11-01
 
 **🔧 Fixes: Vollständige Prompt-Extraktion & chrome.storage Bugfix**
 
@@ -937,4 +968,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.9.9** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!
+**Version 2.10.0** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!
