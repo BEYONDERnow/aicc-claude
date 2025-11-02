@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.9.8** • by BEYONDER
+**Version 2.9.9** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -937,4 +937,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.9.8** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!
+**Version 2.9.9** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!
