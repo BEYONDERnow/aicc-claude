@@ -9,7 +9,7 @@ class ComplianceMonitor {
     this.detector = new ComplianceDetector();
     this.currentLang = this.detectLanguage();
     this.monitoredElements = new Map();
-    this.statusIcons = new Map();
+    this.globalStatusIcon = null; // Nur 1 Icon für alle Inputs
     this.isModalShown = false;
 
     // Debounce Timer für Performance
@@ -403,10 +403,10 @@ class ComplianceMonitor {
   }
 
   /**
-   * Erstellt Status-Icon neben dem Eingabefeld
+   * Erstellt globales Status-Icon (nur 1x für alle Inputs)
    */
-  createStatusIcon(element) {
-    if (this.statusIcons.has(element)) return;
+  createStatusIcon() {
+    if (this.globalStatusIcon) return; // Icon existiert bereits
 
     // Create wrapper for icon
     const iconWrapper = document.createElement('div');
@@ -427,15 +427,13 @@ class ComplianceMonitor {
       </div>
     `;
 
-    // Positioniere das Icon
-    this.positionIcon(element, iconWrapper);
     document.body.appendChild(iconWrapper);
 
-    // Click handler für Icon
+    // Click handler für Icon (zeigt ALLE Inputs in Tabs)
     const icon = iconWrapper.querySelector('.aicc-status-icon');
     icon.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.showOverlay(element);
+      this.showOverlay(); // Kein spezifisches Element mehr
     });
 
     // Keyboard navigation (Enter/Space to open)
@@ -443,50 +441,18 @@ class ComplianceMonitor {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         e.stopPropagation();
-        this.showOverlay(element);
+        this.showOverlay();
       }
     });
 
-    this.statusIcons.set(element, iconWrapper);
-
-    // Update Position bei Scroll/Resize
-    const updatePosition = () => this.positionIcon(element, iconWrapper);
-    window.addEventListener('scroll', updatePosition, true);
-    window.addEventListener('resize', updatePosition);
-
-    // Hide when element is not visible
-    const checkVisibility = () => {
-      const rect = element.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) {
-        iconWrapper.style.display = 'none';
-      } else {
-        iconWrapper.style.display = 'block';
-        updatePosition();
-      }
-    };
-    setInterval(checkVisibility, 500);
+    this.globalStatusIcon = iconWrapper;
   }
 
   /**
-   * Positioniert das Status-Icon
+   * Positioniert das Status-Icon (nicht mehr nötig - fixed per CSS)
    */
-  positionIcon(element, iconWrapper) {
-    const rect = element.getBoundingClientRect();
-
-    // Stelle sicher Element ist sichtbar
-    if (rect.width === 0 || rect.height === 0) {
-      iconWrapper.style.display = 'none';
-      return;
-    }
-
-    iconWrapper.style.display = 'block';
-    iconWrapper.style.position = 'fixed';
-
-    // Position unten rechts im Viewport (nicht am Textfeld!)
-    iconWrapper.style.bottom = '20px';
-    iconWrapper.style.right = '20px';
-    iconWrapper.style.top = 'auto';
-    iconWrapper.style.zIndex = '999999';
+  positionIcon() {
+    // Icon ist jetzt per CSS fixed rechts mittig positioniert
   }
 
   /**
@@ -651,7 +617,7 @@ class ComplianceMonitor {
     }
 
     // Update visuelles Feedback
-    this.updateStatusIcon(element, analysis);
+    this.updateStatusIcon(); // Globales Icon für alle Inputs
     this.highlightText(element, analysis);
   }
 
@@ -857,23 +823,42 @@ class ComplianceMonitor {
   }
 
   /**
-   * Updated das Status-Icon
+   * Updated das globale Status-Icon (kombiniert alle Inputs)
    */
-  updateStatusIcon(element, analysis) {
-    const iconWrapper = this.statusIcons.get(element);
-    if (!iconWrapper) return;
+  updateStatusIcon() {
+    if (!this.globalStatusIcon) return;
 
-    const icon = iconWrapper.querySelector('.aicc-status-icon');
-    const badge = iconWrapper.querySelector('.aicc-badge');
-    const svg = iconWrapper.querySelector('.aicc-icon-svg');
+    const icon = this.globalStatusIcon.querySelector('.aicc-status-icon');
+    const badge = this.globalStatusIcon.querySelector('.aicc-badge');
+    const svg = this.globalStatusIcon.querySelector('.aicc-icon-svg');
+
+    // Kombiniere alle Analysen aller überwachten Inputs
+    let worstStatus = 'safe';
+    let totalDetections = 0;
+    const allAnalyses = [];
+
+    for (const [element, info] of this.monitoredElements.entries()) {
+      const analysis = info.lastAnalysis;
+      if (analysis) {
+        allAnalyses.push(analysis);
+        totalDetections += analysis.detections.length;
+
+        // Ermittle schlimmsten Status: critical > warning > safe
+        if (analysis.status === 'critical') {
+          worstStatus = 'critical';
+        } else if (analysis.status === 'warning' && worstStatus !== 'critical') {
+          worstStatus = 'warning';
+        }
+      }
+    }
 
     // Update Status
-    icon.setAttribute('data-status', analysis.status);
-    iconWrapper.setAttribute('data-status', analysis.status);
+    icon.setAttribute('data-status', worstStatus);
+    this.globalStatusIcon.setAttribute('data-status', worstStatus);
 
-    // Update Badge
-    if (analysis.detections.length > 0) {
-      badge.textContent = analysis.detections.length;
+    // Update Badge (Gesamtzahl aller Detections)
+    if (totalDetections > 0) {
+      badge.textContent = totalDetections;
       badge.style.display = 'flex';
     } else {
       badge.style.display = 'none';
@@ -881,7 +866,7 @@ class ComplianceMonitor {
 
     // Update Icon SVG basierend auf Status
     let iconPath;
-    switch (analysis.status) {
+    switch (worstStatus) {
       case 'safe':
         iconPath = 'M8 12l3 3 5-5';
         break;
@@ -896,11 +881,15 @@ class ComplianceMonitor {
     const checkPath = svg.querySelector('.aicc-icon-check');
     checkPath.setAttribute('d', iconPath);
 
-    // Update Rich Tooltip
-    this.updateTooltip(icon, analysis);
+    // Update Rich Tooltip (kombinierte Analysis)
+    const combinedAnalysis = {
+      status: worstStatus,
+      detections: allAnalyses.flatMap(a => a.detections)
+    };
+    this.updateTooltip(icon, combinedAnalysis);
 
     // Update ARIA label
-    const ariaLabel = this.getAriaLabel(analysis);
+    const ariaLabel = this.getAriaLabel(combinedAnalysis);
     icon.setAttribute('aria-label', ariaLabel);
   }
 
@@ -1214,7 +1203,19 @@ class ComplianceMonitor {
   /**
    * Zeigt Overlay mit detaillierter Analyse
    */
-  async showOverlay(element) {
+  async showOverlay(element = null) {
+    // Fallback: Wenn kein Element übergeben, nimm erstes mit Detections
+    if (!element) {
+      for (const [el, info] of this.monitoredElements.entries()) {
+        if (info.lastAnalysis && info.lastAnalysis.detections.length > 0) {
+          element = el;
+          break;
+        }
+      }
+    }
+
+    if (!element) return; // Keine Inputs mit Detections
+
     const analysis = this.currentAnalysis.get(element);
     if (!analysis || analysis.detections.length === 0) {
       return;
