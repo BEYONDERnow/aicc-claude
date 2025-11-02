@@ -237,8 +237,10 @@ class ComplianceMonitor {
     // Speichere Observer
     info.observer = observer;
 
-    // Erstelle Status-Icon
-    this.createStatusIcon(element);
+    // Erstelle globales Status-Icon (nur beim ersten Input)
+    if (!this.globalStatusIcon) {
+      this.createStatusIcon();
+    }
 
     // Überwache Submit-Button für dieses Element
     this.attachSubmitButtonHandler(element);
@@ -429,15 +431,16 @@ class ComplianceMonitor {
 
     document.body.appendChild(iconWrapper);
 
-    // Click handler für Icon (zeigt ALLE Inputs in Tabs)
+    // Event handler für Icon (zeigt ALLE Inputs in Tabs)
     const icon = iconWrapper.querySelector('.aicc-status-icon');
+
+    // Click handler
     icon.addEventListener('click', (e) => {
       e.stopPropagation();
       this.showOverlay(); // Kein spezifisches Element mehr
     });
 
     // Keyboard navigation (Enter/Space to open)
-    const icon = iconWrapper.querySelector('.aicc-status-icon');
     icon.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
