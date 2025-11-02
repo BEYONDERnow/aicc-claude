@@ -431,14 +431,8 @@ class ComplianceMonitor {
     this.positionIcon(element, iconWrapper);
     document.body.appendChild(iconWrapper);
 
-    // Click handler für Icon
-    const icon = iconWrapper.querySelector('.aicc-status-icon');
-    icon.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.showOverlay(element);
-    });
-
     // Keyboard navigation (Enter/Space to open)
+    const icon = iconWrapper.querySelector('.aicc-status-icon');
     icon.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -449,8 +443,15 @@ class ComplianceMonitor {
 
     this.statusIcons.set(element, iconWrapper);
 
-    // Update Position bei Scroll/Resize
-    const updatePosition = () => this.positionIcon(element, iconWrapper);
+    // v2.8.1: Drag & Drop Setup (inkl. Click-Handling)
+    this.setupDragDrop(iconWrapper, element);
+
+    // Update Position bei Scroll/Resize (nur wenn nicht custom Position)
+    const updatePosition = () => {
+      if (!iconWrapper.dataset.customPosition) {
+        this.positionIcon(element, iconWrapper);
+      }
+    };
     window.addEventListener('scroll', updatePosition, true);
     window.addEventListener('resize', updatePosition);
 
@@ -461,10 +462,143 @@ class ComplianceMonitor {
         iconWrapper.style.display = 'none';
       } else {
         iconWrapper.style.display = 'block';
-        updatePosition();
+        if (!iconWrapper.dataset.customPosition) {
+          updatePosition();
+        }
       }
     };
     setInterval(checkVisibility, 500);
+
+    // v2.8.1: Lade gespeicherte Position
+    this.loadIconPosition(iconWrapper);
+  }
+
+  /**
+   * v2.8.1: Setup Drag & Drop für Icon
+   */
+  setupDragDrop(iconWrapper, element) {
+    const icon = iconWrapper.querySelector('.aicc-status-icon');
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+
+    // Mousedown: Start Dragging
+    icon.addEventListener('mousedown', (e) => {
+      // Nur linke Maustaste
+      if (e.button !== 0) return;
+
+      // Verhindere Click-Event bei Drag
+      e.stopPropagation();
+
+      isDragging = true;
+      icon.classList.add('dragging');
+
+      // Speichere Start-Position
+      startX = e.clientX;
+      startY = e.clientY;
+
+      const rect = iconWrapper.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+
+      // Verhindere Text-Selektion während Drag
+      e.preventDefault();
+    });
+
+    // Mousemove: Update Position
+    const handleMouseMove = (e) => {
+      if (!isDragging) return;
+
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+
+      let newLeft = initialLeft + deltaX;
+      let newTop = initialTop + deltaY;
+
+      // Begrenze auf Viewport
+      const iconRect = iconWrapper.getBoundingClientRect();
+      const maxX = window.innerWidth - iconRect.width;
+      const maxY = window.innerHeight - iconRect.height;
+
+      newLeft = Math.max(0, Math.min(newLeft, maxX));
+      newTop = Math.max(0, Math.min(newTop, maxY));
+
+      // Update Position
+      iconWrapper.style.position = 'fixed';
+      iconWrapper.style.left = `${newLeft}px`;
+      iconWrapper.style.top = `${newTop}px`;
+      iconWrapper.style.bottom = 'auto';
+      iconWrapper.style.right = 'auto';
+      iconWrapper.dataset.customPosition = 'true';
+    };
+
+    // Mouseup: Stop Dragging
+    const handleMouseUp = (e) => {
+      if (!isDragging) return;
+
+      isDragging = false;
+      icon.classList.remove('dragging');
+
+      // Speichere Position in Storage
+      const rect = iconWrapper.getBoundingClientRect();
+      this.saveIconPosition({
+        left: rect.left,
+        top: rect.top
+      });
+
+      // Wenn Drag zu kurz war (< 5px), trigger Click
+      const deltaX = Math.abs(e.clientX - startX);
+      const deltaY = Math.abs(e.clientY - startY);
+      if (deltaX < 5 && deltaY < 5) {
+        this.showOverlay(element);
+      }
+    };
+
+    // Event Listener auf document für globales Mouse-Tracking
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }
+
+  /**
+   * v2.8.1: Speichert Icon-Position in chrome.storage
+   */
+  async saveIconPosition(position) {
+    try {
+      await chrome.storage.local.set({
+        aicc_icon_position: position
+      });
+      console.log('[AI Compliance Checker] Icon position saved:', position);
+    } catch (error) {
+      console.error('[AI Compliance Checker] Failed to save icon position:', error);
+    }
+  }
+
+  /**
+   * v2.8.1: Lädt Icon-Position aus chrome.storage
+   */
+  async loadIconPosition(iconWrapper) {
+    try {
+      const result = await chrome.storage.local.get('aicc_icon_position');
+      if (result.aicc_icon_position) {
+        const { left, top } = result.aicc_icon_position;
+
+        // Validiere Position (innerhalb Viewport)
+        const maxX = window.innerWidth - 50; // Icon width
+        const maxY = window.innerHeight - 50;
+
+        if (left >= 0 && left <= maxX && top >= 0 && top <= maxY) {
+          iconWrapper.style.position = 'fixed';
+          iconWrapper.style.left = `${left}px`;
+          iconWrapper.style.top = `${top}px`;
+          iconWrapper.style.bottom = 'auto';
+          iconWrapper.style.right = 'auto';
+          iconWrapper.dataset.customPosition = 'true';
+
+          console.log('[AI Compliance Checker] Icon position loaded:', { left, top });
+        }
+      }
+    } catch (error) {
+      console.error('[AI Compliance Checker] Failed to load icon position:', error);
+    }
   }
 
   /**
