@@ -52,4 +52,59 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }
+
+  // Feedback Button
+  const feedbackButton = document.getElementById('feedback-button');
+
+  if (feedbackButton) {
+    feedbackButton.addEventListener('click', async () => {
+      try {
+        // Get active tab
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+        // Check if tab is a supported platform
+        const supportedHosts = ['openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com'];
+        const isSupported = supportedHosts.some(host => tab.url.includes(host));
+
+        if (!isSupported) {
+          // Open GitHub Issues directly if not on supported platform
+          chrome.tabs.create({
+            url: 'https://github.com/chrisbeyeler/aicc-claude/issues/new?labels=beta-feedback'
+          });
+          window.close();
+          return;
+        }
+
+        // Send message to content script to open feedback modal
+        chrome.tabs.sendMessage(tab.id, {
+          action: 'openFeedbackModal',
+          options: {
+            preselectedType: 'bug'
+          }
+        });
+
+        // Close popup
+        window.close();
+
+      } catch (error) {
+        console.error('[AI Compliance Checker] Error opening feedback modal:', error);
+        // Fallback: Open GitHub Issues
+        chrome.tabs.create({
+          url: 'https://github.com/chrisbeyeler/aicc-claude/issues/new?labels=beta-feedback'
+        });
+        window.close();
+      }
+    });
+
+    // Hover effect
+    feedbackButton.addEventListener('mouseenter', () => {
+      feedbackButton.style.transform = 'translateY(-2px)';
+      feedbackButton.style.boxShadow = '0 4px 16px rgba(227, 58, 116, 0.4)';
+    });
+
+    feedbackButton.addEventListener('mouseleave', () => {
+      feedbackButton.style.transform = 'translateY(0)';
+      feedbackButton.style.boxShadow = '0 2px 8px rgba(227, 58, 116, 0.3)';
+    });
+  }
 });
