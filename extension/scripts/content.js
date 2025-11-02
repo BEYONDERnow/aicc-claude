@@ -9,7 +9,7 @@ class ComplianceMonitor {
     this.detector = new ComplianceDetector();
     this.currentLang = this.detectLanguage();
     this.monitoredElements = new Map();
-    this.statusIcons = new Map();
+    this.globalStatusIcon = null; // Nur 1 Icon für alle Inputs
     this.isModalShown = false;
 
     // Debounce Timer für Performance
@@ -297,8 +297,10 @@ class ComplianceMonitor {
     // Speichere Observer
     info.observer = observer;
 
-    // Erstelle Status-Icon
-    this.createStatusIcon(element);
+    // Erstelle globales Status-Icon (nur beim ersten Input)
+    if (!this.globalStatusIcon) {
+      this.createStatusIcon();
+    }
 
     // Überwache Submit-Button für dieses Element
     this.attachSubmitButtonHandler(element);
@@ -463,10 +465,10 @@ class ComplianceMonitor {
   }
 
   /**
-   * Erstellt Status-Icon neben dem Eingabefeld
+   * Erstellt globales Status-Icon (nur 1x für alle Inputs)
    */
-  createStatusIcon(element) {
-    if (this.statusIcons.has(element)) return;
+  createStatusIcon() {
+    if (this.globalStatusIcon) return; // Icon existiert bereits
 
     // Create wrapper for icon
     const iconWrapper = document.createElement('div');
@@ -487,200 +489,34 @@ class ComplianceMonitor {
       </div>
     `;
 
-    // Positioniere das Icon
-    this.positionIcon(element, iconWrapper);
     document.body.appendChild(iconWrapper);
 
-    // Keyboard navigation (Enter/Space to open)
+    // Event handler für Icon (zeigt ALLE Inputs in Tabs)
     const icon = iconWrapper.querySelector('.aicc-status-icon');
+
+    // Click handler
+    icon.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.showOverlay(); // Kein spezifisches Element mehr
+    });
+
+    // Keyboard navigation (Enter/Space to open)
     icon.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         e.stopPropagation();
-        this.showOverlay(element);
+        this.showOverlay();
       }
     });
 
-    this.statusIcons.set(element, iconWrapper);
-
-    // v2.8.1: Drag & Drop Setup (inkl. Click-Handling)
-    this.setupDragDrop(iconWrapper, element);
-
-    // Update Position bei Scroll/Resize (nur wenn nicht custom Position)
-    const updatePosition = () => {
-      if (!iconWrapper.dataset.customPosition) {
-        this.positionIcon(element, iconWrapper);
-      }
-    };
-    window.addEventListener('scroll', updatePosition, true);
-    window.addEventListener('resize', updatePosition);
-
-    // Hide when element is not visible
-    const checkVisibility = () => {
-      const rect = element.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) {
-        iconWrapper.style.display = 'none';
-      } else {
-        iconWrapper.style.display = 'block';
-        if (!iconWrapper.dataset.customPosition) {
-          updatePosition();
-        }
-      }
-    };
-    setInterval(checkVisibility, 500);
-
-    // v2.8.1: Lade gespeicherte Position
-    this.loadIconPosition(iconWrapper);
+    this.globalStatusIcon = iconWrapper;
   }
 
   /**
-   * v2.8.1: Setup Drag & Drop für Icon
+   * Positioniert das Status-Icon (nicht mehr nötig - fixed per CSS)
    */
-  setupDragDrop(iconWrapper, element) {
-    const icon = iconWrapper.querySelector('.aicc-status-icon');
-    let isDragging = false;
-    let startX, startY, initialLeft, initialTop;
-
-    // Mousedown: Start Dragging
-    icon.addEventListener('mousedown', (e) => {
-      // Nur linke Maustaste
-      if (e.button !== 0) return;
-
-      // Verhindere Click-Event bei Drag
-      e.stopPropagation();
-
-      isDragging = true;
-      icon.classList.add('dragging');
-
-      // Speichere Start-Position
-      startX = e.clientX;
-      startY = e.clientY;
-
-      const rect = iconWrapper.getBoundingClientRect();
-      initialLeft = rect.left;
-      initialTop = rect.top;
-
-      // Verhindere Text-Selektion während Drag
-      e.preventDefault();
-    });
-
-    // Mousemove: Update Position
-    const handleMouseMove = (e) => {
-      if (!isDragging) return;
-
-      const deltaX = e.clientX - startX;
-      const deltaY = e.clientY - startY;
-
-      let newLeft = initialLeft + deltaX;
-      let newTop = initialTop + deltaY;
-
-      // Begrenze auf Viewport
-      const iconRect = iconWrapper.getBoundingClientRect();
-      const maxX = window.innerWidth - iconRect.width;
-      const maxY = window.innerHeight - iconRect.height;
-
-      newLeft = Math.max(0, Math.min(newLeft, maxX));
-      newTop = Math.max(0, Math.min(newTop, maxY));
-
-      // Update Position
-      iconWrapper.style.position = 'fixed';
-      iconWrapper.style.left = `${newLeft}px`;
-      iconWrapper.style.top = `${newTop}px`;
-      iconWrapper.style.bottom = 'auto';
-      iconWrapper.style.right = 'auto';
-      iconWrapper.dataset.customPosition = 'true';
-    };
-
-    // Mouseup: Stop Dragging
-    const handleMouseUp = (e) => {
-      if (!isDragging) return;
-
-      isDragging = false;
-      icon.classList.remove('dragging');
-
-      // Speichere Position in Storage
-      const rect = iconWrapper.getBoundingClientRect();
-      this.saveIconPosition({
-        left: rect.left,
-        top: rect.top
-      });
-
-      // Wenn Drag zu kurz war (< 5px), trigger Click
-      const deltaX = Math.abs(e.clientX - startX);
-      const deltaY = Math.abs(e.clientY - startY);
-      if (deltaX < 5 && deltaY < 5) {
-        this.showOverlay(element);
-      }
-    };
-
-    // Event Listener auf document für globales Mouse-Tracking
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }
-
-  /**
-   * v2.8.1: Speichert Icon-Position in chrome.storage
-   */
-  async saveIconPosition(position) {
-    try {
-      await chrome.storage.local.set({
-        aicc_icon_position: position
-      });
-      console.log('[AI Compliance Checker] Icon position saved:', position);
-    } catch (error) {
-      console.error('[AI Compliance Checker] Failed to save icon position:', error);
-    }
-  }
-
-  /**
-   * v2.8.1: Lädt Icon-Position aus chrome.storage
-   */
-  async loadIconPosition(iconWrapper) {
-    try {
-      const result = await chrome.storage.local.get('aicc_icon_position');
-      if (result.aicc_icon_position) {
-        const { left, top } = result.aicc_icon_position;
-
-        // Validiere Position (innerhalb Viewport)
-        const maxX = window.innerWidth - 50; // Icon width
-        const maxY = window.innerHeight - 50;
-
-        if (left >= 0 && left <= maxX && top >= 0 && top <= maxY) {
-          iconWrapper.style.position = 'fixed';
-          iconWrapper.style.left = `${left}px`;
-          iconWrapper.style.top = `${top}px`;
-          iconWrapper.style.bottom = 'auto';
-          iconWrapper.style.right = 'auto';
-          iconWrapper.dataset.customPosition = 'true';
-
-          console.log('[AI Compliance Checker] Icon position loaded:', { left, top });
-        }
-      }
-    } catch (error) {
-      console.error('[AI Compliance Checker] Failed to load icon position:', error);
-    }
-  }
-
-  /**
-   * Positioniert das Status-Icon
-   */
-  positionIcon(element, iconWrapper) {
-    const rect = element.getBoundingClientRect();
-
-    // Stelle sicher Element ist sichtbar
-    if (rect.width === 0 || rect.height === 0) {
-      iconWrapper.style.display = 'none';
-      return;
-    }
-
-    iconWrapper.style.display = 'block';
-    iconWrapper.style.position = 'fixed';
-
-    // Position unten rechts im Viewport (nicht am Textfeld!)
-    iconWrapper.style.bottom = '20px';
-    iconWrapper.style.right = '20px';
-    iconWrapper.style.top = 'auto';
-    iconWrapper.style.zIndex = '999999';
+  positionIcon() {
+    // Icon ist jetzt per CSS fixed rechts mittig positioniert
   }
 
   /**
@@ -845,7 +681,7 @@ class ComplianceMonitor {
     }
 
     // Update visuelles Feedback
-    this.updateStatusIcon(element, analysis);
+    this.updateStatusIcon(); // Globales Icon für alle Inputs
     this.highlightText(element, analysis);
   }
 
@@ -861,6 +697,20 @@ class ComplianceMonitor {
 
       // innerText extrahiert nur sichtbaren Text des Elements (ohne Children die nicht dazu gehören)
       return element.innerText || element.textContent || '';
+    }
+    return element.value || '';
+  }
+
+  /**
+   * v2.9.1: Holt VOLLSTÄNDIGEN Text aus Element für Report-Zwecke
+   * Verwendet textContent ZUERST um Truncation durch lazy rendering zu vermeiden
+   * Besonders wichtig für lange Prompts (>10k Zeichen) bei Claude.ai/ChatGPT
+   */
+  getFullElementText(element) {
+    if (element.contentEditable === 'true') {
+      // textContent gibt IMMER den kompletten Text zurück, unabhängig vom Rendering
+      // Bei virtuellen Scrolling/Lazy Loading werden sonst Teile abgeschnitten
+      return element.textContent || element.innerText || '';
     }
     return element.value || '';
   }
@@ -1037,23 +887,42 @@ class ComplianceMonitor {
   }
 
   /**
-   * Updated das Status-Icon
+   * Updated das globale Status-Icon (kombiniert alle Inputs)
    */
-  updateStatusIcon(element, analysis) {
-    const iconWrapper = this.statusIcons.get(element);
-    if (!iconWrapper) return;
+  updateStatusIcon() {
+    if (!this.globalStatusIcon) return;
 
-    const icon = iconWrapper.querySelector('.aicc-status-icon');
-    const badge = iconWrapper.querySelector('.aicc-badge');
-    const svg = iconWrapper.querySelector('.aicc-icon-svg');
+    const icon = this.globalStatusIcon.querySelector('.aicc-status-icon');
+    const badge = this.globalStatusIcon.querySelector('.aicc-badge');
+    const svg = this.globalStatusIcon.querySelector('.aicc-icon-svg');
+
+    // Kombiniere alle Analysen aller überwachten Inputs
+    let worstStatus = 'safe';
+    let totalDetections = 0;
+    const allAnalyses = [];
+
+    for (const [element, info] of this.monitoredElements.entries()) {
+      const analysis = info.lastAnalysis;
+      if (analysis) {
+        allAnalyses.push(analysis);
+        totalDetections += analysis.detections.length;
+
+        // Ermittle schlimmsten Status: critical > warning > safe
+        if (analysis.status === 'critical') {
+          worstStatus = 'critical';
+        } else if (analysis.status === 'warning' && worstStatus !== 'critical') {
+          worstStatus = 'warning';
+        }
+      }
+    }
 
     // Update Status
-    icon.setAttribute('data-status', analysis.status);
-    iconWrapper.setAttribute('data-status', analysis.status);
+    icon.setAttribute('data-status', worstStatus);
+    this.globalStatusIcon.setAttribute('data-status', worstStatus);
 
-    // Update Badge
-    if (analysis.detections.length > 0) {
-      badge.textContent = analysis.detections.length;
+    // Update Badge (Gesamtzahl aller Detections)
+    if (totalDetections > 0) {
+      badge.textContent = totalDetections;
       badge.style.display = 'flex';
     } else {
       badge.style.display = 'none';
@@ -1061,7 +930,7 @@ class ComplianceMonitor {
 
     // Update Icon SVG basierend auf Status
     let iconPath;
-    switch (analysis.status) {
+    switch (worstStatus) {
       case 'safe':
         iconPath = 'M8 12l3 3 5-5';
         break;
@@ -1076,11 +945,15 @@ class ComplianceMonitor {
     const checkPath = svg.querySelector('.aicc-icon-check');
     checkPath.setAttribute('d', iconPath);
 
-    // Update Rich Tooltip
-    this.updateTooltip(icon, analysis);
+    // Update Rich Tooltip (kombinierte Analysis)
+    const combinedAnalysis = {
+      status: worstStatus,
+      detections: allAnalyses.flatMap(a => a.detections)
+    };
+    this.updateTooltip(icon, combinedAnalysis);
 
     // Update ARIA label
-    const ariaLabel = this.getAriaLabel(analysis);
+    const ariaLabel = this.getAriaLabel(combinedAnalysis);
     icon.setAttribute('aria-label', ariaLabel);
   }
 
@@ -1394,7 +1267,19 @@ class ComplianceMonitor {
   /**
    * Zeigt Overlay mit detaillierter Analyse
    */
-  async showOverlay(element) {
+  async showOverlay(element = null) {
+    // Fallback: Wenn kein Element übergeben, nimm erstes mit Detections
+    if (!element) {
+      for (const [el, info] of this.monitoredElements.entries()) {
+        if (info.lastAnalysis && info.lastAnalysis.detections.length > 0) {
+          element = el;
+          break;
+        }
+      }
+    }
+
+    if (!element) return; // Keine Inputs mit Detections
+
     const analysis = this.currentAnalysis.get(element);
     if (!analysis || analysis.detections.length === 0) {
       return;
@@ -1402,11 +1287,13 @@ class ComplianceMonitor {
 
     // v2.7.0: Lade Developer Mode Setting
     let isDeveloperMode = false;
-    try {
-      const result = await chrome.storage.local.get(['aicc_developer_mode']);
-      isDeveloperMode = result.aicc_developer_mode || false;
-    } catch (error) {
-      console.error('[AI Compliance Checker] Error loading developer mode:', error);
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      try {
+        const result = await chrome.storage.local.get(['aicc_developer_mode']);
+        isDeveloperMode = result.aicc_developer_mode || false;
+      } catch (error) {
+        // Silently handle - developer mode defaults to false
+      }
     }
 
     // WICHTIG: Blende alle Highlight-Overlays aus während Info-Overlay offen ist
@@ -1513,128 +1400,212 @@ class ComplianceMonitor {
   /**
    * Generiert Validierungs-Report für Claude
    * v2.7.0: Erweitert mit allen Prüfkriterien und vollem Prompt
+   * v2.9.1: Verwendet getFullElementText() für vollständige Prompt-Extraktion
+   * v2.9.2: Erweitert mit Kontext, Position, Methode, annotiertem Prompt & False-Negative-Prüfung
    */
   generateValidationReport(analysis, element = null, isDeveloperMode = true) {
     const lang = this.currentLang;
 
-    // Extrahiere eingegebenen Text (OHNE Kürzung in v2.7.0)
-    const inputText = element ? this.getElementText(element) : '';
+    // v2.9.1: Extrahiere VOLLSTÄNDIGEN Text für Report (textContent statt innerText)
+    // Verhindert Truncation bei langen Prompts (>10k Zeichen) durch lazy rendering
+    const inputText = element ? this.getFullElementText(element) : '';
 
     // v2.7.0: Hole alle verfügbaren Prüfkriterien
     const allCriteria = this.detector.getAllCriteria(lang);
 
+    // Helper: Extrahiere Kontext um Erkennung (±50 Zeichen)
+    const getContext = (text, start, end, contextLength = 50) => {
+      const before = text.substring(Math.max(0, start - contextLength), start);
+      const match = text.substring(start, end);
+      const after = text.substring(end, Math.min(text.length, end + contextLength));
+      return `${before.length < contextLength ? '' : '...'}${before}**${match}**${after}${after.length < contextLength ? '' : '...'}`;
+    };
+
+    // Helper: Bestimme Erkennungsmethode
+    const getMethod = (detection) => {
+      const id = detection.id || detection.type || '';
+      if (id.includes('_ner') || id.includes('_nlp')) return 'NER/KI';
+      if (id.includes('regex') || id.includes('pattern')) return 'Regex';
+      if (id.includes('lexicon')) return 'Lexikon';
+      return 'Pattern';
+    };
+
     // Erstelle Map für schnelle Lookups welche Kriterien erkannt wurden
     const detectedCriteriaMap = new Map();
+    const allDetections = []; // Alle Detections mit Details
+
     analysis.detections.forEach(detection => {
       const key = detection.id || detection.type;
       if (!detectedCriteriaMap.has(key)) {
         detectedCriteriaMap.set(key, []);
       }
       detectedCriteriaMap.get(key).push(detection);
+
+      // Sammle Detection mit Kontext
+      if (detection.start !== undefined && detection.end !== undefined) {
+        allDetections.push({
+          ...detection,
+          context: getContext(inputText, detection.start, detection.end),
+          method: getMethod(detection),
+          position: `${detection.start}-${detection.end}`
+        });
+      }
     });
 
-    // Erstelle Markdown-Tabelle
-    let report = `# AI Compliance Checker - Validierungsreport v2.7.0
+    // Sortiere Detections nach Position für annotierten Prompt
+    allDetections.sort((a, b) => a.start - b.start);
 
-## Rolle
+    // Erstelle Markdown-Report
+    let report = `# AI Compliance Checker - Validierungsreport v2.9.9
+
+## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
 
-## Aufgabe
-Überprüfe die folgenden Prüfkriterien und validiere ob die Erkennungen korrekt sind.
+## 📋 Aufgabe
+Validiere die Erkennungen des AI Compliance Checkers auf:
+1. **True Positives**: Korrekt erkannte sensible Daten
+2. **False Positives**: Fälschlicherweise markierte Inhalte
+3. **False Negatives**: Übersehene sensible Daten
 
-Der Report zeigt ALLE ${allCriteria.critical.length + allCriteria.warning.length} geprüften Kriterien an:
-- ✅ = Kriterium wurde erkannt mit konkretem Wert
-- ⬜ = Kriterium wurde geprüft aber nicht gefunden
-
-Zähle am Ende wie viele Erkennungen korrekt (True Positives) und wie viele falsch (False Positives) sind.
-
-## Eingegebener Prompt (vollständig)
-
-Der Benutzer hat folgenden Text eingegeben (${inputText.length} Zeichen):
-
-\`\`\`
-${inputText}
-\`\`\`
-
-## Geprüfte Kriterien
-
-### 🔴 Kritische Daten (${allCriteria.critical.length} Kriterien)
-
-| # | Kriterium | Status | Wert | Kategorie | Beschreibung | Korrekt? |
-|---|-----------|--------|------|-----------|--------------|----------|
-`;
-
-    // Kritische Kriterien
-    let counter = 1;
-    allCriteria.critical.forEach(criterion => {
-      const detections = detectedCriteriaMap.get(criterion.id);
-      if (detections && detections.length > 0) {
-        // Gruppiere gleiche Werte
-        const uniqueValues = [...new Set(detections.map(d => d.match))];
-        uniqueValues.forEach(value => {
-          report += `| ${counter} | ${criterion.name} | ✅ | \`${value}\` | ${criterion.categoryLabel} | ${criterion.description} | ⬜ |\n`;
-          counter++;
-        });
-      } else {
-        report += `| ${counter} | ${criterion.name} | ⬜ | - | ${criterion.categoryLabel} | ${criterion.description} | - |\n`;
-        counter++;
-      }
-    });
-
-    report += `\n### 🟠 Warnungen (${allCriteria.warning.length} Kriterien)
-
-| # | Kriterium | Status | Wert | Kategorie | Beschreibung | Korrekt? |
-|---|-----------|--------|------|-----------|--------------|----------|
-`;
-
-    // Warning Kriterien
-    allCriteria.warning.forEach(criterion => {
-      const detections = detectedCriteriaMap.get(criterion.id);
-      if (detections && detections.length > 0) {
-        const uniqueValues = [...new Set(detections.map(d => d.match))];
-        uniqueValues.forEach(value => {
-          report += `| ${counter} | ${criterion.name} | ✅ | \`${value}\` | ${criterion.categoryLabel} | ${criterion.description} | ⬜ |\n`;
-          counter++;
-        });
-      } else {
-        report += `| ${counter} | ${criterion.name} | ⬜ | - | ${criterion.categoryLabel} | ${criterion.description} | - |\n`;
-        counter++;
-      }
-    });
-
-    const detectedCount = analysis.detections.length;
-    const notDetectedCount = (allCriteria.critical.length + allCriteria.warning.length) - detectedCount;
-
-    report += `
-## Anweisungen
-1. **Prüfe jeden Eintrag mit Status ✅**:
-   - Ersetze ⬜ in der "Korrekt?"-Spalte mit:
-     - ✅ wenn korrekt erkannt (True Positive)
-     - ❌ wenn falsch erkannt (False Positive)
-2. **Prüfe Einträge mit Status ⬜**:
-   - Sind wirklich keine Daten vorhanden?
-   - Oder wurden sie übersehen? (False Negative)
-3. **Ergänze Kommentare** bei:
-   - Fehlenden Erkennungen (False Negatives)
-   - Zweifelhaften Fällen
-4. **Zähle am Ende**:
-   - Anzahl ✅ (True Positives)
-   - Anzahl ❌ (False Positives)
-   - Anzahl False Negatives
-   - Accuracy = ✅ / (✅ + ❌)
-
-## Kontext
-- **Tool**: AI Compliance Checker v2.7.0
-- **Sprache**: ${lang === 'de' ? 'Deutsch' : 'English'}
+## 📊 Übersicht
 - **Textlänge**: ${inputText.length} Zeichen
-- **Geprüfte Kriterien**: ${allCriteria.critical.length + allCriteria.warning.length} total (${allCriteria.critical.length} kritisch, ${allCriteria.warning.length} Warnungen)
-- **Erkannte Daten**: ${detectedCount} (${analysis.detections.filter(d => d.severity === 'critical').length} kritisch, ${analysis.detections.filter(d => d.severity === 'warning').length} Warnungen)
-- **Nicht erkannte**: ${notDetectedCount}
-- **Status**: ${analysis.status === 'critical' ? '🔴 Kritisch' : '🟠 Warnung'}
+- **Geprüfte Kriterien**: ${allCriteria.critical.length + allCriteria.warning.length} (${allCriteria.critical.length} kritisch, ${allCriteria.warning.length} Warnungen)
+- **Erkennungen**: ${allDetections.length} (${analysis.detections.filter(d => d.severity === 'critical').length} kritisch, ${analysis.detections.filter(d => d.severity === 'warning').length} Warnungen)
 
 ---
 
-Beginne mit der Validierung!`;
+## ✅ Erkennungen mit Kontext
+
+`;
+
+    // Erkennungen mit Details in Tabelle
+    if (allDetections.length > 0) {
+      report += `| # | Kriterium | Wert | Kontext (±50 Zeichen) | Position | Methode | Korrekt? |
+|---|-----------|------|-----------------------|----------|---------|----------|
+`;
+
+      allDetections.forEach((detection, index) => {
+        const criterion = [...allCriteria.critical, ...allCriteria.warning].find(c => c.id === detection.id);
+        const name = criterion ? criterion.name : (detection.name || detection.id);
+        report += `| ${index + 1} | ${name} | \`${detection.match}\` | ${detection.context} | ${detection.position} | ${detection.method} | ⬜ |\n`;
+      });
+    } else {
+      report += `Keine Erkennungen.\n`;
+    }
+
+    report += `\n**Legende:**
+- **Position**: Zeichen-Offset im Text (start-end)
+- **Methode**: Erkennungstechnik (NER/KI, Regex, Pattern, Lexikon)
+- **Korrekt?**: ✅ = True Positive, ❌ = False Positive
+
+---
+
+## 📝 Eingegebener Prompt (annotiert)
+
+`;
+
+    // Annotierter Prompt
+    if (allDetections.length > 0 && inputText.length > 0) {
+      let annotatedText = '';
+      let lastIndex = 0;
+
+      allDetections.forEach((detection, index) => {
+        // Text vor der Erkennung
+        annotatedText += inputText.substring(lastIndex, detection.start);
+
+        // Erkannte Stelle markieren
+        const criterion = [...allCriteria.critical, ...allCriteria.warning].find(c => c.id === detection.id);
+        const label = criterion ? criterion.name : detection.id;
+        annotatedText += `[${index + 1}:${label.toUpperCase()}]`;
+
+        lastIndex = detection.end;
+      });
+
+      // Rest des Textes
+      annotatedText += inputText.substring(lastIndex);
+
+      report += `\`\`\`\n${annotatedText}\n\`\`\`\n\n`;
+      report += `**Markierungen**: \`[#:TYP]\` zeigt Position der Erkennung im Text.\n`;
+    } else {
+      report += `\`\`\`\n${inputText}\n\`\`\`\n\n`;
+    }
+
+    report += `\n---
+
+## 🔍 False-Negative-Prüfung
+
+Prüfe ob folgende Kategorien übersehen wurden:
+
+`;
+
+    // Liste aller nicht erkannten Kriterien mit Beispielen
+    const notDetectedCriteria = [];
+    [...allCriteria.critical, ...allCriteria.warning].forEach(criterion => {
+      if (!detectedCriteriaMap.has(criterion.id)) {
+        notDetectedCriteria.push(criterion);
+      }
+    });
+
+    if (notDetectedCriteria.length > 0) {
+      report += `### 🔴 Kritische Daten (nicht erkannt)\n\n`;
+      const criticalNotDetected = notDetectedCriteria.filter(c => c.severity === 'critical');
+      if (criticalNotDetected.length > 0) {
+        criticalNotDetected.forEach(criterion => {
+          report += `- [ ] **${criterion.name}**: ${criterion.description}\n`;
+        });
+      } else {
+        report += `✅ Alle kritischen Kategorien geprüft.\n`;
+      }
+
+      report += `\n### 🟠 Warnungen (nicht erkannt)\n\n`;
+      const warningNotDetected = notDetectedCriteria.filter(c => c.severity !== 'critical');
+      if (warningNotDetected.length > 0) {
+        warningNotDetected.forEach(criterion => {
+          report += `- [ ] **${criterion.name}**: ${criterion.description}\n`;
+        });
+      } else {
+        report += `✅ Alle Warning-Kategorien geprüft.\n`;
+      }
+    } else {
+      report += `🎉 Alle ${allCriteria.critical.length + allCriteria.warning.length} Kriterien wurden erkannt!\n`;
+    }
+
+    report += `\n---
+
+## 📊 Anweisungen für die Validierung
+
+1. **Erkennungen validieren** (Tabelle oben):
+   - Nutze den Kontext um zu prüfen ob die Erkennung korrekt ist
+   - Markiere in "Korrekt?"-Spalte: ✅ (True Positive) oder ❌ (False Positive)
+   - Nutze Position und annotierten Prompt zur Orientierung
+
+2. **False Negatives finden** (Checkliste oben):
+   - Lies den vollständigen Prompt durch
+   - Prüfe ob Kategorien mit \`[ ]\` übersehen wurden
+   - Notiere gefundene False Negatives mit Position
+
+3. **Zusammenfassung erstellen**:
+   - Anzahl True Positives: ___
+   - Anzahl False Positives: ___
+   - Anzahl False Negatives: ___
+   - **Precision** = TP / (TP + FP) = ___
+   - **Recall** = TP / (TP + FN) = ___
+   - **F1-Score** = 2 × (Precision × Recall) / (Precision + Recall) = ___
+
+4. **Verbesserungsvorschläge**:
+   - Welche False Positives treten auf? (Pattern zu breit?)
+   - Welche False Negatives wurden übersehen? (Pattern fehlt?)
+   - Wie kann die Detection verbessert werden?
+
+---
+
+**Tool**: AI Compliance Checker v2.9.2
+**Sprache**: ${lang === 'de' ? 'Deutsch' : 'English'}
+**Status**: ${analysis.status === 'critical' ? '🔴 Kritisch' : analysis.status === 'warning' ? '🟠 Warnung' : '✅ Sicher'}
+
+---
+
+🚀 **Beginne mit der Validierung!**`;
 
     return report;
   }
@@ -1710,12 +1681,14 @@ Beginne mit der Validierung!`;
 
     // v2.7.0: Lade Developer Mode Setting
     let isDeveloperMode = false;
-    try {
-      const result = await chrome.storage.local.get(['aicc_developer_mode']);
-      isDeveloperMode = result.aicc_developer_mode || false;
-      console.log('[AI Compliance Checker] Developer Mode:', isDeveloperMode);
-    } catch (error) {
-      console.error('[AI Compliance Checker] Error loading developer mode:', error);
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      try {
+        const result = await chrome.storage.local.get(['aicc_developer_mode']);
+        isDeveloperMode = result.aicc_developer_mode || false;
+        console.log('[AI Compliance Checker] Developer Mode:', isDeveloperMode);
+      } catch (error) {
+        // Silently handle - developer mode defaults to false
+      }
     }
 
     // WICHTIG: Blende alle Highlight-Overlays aus während Modal offen ist

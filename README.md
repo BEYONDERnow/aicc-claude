@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.8.0** • by BEYONDER
+**Version 2.9.9** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -15,7 +15,91 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.8.0 (Aktuell) - 2025-11-01
+### Version 2.9.3 (Aktuell) - 2025-11-02
+
+**🚀 Feature: Optimierter Validierungsreport mit Kontext, Position & Annotation**
+
+#### 🎯 Neue Features
+- **Kontext bei Erkennungen**: ±50 Zeichen um jede Erkennung + Position im Text
+- **Annotierter Prompt**: Erkennungen markiert als `[1:NAME]`, `[2:IBAN]` im Text
+- **False-Negative-Prüfung**: Strukturierte Checkliste aller nicht erkannten Kriterien
+- **Erkennungsmethode**: Zeigt ob NER/KI, Regex, Pattern oder Lexikon verwendet wurde
+- **Metriken-Anleitung**: Precision, Recall, F1-Score Formeln für objektive Bewertung
+
+#### 📊 Vorteile
+- ✅ Schnellere Validierung durch sofort erkennbaren Kontext
+- ✅ False Negatives einfacher zu finden (annotierter Prompt + Checkliste)
+- ✅ Bessere Verbesserungs-Insights durch strukturierte Pattern-Analyse
+- ✅ Objektive Metriken für Qualitätsvergleich zwischen Versionen
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#292---2025-11-01)
+
+---
+
+### Version 2.9.1 (Vorherige) - 2025-11-01
+
+**🔧 Fixes: Vollständige Prompt-Extraktion & chrome.storage Bugfix**
+
+#### 🐛 Problem 1: Lange Prompts wurden abgeschnitten
+- Bei Prompts >10k Zeichen zeigte der Validierungsreport nur einen Teil des Textes
+- **Ursache:** `innerText` gibt nur gerenderten/sichtbaren Text zurück (lazy rendering)
+- **Lösung:** Neue Methode `getFullElementText()` verwendet `textContent` statt `innerText`
+
+#### 🐛 Problem 2: chrome.storage undefined Error
+- **TypeError: Cannot read properties of undefined (reading 'local')**
+- Content-Script versuchte auf `chrome.storage.local` zuzugreifen, aber `chrome.storage` war `undefined`
+- **Ursache:** Race Condition bei Extension-Initialisierung oder Reload
+- **Lösung:** Defensive try-catch Prüfung mit silentFail Fallback
+
+#### ✅ Auswirkung
+- ✅ Reports enthalten **vollständigen Prompt** (auch bei 15k+ Zeichen)
+- ✅ Keine Truncation durch Browser-Optimierungen
+- ✅ Verhindert TypeError komplett mit Graceful Degradation
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#291---2025-11-01)
+
+---
+
+### Version 2.9.0 - 2025-11-01
+
+**🔧 Zentrale Versionsverwaltung**
+
+#### 🚀 Neue Features
+
+**1. Single Source of Truth für Versionierung** 🎯
+- **Zentrale Version:** `extension/scripts/version.js` ist die einzige Versionsdefinition
+- **Automatische Synchronisation:** Alle 6 Dateien werden automatisch aktualisiert
+- **Kein manuelles Copy-Paste:** Eliminiert Inkonsistenzen und Fehler
+
+**2. NPM-Scripts für einfache Versionsverwaltung** ⚙️
+- `npm run version:patch` → Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` → Features (2.9.0 → 2.10.0)
+- `npm run version:major` → Breaking (2.9.0 → 3.0.0)
+- `npm run version:sync` → Synchronisiert aktuelle Version
+
+**3. Smart Build-Script mit Feedback** 💬
+- Farbcodierte Console-Ausgabe
+- Zeigt geänderte Dateien mit Zeilennummern
+- Git-Tag-Integration für professionelle Releases
+- Klare "Next Steps" Anweisungen
+
+#### 📊 Workflow
+
+**Vorher:** 6 Dateien manuell öffnen & ändern (fehleranfällig!)
+**Nachher:** `npm run version:minor` → Fertig! ✅
+
+#### 🎨 Benefits
+- ✅ Konsistente Versionierung (manifest.json, package.json, popup.html, version.js, README.md, CHANGELOG.md)
+- ✅ Zeitersparnis (~5 Min. pro Release)
+- ✅ Fehlerprävention (keine manuellen Fehler)
+- ✅ Semantic Versioning (SemVer 2.0)
+- ✅ Developer Experience (farbcodierte Ausgabe)
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#290---2025-11-01)
+
+---
+
+### Version 2.8.0 - 2025-11-01
 
 **🎨 Verbesserte Icon-Sichtbarkeit & Hybrid-Ansatz**
 
@@ -853,4 +937,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.8.0** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Enhanced Icon Visibility & Hybrid Approach!
+**Version 2.9.9** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!

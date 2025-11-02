@@ -7,7 +7,7 @@
  * Layer 3: Capitalization (98%+ Präzision) - Pattern + German Nouns Filter
  * Layer 4: Compound Names (98%+ Präzision) - Hans-Peter (Lexikon + Nomen validiert)
  *
- * Version: 2.4.1 - Fix für abgeschnittene Namen im Transkript
+ * Fix für abgeschnittene Namen im Transkript:
  * - Verhindert Erkennung von partiellen Namen (s-Peter, ne-Marie)
  * - Erweiterte Word Boundary Checks (Bindestrich-Präfix)
  * - Mindestlänge für Bindestrich-Präfix erhöht (3 → 4 Zeichen)

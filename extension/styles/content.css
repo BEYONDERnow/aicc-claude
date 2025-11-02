@@ -79,6 +79,9 @@ body.aicc-modal-open .aicc-overlay-container {
 
 .aicc-status-icon-wrapper {
   position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 999999;
   pointer-events: all;
 }
@@ -379,8 +382,9 @@ body.aicc-modal-open .aicc-overlay-container {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(16, 30, 53, 0.75);
-  backdrop-filter: blur(6px);
+  background: rgba(16, 30, 53, 0.4);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 .aicc-overlay-content {
@@ -474,10 +478,76 @@ body.aicc-modal-open .aicc-overlay-container {
 }
 
 .aicc-overlay-body {
-  padding: 32px;
+  padding: 0;
   overflow-y: auto;
   flex: 1;
   background: var(--beyonder-white-smoke);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tab System für Multi-Input */
+.aicc-tabs-header {
+  display: flex;
+  gap: 8px;
+  padding: 20px 32px 0 32px;
+  background: var(--beyonder-white-smoke);
+  border-bottom: 2px solid var(--beyonder-grey-light);
+}
+
+.aicc-tab-button {
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--beyonder-grey-dark);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.aicc-tab-button:hover {
+  color: var(--beyonder-midnight);
+  background: rgba(16, 30, 53, 0.05);
+}
+
+.aicc-tab-button.active {
+  color: var(--beyonder-midnight);
+  border-bottom-color: var(--beyonder-pink);
+}
+
+.aicc-tab-badge {
+  display: inline-block;
+  background: var(--status-error);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 6px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.aicc-tab-badge.warning {
+  background: var(--status-warning);
+  color: var(--beyonder-midnight);
+}
+
+.aicc-tab-badge.safe {
+  background: var(--status-ok);
+}
+
+.aicc-tab-content {
+  display: none;
+  padding: 32px;
+}
+
+.aicc-tab-content.active {
+  display: block;
 }
 
 .aicc-overlay-footer {
@@ -632,8 +702,9 @@ body.aicc-modal-open .aicc-overlay-container {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(16, 30, 53, 0.85);
-  backdrop-filter: blur(8px);
+  background: rgba(16, 30, 53, 0.4);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 .aicc-modal-content {
