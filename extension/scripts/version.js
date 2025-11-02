@@ -5,7 +5,7 @@
  * Update this file when releasing new versions.
  */
 
-export const VERSION = '2.9.2';
+export const VERSION = '2.9.5';
 export const VERSION_LABEL = 'BETA';
 export const VERSION_FULL = `${VERSION} ${VERSION_LABEL}`;
 
