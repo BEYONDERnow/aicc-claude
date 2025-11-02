@@ -9,7 +9,7 @@ class ComplianceMonitor {
     this.detector = new ComplianceDetector();
     this.currentLang = this.detectLanguage();
     this.monitoredElements = new Map();
-    this.statusIcons = new Map();
+    this.globalStatusIcon = null; // Nur 1 Icon für alle Inputs
     this.isModalShown = false;
 
     // Debounce Timer für Performance
@@ -31,8 +31,21 @@ class ComplianceMonitor {
   /**
    * Initialisiert den Monitor
    */
-  init() {
+  async init() {
     console.log('[AI Compliance Checker by BEYONDER] Initialized on', this.platforms.name);
+
+    // v2.8.1: Prüfe ob Extension aktiviert ist (default: true)
+    try {
+      const result = await chrome.storage.local.get('aicc_extension_enabled');
+      const isEnabled = result.aicc_extension_enabled !== false; // Default: true
+
+      if (!isEnabled) {
+        console.log('[AI Compliance Checker] Extension is disabled - not starting monitoring');
+        return; // Extension deaktiviert, nicht starten
+      }
+    } catch (error) {
+      console.warn('[AI Compliance Checker] Could not check enabled status, assuming enabled:', error);
+    }
 
     // Warte auf DOM ready
     if (document.readyState === 'loading') {
@@ -40,6 +53,22 @@ class ComplianceMonitor {
     } else {
       this.startMonitoring();
     }
+
+    // v2.8.1: Lausche auf Storage-Änderungen um Extension dynamisch zu deaktivieren/aktivieren
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (namespace === 'local' && changes.aicc_extension_enabled) {
+        const newValue = changes.aicc_extension_enabled.newValue;
+        console.log('[AI Compliance Checker] Extension enabled status changed:', newValue);
+
+        if (newValue === false) {
+          // Extension wurde deaktiviert - entferne Icons und stoppe Monitoring
+          this.stopMonitoring();
+        } else {
+          // Extension wurde aktiviert - starte Monitoring
+          this.startMonitoring();
+        }
+      }
+    });
   }
 
   /**
@@ -51,6 +80,37 @@ class ComplianceMonitor {
 
     // Beobachte DOM-Änderungen für dynamisch hinzugefügte Elemente
     this.observeDOM();
+  }
+
+  /**
+   * v2.8.1: Stoppt die Überwachung und entfernt alle Icons
+   */
+  stopMonitoring() {
+    console.log('[AI Compliance Checker] Stopping monitoring...');
+
+    // Entferne alle Status-Icons
+    this.statusIcons.forEach((iconWrapper) => {
+      if (iconWrapper && iconWrapper.parentNode) {
+        iconWrapper.parentNode.removeChild(iconWrapper);
+      }
+    });
+    this.statusIcons.clear();
+
+    // Entferne alle Overlays
+    this.overlayContainers.forEach((container) => {
+      if (container && container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+    });
+    this.overlayContainers.clear();
+
+    // Entferne Event Listener von monitored elements
+    this.monitoredElements.forEach((listeners, element) => {
+      // Event Listener werden automatisch entfernt wenn Element nicht mehr referenziert wird
+    });
+    this.monitoredElements.clear();
+
+    console.log('[AI Compliance Checker] Monitoring stopped');
   }
 
   /**
@@ -237,8 +297,10 @@ class ComplianceMonitor {
     // Speichere Observer
     info.observer = observer;
 
-    // Erstelle Status-Icon
-    this.createStatusIcon(element);
+    // Erstelle globales Status-Icon (nur beim ersten Input)
+    if (!this.globalStatusIcon) {
+      this.createStatusIcon();
+    }
 
     // Überwache Submit-Button für dieses Element
     this.attachSubmitButtonHandler(element);
@@ -403,10 +465,10 @@ class ComplianceMonitor {
   }
 
   /**
-   * Erstellt Status-Icon neben dem Eingabefeld
+   * Erstellt globales Status-Icon (nur 1x für alle Inputs)
    */
-  createStatusIcon(element) {
-    if (this.statusIcons.has(element)) return;
+  createStatusIcon() {
+    if (this.globalStatusIcon) return; // Icon existiert bereits
 
     // Create wrapper for icon
     const iconWrapper = document.createElement('div');
@@ -427,15 +489,15 @@ class ComplianceMonitor {
       </div>
     `;
 
-    // Positioniere das Icon
-    this.positionIcon(element, iconWrapper);
     document.body.appendChild(iconWrapper);
 
-    // Click handler für Icon
+    // Event handler für Icon (zeigt ALLE Inputs in Tabs)
     const icon = iconWrapper.querySelector('.aicc-status-icon');
+
+    // Click handler
     icon.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.showOverlay(element);
+      this.showOverlay(); // Kein spezifisches Element mehr
     });
 
     // Keyboard navigation (Enter/Space to open)
@@ -443,50 +505,18 @@ class ComplianceMonitor {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         e.stopPropagation();
-        this.showOverlay(element);
+        this.showOverlay();
       }
     });
 
-    this.statusIcons.set(element, iconWrapper);
-
-    // Update Position bei Scroll/Resize
-    const updatePosition = () => this.positionIcon(element, iconWrapper);
-    window.addEventListener('scroll', updatePosition, true);
-    window.addEventListener('resize', updatePosition);
-
-    // Hide when element is not visible
-    const checkVisibility = () => {
-      const rect = element.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) {
-        iconWrapper.style.display = 'none';
-      } else {
-        iconWrapper.style.display = 'block';
-        updatePosition();
-      }
-    };
-    setInterval(checkVisibility, 500);
+    this.globalStatusIcon = iconWrapper;
   }
 
   /**
-   * Positioniert das Status-Icon
+   * Positioniert das Status-Icon (nicht mehr nötig - fixed per CSS)
    */
-  positionIcon(element, iconWrapper) {
-    const rect = element.getBoundingClientRect();
-
-    // Stelle sicher Element ist sichtbar
-    if (rect.width === 0 || rect.height === 0) {
-      iconWrapper.style.display = 'none';
-      return;
-    }
-
-    iconWrapper.style.display = 'block';
-    iconWrapper.style.position = 'fixed';
-
-    // Position unten rechts im Viewport (nicht am Textfeld!)
-    iconWrapper.style.bottom = '20px';
-    iconWrapper.style.right = '20px';
-    iconWrapper.style.top = 'auto';
-    iconWrapper.style.zIndex = '999999';
+  positionIcon() {
+    // Icon ist jetzt per CSS fixed rechts mittig positioniert
   }
 
   /**
@@ -651,7 +681,7 @@ class ComplianceMonitor {
     }
 
     // Update visuelles Feedback
-    this.updateStatusIcon(element, analysis);
+    this.updateStatusIcon(); // Globales Icon für alle Inputs
     this.highlightText(element, analysis);
   }
 
@@ -857,23 +887,42 @@ class ComplianceMonitor {
   }
 
   /**
-   * Updated das Status-Icon
+   * Updated das globale Status-Icon (kombiniert alle Inputs)
    */
-  updateStatusIcon(element, analysis) {
-    const iconWrapper = this.statusIcons.get(element);
-    if (!iconWrapper) return;
+  updateStatusIcon() {
+    if (!this.globalStatusIcon) return;
 
-    const icon = iconWrapper.querySelector('.aicc-status-icon');
-    const badge = iconWrapper.querySelector('.aicc-badge');
-    const svg = iconWrapper.querySelector('.aicc-icon-svg');
+    const icon = this.globalStatusIcon.querySelector('.aicc-status-icon');
+    const badge = this.globalStatusIcon.querySelector('.aicc-badge');
+    const svg = this.globalStatusIcon.querySelector('.aicc-icon-svg');
+
+    // Kombiniere alle Analysen aller überwachten Inputs
+    let worstStatus = 'safe';
+    let totalDetections = 0;
+    const allAnalyses = [];
+
+    for (const [element, info] of this.monitoredElements.entries()) {
+      const analysis = info.lastAnalysis;
+      if (analysis) {
+        allAnalyses.push(analysis);
+        totalDetections += analysis.detections.length;
+
+        // Ermittle schlimmsten Status: critical > warning > safe
+        if (analysis.status === 'critical') {
+          worstStatus = 'critical';
+        } else if (analysis.status === 'warning' && worstStatus !== 'critical') {
+          worstStatus = 'warning';
+        }
+      }
+    }
 
     // Update Status
-    icon.setAttribute('data-status', analysis.status);
-    iconWrapper.setAttribute('data-status', analysis.status);
+    icon.setAttribute('data-status', worstStatus);
+    this.globalStatusIcon.setAttribute('data-status', worstStatus);
 
-    // Update Badge
-    if (analysis.detections.length > 0) {
-      badge.textContent = analysis.detections.length;
+    // Update Badge (Gesamtzahl aller Detections)
+    if (totalDetections > 0) {
+      badge.textContent = totalDetections;
       badge.style.display = 'flex';
     } else {
       badge.style.display = 'none';
@@ -881,7 +930,7 @@ class ComplianceMonitor {
 
     // Update Icon SVG basierend auf Status
     let iconPath;
-    switch (analysis.status) {
+    switch (worstStatus) {
       case 'safe':
         iconPath = 'M8 12l3 3 5-5';
         break;
@@ -896,11 +945,15 @@ class ComplianceMonitor {
     const checkPath = svg.querySelector('.aicc-icon-check');
     checkPath.setAttribute('d', iconPath);
 
-    // Update Rich Tooltip
-    this.updateTooltip(icon, analysis);
+    // Update Rich Tooltip (kombinierte Analysis)
+    const combinedAnalysis = {
+      status: worstStatus,
+      detections: allAnalyses.flatMap(a => a.detections)
+    };
+    this.updateTooltip(icon, combinedAnalysis);
 
     // Update ARIA label
-    const ariaLabel = this.getAriaLabel(analysis);
+    const ariaLabel = this.getAriaLabel(combinedAnalysis);
     icon.setAttribute('aria-label', ariaLabel);
   }
 
@@ -1214,7 +1267,19 @@ class ComplianceMonitor {
   /**
    * Zeigt Overlay mit detaillierter Analyse
    */
-  async showOverlay(element) {
+  async showOverlay(element = null) {
+    // Fallback: Wenn kein Element übergeben, nimm erstes mit Detections
+    if (!element) {
+      for (const [el, info] of this.monitoredElements.entries()) {
+        if (info.lastAnalysis && info.lastAnalysis.detections.length > 0) {
+          element = el;
+          break;
+        }
+      }
+    }
+
+    if (!element) return; // Keine Inputs mit Detections
+
     const analysis = this.currentAnalysis.get(element);
     if (!analysis || analysis.detections.length === 0) {
       return;
@@ -1222,12 +1287,13 @@ class ComplianceMonitor {
 
     // v2.7.0: Lade Developer Mode Setting
     let isDeveloperMode = false;
-    try {
-      const result = await chrome.storage.local.get(['aicc_developer_mode']);
-      isDeveloperMode = result.aicc_developer_mode || false;
-    } catch (error) {
-      // Silently handle - developer mode defaults to false
-      // This can happen in contexts where chrome.storage is not available
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      try {
+        const result = await chrome.storage.local.get(['aicc_developer_mode']);
+        isDeveloperMode = result.aicc_developer_mode || false;
+      } catch (error) {
+        // Silently handle - developer mode defaults to false
+      }
     }
 
     // WICHTIG: Blende alle Highlight-Overlays aus während Info-Overlay offen ist
@@ -1658,13 +1724,14 @@ Prüfe ob folgende Kategorien übersehen wurden:
 
     // v2.7.0: Lade Developer Mode Setting
     let isDeveloperMode = false;
-    try {
-      const result = await chrome.storage.local.get(['aicc_developer_mode']);
-      isDeveloperMode = result.aicc_developer_mode || false;
-      console.log('[AI Compliance Checker] Developer Mode:', isDeveloperMode);
-    } catch (error) {
-      // Silently handle - developer mode defaults to false
-      // This can happen in contexts where chrome.storage is not available
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      try {
+        const result = await chrome.storage.local.get(['aicc_developer_mode']);
+        isDeveloperMode = result.aicc_developer_mode || false;
+        console.log('[AI Compliance Checker] Developer Mode:', isDeveloperMode);
+      } catch (error) {
+        // Silently handle - developer mode defaults to false
+      }
     }
 
     // WICHTIG: Blende alle Highlight-Overlays aus während Modal offen ist

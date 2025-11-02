@@ -11,7 +11,8 @@ export const VERSION_FULL = `${VERSION} ${VERSION_LABEL}`;
 
 // Storage Keys
 export const STORAGE_KEYS = {
-  DEVELOPER_MODE: 'aicc_developer_mode'
+  DEVELOPER_MODE: 'aicc_developer_mode',
+  EXTENSION_ENABLED: 'aicc_extension_enabled'
 };
 
 // Export for use in manifest.json generation (if needed)
