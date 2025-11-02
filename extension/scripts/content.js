@@ -1208,12 +1208,13 @@ class ComplianceMonitor {
 
     // v2.7.0: Lade Developer Mode Setting
     let isDeveloperMode = false;
-    try {
-      const result = await chrome.storage.local.get(['aicc_developer_mode']);
-      isDeveloperMode = result.aicc_developer_mode || false;
-    } catch (error) {
-      // Silently handle - developer mode defaults to false
-      // This can happen in contexts where chrome.storage is not available
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      try {
+        const result = await chrome.storage.local.get(['aicc_developer_mode']);
+        isDeveloperMode = result.aicc_developer_mode || false;
+      } catch (error) {
+        // Silently handle - developer mode defaults to false
+      }
     }
 
     // WICHTIG: Blende alle Highlight-Overlays aus während Info-Overlay offen ist
@@ -1517,13 +1518,14 @@ Beginne mit der Validierung!`;
 
     // v2.7.0: Lade Developer Mode Setting
     let isDeveloperMode = false;
-    try {
-      const result = await chrome.storage.local.get(['aicc_developer_mode']);
-      isDeveloperMode = result.aicc_developer_mode || false;
-      console.log('[AI Compliance Checker] Developer Mode:', isDeveloperMode);
-    } catch (error) {
-      // Silently handle - developer mode defaults to false
-      // This can happen in contexts where chrome.storage is not available
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      try {
+        const result = await chrome.storage.local.get(['aicc_developer_mode']);
+        isDeveloperMode = result.aicc_developer_mode || false;
+        console.log('[AI Compliance Checker] Developer Mode:', isDeveloperMode);
+      } catch (error) {
+        // Silently handle - developer mode defaults to false
+      }
     }
 
     // WICHTIG: Blende alle Highlight-Overlays aus während Modal offen ist
