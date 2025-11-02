@@ -31,8 +31,21 @@ class ComplianceMonitor {
   /**
    * Initialisiert den Monitor
    */
-  init() {
+  async init() {
     console.log('[AI Compliance Checker by BEYONDER] Initialized on', this.platforms.name);
+
+    // v2.8.1: Prüfe ob Extension aktiviert ist (default: true)
+    try {
+      const result = await chrome.storage.local.get('aicc_extension_enabled');
+      const isEnabled = result.aicc_extension_enabled !== false; // Default: true
+
+      if (!isEnabled) {
+        console.log('[AI Compliance Checker] Extension is disabled - not starting monitoring');
+        return; // Extension deaktiviert, nicht starten
+      }
+    } catch (error) {
+      console.warn('[AI Compliance Checker] Could not check enabled status, assuming enabled:', error);
+    }
 
     // Warte auf DOM ready
     if (document.readyState === 'loading') {
@@ -40,6 +53,22 @@ class ComplianceMonitor {
     } else {
       this.startMonitoring();
     }
+
+    // v2.8.1: Lausche auf Storage-Änderungen um Extension dynamisch zu deaktivieren/aktivieren
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (namespace === 'local' && changes.aicc_extension_enabled) {
+        const newValue = changes.aicc_extension_enabled.newValue;
+        console.log('[AI Compliance Checker] Extension enabled status changed:', newValue);
+
+        if (newValue === false) {
+          // Extension wurde deaktiviert - entferne Icons und stoppe Monitoring
+          this.stopMonitoring();
+        } else {
+          // Extension wurde aktiviert - starte Monitoring
+          this.startMonitoring();
+        }
+      }
+    });
   }
 
   /**
@@ -51,6 +80,37 @@ class ComplianceMonitor {
 
     // Beobachte DOM-Änderungen für dynamisch hinzugefügte Elemente
     this.observeDOM();
+  }
+
+  /**
+   * v2.8.1: Stoppt die Überwachung und entfernt alle Icons
+   */
+  stopMonitoring() {
+    console.log('[AI Compliance Checker] Stopping monitoring...');
+
+    // Entferne alle Status-Icons
+    this.statusIcons.forEach((iconWrapper) => {
+      if (iconWrapper && iconWrapper.parentNode) {
+        iconWrapper.parentNode.removeChild(iconWrapper);
+      }
+    });
+    this.statusIcons.clear();
+
+    // Entferne alle Overlays
+    this.overlayContainers.forEach((container) => {
+      if (container && container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+    });
+    this.overlayContainers.clear();
+
+    // Entferne Event Listener von monitored elements
+    this.monitoredElements.forEach((listeners, element) => {
+      // Event Listener werden automatisch entfernt wenn Element nicht mehr referenziert wird
+    });
+    this.monitoredElements.clear();
+
+    console.log('[AI Compliance Checker] Monitoring stopped');
   }
 
   /**
