@@ -1,12 +1,12 @@
 /**
  * AI Compliance Checker - Detection Engine
- * Version 2.9.3 - Accuracy: ~97% (kritische Daten: 100%, Warnungen: ~96%)
+ * Accuracy: ~97% (kritische Daten: 100%, Warnungen: ~96%)
  * by BEYONDER
  *
  * Erkennt personenbezogene und sensible Daten in Text-Eingaben
  * 100% lokal, keine Server-Kommunikation, DSGVO/DSG-konform
  *
- * v2.9.3 BUGFIXES (nach Validierung):
+ * BUGFIXES (nach Validierung):
  * ✅ Geldbetrag-Patterns repariert: Fr. 2'500, € 3.450,50, $ 10,000.00 erkannt
  * ✅ NER-Cleanup erweitert: "Thomas Schmidt Tel" → "Thomas Schmidt"
  * ✅ Einzelnamen-Filter: "Giuseppe", "Marie" (nur Vornamen) gefiltert

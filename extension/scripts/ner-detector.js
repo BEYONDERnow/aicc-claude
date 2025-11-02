@@ -2,7 +2,7 @@
  * AI Compliance Checker - NER Detector
  * Verwendet Transformer.js für lokale Named Entity Recognition
  *
- * Version 2.0.0 - Intelligente Namenserkennung ohne Blacklist/Lexicon
+ * Intelligente Namenserkennung ohne Blacklist/Lexicon
  */
 
 import { pipeline, env } from '@xenova/transformers';
