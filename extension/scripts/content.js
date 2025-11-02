@@ -237,8 +237,10 @@ class ComplianceMonitor {
     // Speichere Observer
     info.observer = observer;
 
-    // Erstelle Status-Icon
-    this.createStatusIcon(element);
+    // Erstelle globales Status-Icon (nur beim ersten Input)
+    if (!this.globalStatusIcon) {
+      this.createStatusIcon();
+    }
 
     // Überwache Submit-Button für dieses Element
     this.attachSubmitButtonHandler(element);
