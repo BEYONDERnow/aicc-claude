@@ -3,20 +3,18 @@
  * Sendet Feedback als GitHub Issues
  *
  * SETUP:
- * 1. GitHub Personal Access Token erstellen mit 'public_repo' oder 'repo' scope
- * 2. Token in GITHUB_CONFIG.token eintragen (NICHT committen!)
- * 3. Repo Owner & Name konfigurieren
+ * 1. Kopiere scripts/config.example.js zu scripts/config.js
+ * 2. Trage deinen GitHub Personal Access Token in config.js ein
+ * 3. Siehe config.example.js für detaillierte Anleitung
  */
+
+// Import Config (wird von config.js geladen, NICHT von config.example.js)
+import { GITHUB_CONFIG } from './config.js';
 
 class GitHubFeedbackService {
   constructor() {
-    // KONFIGURATION - Hier anpassen für dein Repo
-    this.config = {
-      owner: 'chrisbeyeler',          // GitHub Username
-      repo: 'aicc-claude',             // Repository Name
-      token: '',                        // PAT hier eintragen (NICHT committen!)
-      apiUrl: 'https://api.github.com'
-    };
+    // Verwende Config aus config.js
+    this.config = GITHUB_CONFIG;
 
     // Labels für verschiedene Feedback-Typen
     this.labels = {
