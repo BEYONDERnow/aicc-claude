@@ -5,8 +5,15 @@
 
 class FeedbackModal {
   constructor() {
-    this.githubService = new GitHubFeedbackService();
-    this.screenshotCapture = new ScreenshotCapture();
+    try {
+      this.githubService = new GitHubFeedbackService();
+      this.screenshotCapture = new ScreenshotCapture();
+    } catch (error) {
+      console.error('[Feedback Modal] Initialization error (non-blocking):', error);
+      this.githubService = null;
+      this.screenshotCapture = null;
+    }
+
     this.currentScreenshot = null;
     this.detectionContext = null; // Für False-Positive/Negative Reports
 
@@ -279,6 +286,16 @@ class FeedbackModal {
     const previewContainer = document.querySelector('#screenshot-preview');
     if (!previewContainer) return;
 
+    // Screenshot-Feature ist optional - wenn Service Worker nicht läuft, einfach deaktivieren
+    if (!this.screenshotCapture) {
+      previewContainer.innerHTML = `
+        <div class="aicc-feedback-screenshot-error">
+          ℹ️ Screenshot-Feature nicht verfügbar (Extension neu laden könnte helfen)
+        </div>
+      `;
+      return;
+    }
+
     try {
       previewContainer.style.display = 'block';
       previewContainer.innerHTML = '<div class="aicc-feedback-screenshot-loading">📸 Screenshot wird erfasst...</div>';
@@ -289,13 +306,20 @@ class FeedbackModal {
       previewContainer.innerHTML = `<img src="${screenshot}" alt="Screenshot Preview">`;
 
     } catch (error) {
-      console.error('[Feedback Modal] Screenshot capture failed:', error);
+      console.error('[Feedback Modal] Screenshot capture failed (non-blocking):', error);
       previewContainer.innerHTML = `
         <div class="aicc-feedback-screenshot-error">
-          ❌ Screenshot konnte nicht erstellt werden: ${error.message}
+          ℹ️ Screenshot-Feature nicht verfügbar. Du kannst trotzdem Feedback senden.
         </div>
       `;
       this.currentScreenshot = null;
+
+      // Screenshot-Checkbox deaktivieren
+      const screenshotCheckbox = document.querySelector('#feedback-screenshot');
+      if (screenshotCheckbox) {
+        screenshotCheckbox.checked = false;
+        screenshotCheckbox.disabled = true;
+      }
     }
   }
 
@@ -340,7 +364,11 @@ class FeedbackModal {
         detection: this.detectionContext || undefined
       };
 
-      // GitHub Issue erstellen
+      // GitHub Issue erstellen (Fallback wenn Service nicht verfügbar)
+      if (!this.githubService) {
+        throw new Error('Feedback-Service nicht verfügbar. Bitte kontaktiere chris@beyonder.ch direkt.');
+      }
+
       const result = await this.githubService.createIssue(feedbackData);
 
       // Success State (mit E-Mail für optionale Benachrichtigung)
@@ -509,7 +537,11 @@ class FeedbackModal {
   }
 }
 
-// Export für Content Script
-if (typeof window !== 'undefined') {
-  window.FeedbackModal = FeedbackModal;
+// Export für Content Script (mit Fehlerbehandlung)
+try {
+  if (typeof window !== 'undefined') {
+    window.FeedbackModal = FeedbackModal;
+  }
+} catch (error) {
+  console.error('[Feedback Modal] Export error (non-blocking):', error);
 }

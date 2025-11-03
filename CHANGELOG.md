@@ -7,6 +7,44 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.10.1] - 2025-11-03
+
+### 🔧 Bugfixes: Feedback-System Stabilität & UX
+
+#### Kritische Fixes
+- **NON-BLOCKING Scripts**: Alle Feedback-Scripts (github-feedback.js, screenshot-capture.js, feedback-modal.js) mit try-catch gesichert
+  - Fehler im Feedback-System blockieren NICHT mehr die Haupt-Extension
+  - Export-Fehler werden abgefangen und geloggt (non-blocking)
+  - FeedbackModal Constructor mit Fehlerbehandlung
+- **Screenshot-Feature optional**: Service Worker Connection-Fehler blockieren nicht mehr
+  - Benutzerfreundliche Fehlermeldung statt technischem Fehler
+  - "Screenshot-Feature nicht verfügbar" Message mit Hinweis
+  - Checkbox wird automatisch deaktiviert bei Fehler
+
+#### UX & Design Verbesserungen
+- **Kontrast verbessert** für bessere Lesbarkeit:
+  - Texte von #61666D auf #333B49 (höherer Kontrast)
+  - Font-Size von 12px auf 13px erhöht
+  - Screenshot-Fehler: Warnung statt Fehler-Rot (orange #FF9220)
+- **Modal Scrolling Fix**:
+  - Nur `.aicc-feedback-body` scrollt (nicht ganzes Modal)
+  - Border-Radius bleibt sauber und passt perfekt
+  - Scrollbar-Styling nur auf Body
+- **Schliessen-Button Fix**: Event Listener statt onclick (funktioniert jetzt korrekt)
+
+#### Privacy Verbesserungen
+- **E-Mail Privacy**: E-Mail wird NICHT mehr öffentlich im GitHub Issue angezeigt
+  - Stattdessen: Optional mailto: Link an chris@beyonder.ch nach Absenden
+  - Privacy Notice aktualisiert mit klarem Hinweis
+- **Schweizer Rechtschreibung**: ß → ss in allen User-sichtbaren Texten
+
+#### Technische Details
+- Service Worker Connection Test mit 2s Timeout
+- Bessere Fehlermeldungen: "Could not establish connection" → benutzerfreundlich
+- Robustere Fehlerbehandlung in allen neuen Modulen
+
+---
+
 ## [2.10.0] - 2025-11-02
 
 ### 🎉 Feature: Public Beta Feedback-System mit GitHub Issues Integration

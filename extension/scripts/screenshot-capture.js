@@ -4,6 +4,8 @@
  *
  * WICHTIG: Screenshots werden via Service Worker (background.js) erstellt,
  * da Content Scripts keinen direkten Zugriff auf chrome.tabs.captureVisibleTab haben.
+ *
+ * NICHT-BLOCKIEREND: Fehler in diesem Service dürfen nicht die Haupt-Extension blockieren
  */
 
 class ScreenshotCapture {
@@ -238,7 +240,11 @@ class ScreenshotCapture {
   }
 }
 
-// Export für Content Script
-if (typeof window !== 'undefined') {
-  window.ScreenshotCapture = ScreenshotCapture;
+// Export für Content Script (mit Fehlerbehandlung)
+try {
+  if (typeof window !== 'undefined') {
+    window.ScreenshotCapture = ScreenshotCapture;
+  }
+} catch (error) {
+  console.error('[Screenshot Capture] Export error (non-blocking):', error);
 }

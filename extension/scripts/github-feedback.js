@@ -328,7 +328,11 @@ class GitHubFeedbackService {
   }
 }
 
-// Export für Content Script
-if (typeof window !== 'undefined') {
-  window.GitHubFeedbackService = GitHubFeedbackService;
+// Export für Content Script (mit Fehlerbehandlung)
+try {
+  if (typeof window !== 'undefined') {
+    window.GitHubFeedbackService = GitHubFeedbackService;
+  }
+} catch (error) {
+  console.error('[GitHub Feedback] Export error (non-blocking):', error);
 }
