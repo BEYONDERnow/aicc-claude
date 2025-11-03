@@ -138,14 +138,18 @@ class FeedbackModal {
               🔒 Datenschutz-Information
             </div>
             <p class="aicc-feedback-privacy-text">
-              Deine Feedback-Daten werden an GitHub gesendet und als Issue in unserem Repository gespeichert. Folgende Daten werden übertragen:
+              Deine Feedback-Daten werden an GitHub gesendet und als öffentliches Issue gespeichert. Folgende Daten werden übertragen:
             </p>
             <ul class="aicc-feedback-privacy-list">
-              <li>Feedback-Typ, Kommentar und E-Mail (falls angegeben)</li>
+              <li>Feedback-Typ und Kommentar</li>
               <li>Screenshot (falls aktiviert)</li>
               <li>Extension-Version, Platform und Browser-Info</li>
               <li>Bei False-Positive/Negative: Erkannter Wert und Kontext</li>
             </ul>
+            <p class="aicc-feedback-privacy-text" style="margin-top: 12px; font-weight: 600; color: #33D099;">
+              ✓ Deine E-Mail-Adresse wird NICHT öffentlich im Issue angezeigt.<br>
+              Du kannst optional eine Benachrichtigungs-E-Mail an uns senden (nach dem Absenden).
+            </p>
             <p class="aicc-feedback-privacy-text" style="margin-top: 12px;">
               Du kannst das Issue später einsehen unter:
               <a href="https://github.com/${this.githubService.config.owner}/${this.githubService.config.repo}/issues" target="_blank" class="aicc-feedback-privacy-link">
@@ -339,8 +343,8 @@ class FeedbackModal {
       // GitHub Issue erstellen
       const result = await this.githubService.createIssue(feedbackData);
 
-      // Success State
-      this.showSuccess(result.html_url, result.fallback);
+      // Success State (mit E-Mail für optionale Benachrichtigung)
+      this.showSuccess(result.html_url, result.fallback, email);
 
     } catch (error) {
       console.error('[Feedback Modal] Submit failed:', error);
@@ -348,7 +352,7 @@ class FeedbackModal {
       submitButton.disabled = false;
       submitButton.textContent = originalText;
 
-      alert(`Fehler beim Senden: ${error.message}\n\nBitte versuche es später erneut oder kontaktiere uns direkt.`);
+      alert(`Fehler beim Senden: ${error.message}\n\nBitte versuche es spaeter erneut oder kontaktiere uns direkt.`);
     }
   }
 
@@ -356,8 +360,9 @@ class FeedbackModal {
    * Zeigt Success Message
    * @param {string} issueUrl - GitHub Issue URL
    * @param {boolean} isFallback - Ob Fallback-Modus (kein API, nur Link)
+   * @param {string} userEmail - E-Mail des Users (optional, für Benachrichtigung)
    */
-  showSuccess(issueUrl, isFallback = false) {
+  showSuccess(issueUrl, isFallback = false, userEmail = null) {
     const overlay = document.querySelector('.aicc-feedback-overlay');
     if (!overlay) return;
 
@@ -389,13 +394,19 @@ class FeedbackModal {
               📝 Zum GitHub Issue
             </a>
             <div style="margin-top: 24px;">
-              <button class="aicc-feedback-cancel" onclick="document.querySelector('.aicc-feedback-overlay').remove()">
-                Schließen
+              <button class="aicc-feedback-cancel" data-close-modal>
+                Schliessen
               </button>
             </div>
           </div>
         </div>
       `;
+
+      // Event Listener für Schliessen-Button
+      modal.querySelector('[data-close-modal]')?.addEventListener('click', () => {
+        overlay.remove();
+      });
+
       return;
     }
 
@@ -419,18 +430,45 @@ class FeedbackModal {
           <a href="${issueUrl}" target="_blank" class="aicc-feedback-success-link">
             📝 Issue auf GitHub ansehen
           </a>
+          ${userEmail ? `
+            <div style="margin-top: 20px;">
+              <a href="${this.generateEmailNotification(issueUrl, userEmail)}" class="aicc-feedback-success-link" style="background: #33D099; border-color: #33D099;">
+                📧 Benachrichtigung per E-Mail senden
+              </a>
+            </div>
+          ` : ''}
           <div style="margin-top: 24px;">
-            <button class="aicc-feedback-cancel" onclick="document.querySelector('.aicc-feedback-overlay').remove()">
-              Schließen
+            <button class="aicc-feedback-cancel" data-close-modal>
+              Schliessen
             </button>
           </div>
         </div>
       </div>
     `;
+
+    // Event Listener für Schliessen-Button
+    modal.querySelector('[data-close-modal]')?.addEventListener('click', () => {
+      overlay.remove();
+    });
   }
 
   /**
-   * Schließt das Modal
+   * Generiert mailto: Link für E-Mail Benachrichtigung
+   */
+  generateEmailNotification(issueUrl, userEmail) {
+    const subject = encodeURIComponent('Neues Beta Feedback eingereicht');
+    const body = encodeURIComponent(
+      `Hallo,\n\n` +
+      `ich habe ein Beta Feedback eingereicht:\n\n` +
+      `GitHub Issue: ${issueUrl}\n\n` +
+      `Meine E-Mail für Rückfragen: ${userEmail}\n\n` +
+      `Beste Grüsse`
+    );
+    return `mailto:chris@beyonder.ch?subject=${subject}&body=${body}`;
+  }
+
+  /**
+   * Schliesst das Modal
    */
   close() {
     const overlay = document.querySelector('.aicc-feedback-overlay');

@@ -20,23 +20,51 @@ class ScreenshotCapture {
    */
   async captureTab() {
     try {
+      // Test Connection zum Service Worker
+      await this.testConnection();
+
       // Message an Service Worker senden
       const response = await chrome.runtime.sendMessage({
         action: 'captureScreenshot'
       });
 
       if (!response || !response.success) {
-        throw new Error(response?.error || 'Screenshot capture failed');
+        throw new Error(response?.error || 'Screenshot konnte nicht erstellt werden');
       }
 
-      // Screenshot komprimieren falls zu groß
+      // Screenshot komprimieren falls zu gross
       const compressed = await this.compressIfNeeded(response.dataUrl);
 
       return compressed;
 
     } catch (error) {
       console.error('[Screenshot Capture] Error:', error);
+      // Benutzerfreundliche Fehlermeldung
+      if (error.message.includes('Could not establish connection')) {
+        throw new Error('Service Worker nicht aktiv. Bitte lade die Extension neu.');
+      }
       throw error;
+    }
+  }
+
+  /**
+   * Testet Verbindung zum Service Worker
+   */
+  async testConnection() {
+    try {
+      const response = await Promise.race([
+        chrome.runtime.sendMessage({ action: 'testConnection' }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout')), 2000)
+        )
+      ]);
+
+      if (!response || !response.success) {
+        throw new Error('Service Worker antwortet nicht');
+      }
+    } catch (error) {
+      console.error('[Screenshot Capture] Connection test failed:', error);
+      throw new Error('Could not establish connection. Receiving end does not exist.');
     }
   }
 
@@ -163,7 +191,7 @@ class ScreenshotCapture {
   }
 
   /**
-   * Berechnet Größe eines Base64 Strings in Bytes
+   * Berechnet Groesse eines Base64 Strings in Bytes
    *
    * @param {string} base64String
    * @returns {number} Bytes
