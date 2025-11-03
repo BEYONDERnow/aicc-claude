@@ -19,8 +19,8 @@ class FeedbackModal {
 
     // Konfiguration
     this.config = {
-      enableScreenshots: true,
-      autoCapture: true
+      enableScreenshots: false,  // Screenshot-Upload deaktiviert
+      autoCapture: false
     };
   }
 
@@ -46,11 +46,6 @@ class FeedbackModal {
 
     // Event Listeners anhängen
     this.attachEventListeners();
-
-    // Auto-Screenshot (falls aktiviert)
-    if (this.config.autoCapture && this.config.enableScreenshots) {
-      await this.captureScreenshot();
-    }
   }
 
   /**
@@ -136,8 +131,13 @@ class FeedbackModal {
             >
           </div>
 
-          <!-- SCREENSHOT -->
-          ${this.config.enableScreenshots ? this.renderScreenshotSection() : ''}
+          <!-- SCREENSHOT HINWEIS -->
+          <div class="aicc-feedback-field">
+            <div class="aicc-feedback-upload-hint">
+              📎 <strong>Screenshots hinzufügen?</strong><br>
+              Nach dem Absenden kannst du auf GitHub weitere Dateien und Screenshots hochladen.
+            </div>
+          </div>
 
           <!-- PRIVACY NOTICE -->
           <div class="aicc-feedback-privacy">
@@ -149,9 +149,8 @@ class FeedbackModal {
             </p>
             <ul class="aicc-feedback-privacy-list">
               <li>Feedback-Typ und Kommentar</li>
-              <li>Screenshot (falls aktiviert)</li>
-              <li>Extension-Version, Platform und Browser-Info</li>
-              <li>Bei False-Positive/Negative: Erkannter Wert und Kontext</li>
+              <li>Extension-Version, Platform, Browser-Info und URL</li>
+              <li>Bei False-Positive/Negative: Erkannter Wert, Typ und Kontext</li>
             </ul>
             <p class="aicc-feedback-privacy-text" style="margin-top: 12px; font-weight: 600; color: #33D099;">
               ✓ Deine E-Mail-Adresse wird NICHT öffentlich im Issue angezeigt.<br>
@@ -270,13 +269,6 @@ class FeedbackModal {
     consentCheckbox?.addEventListener('change', (e) => {
       submitButton.disabled = !e.target.checked;
     });
-
-    // Screenshot checkbox
-    overlay.querySelector('#feedback-screenshot')?.addEventListener('change', (e) => {
-      if (e.target.checked && !this.currentScreenshot) {
-        this.captureScreenshot();
-      }
-    });
   }
 
   /**
@@ -338,7 +330,6 @@ class FeedbackModal {
       const type = overlay.querySelector('input[name="feedback-type"]:checked')?.value;
       const comment = overlay.querySelector('#feedback-comment')?.value.trim();
       const email = overlay.querySelector('#feedback-email')?.value.trim();
-      const includeScreenshot = overlay.querySelector('#feedback-screenshot')?.checked;
 
       if (!type || !comment) {
         alert('Bitte fülle alle Pflichtfelder aus.');
@@ -354,11 +345,11 @@ class FeedbackModal {
         type,
         comment,
         email: email || undefined,
-        screenshot: (includeScreenshot && this.currentScreenshot) ? this.currentScreenshot : undefined,
         context: {
           version: chrome.runtime.getManifest().version,
           platform: this.detectPlatform(),
           browser: this.detectBrowser(),
+          url: window.location.href,
           userAgent: navigator.userAgent
         },
         detection: this.detectionContext || undefined

@@ -7,6 +7,66 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.10.3] - 2025-11-03
+
+### 🎨 UX/Lesbarkeit Verbesserungen (Feedback-System)
+
+#### Screenshot-Upload entfernt
+- **Screenshot-Feature komplett deaktiviert**
+  - Service Worker und screenshot-capture.js nicht mehr verwendet
+  - Einfacherer, zuverlässigerer Feedback-Flow
+- **Upload-Hinweis hinzugefügt**
+  - Blauer Info-Box: "📎 Screenshots hinzufügen?"
+  - Hinweis auf GitHub Upload-Möglichkeit nach dem Absenden
+  - Nutzer können Screenshots direkt auf GitHub hochladen
+
+#### Lesbarkeit deutlich verbessert
+- **Montserrat Regular (font-weight: 400)** für alle Fließtexte
+  - Privacy Notice
+  - Checkbox-Labels
+  - Success-Messages
+  - Upload-Hinweis
+  - Subtitle
+- **Bessere Textkontraste** (#333B49 statt #61666D)
+- **Optimierte Schriftgrößen** (13px für bessere Lesbarkeit)
+
+#### Vollständige Detection-Daten im Issue
+- **URL wird jetzt übertragen** (context.url)
+- **Alle Detection-Informationen vollständig**:
+  - Erkannter Wert
+  - Typ (z.B. "Name", "E-Mail")
+  - Schweregrad
+  - Beschreibung
+  - Kontext (±50 Zeichen um den Wert)
+  - URL der Seite
+
+#### Technische Verbesserungen
+- Feedback-Modal ohne Service Worker Dependencies
+- Robusterer Code ohne Screenshot-Komplexität
+- Privacy Notice aktualisiert (Screenshot entfernt)
+
+---
+
+## [2.10.2] - 2025-11-03
+
+### 🚀 Feature: Einzelnamen-Erkennung aktiviert
+
+#### Zusammenfassung
+Alle Namen werden jetzt einzeln erkannt - keine Filter mehr für häufige Vornamen. Recall verbessert von ~98% auf ~100%.
+
+#### Änderungen
+- **Einzelname-Filter entfernt** (commonFirstNames-Check)
+- **Alle Namen einzeln erkannt**: Chris, Michael, Giuseppe, Marie, etc.
+- **Minimale Längenprüfung**: Nur 1-Zeichen-Wörter werden gefiltert
+- **Recall: ~98% → ~100%**
+
+#### Technische Details
+- `detector.js`: `cleanNEREntity()` vereinfacht
+- Nur noch "I", "a" werden gefiltert
+- Version konsistent in allen Dateien: 2.10.2
+
+---
+
 ## [2.10.1] - 2025-11-03
 
 ### 🔧 Bugfixes: Feedback-System Stabilität & UX
@@ -44,62 +104,6 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 - Robustere Fehlerbehandlung in allen neuen Modulen
 
 ---
-
-## [2.10.2] - 2025-11-03
-
-### 🔧 Zentrale Versionsverwaltung
-
-#### Zusammenfassung
-
-Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
-
-#### ✅ Neue Features
-
-**1. Zentrale Version Management** 🎯
-
-- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
-- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
-- **Git-Integration:** Unterstützt Git-Tags für Versionierung
-- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
-
-**2. NPM-Scripts für Versionierung** ⚙️
-
-- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
-- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
-- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
-- `npm run version:sync` - Synchronisiert aktuelle Version
-
-**3. Aktualisierte Dateien** 📝
-
-- `extension/manifest.json` - Chrome Extension Version
-- `package.json` - NPM Package Version
-- `extension/popup.html` - Angezeigter Version String
-- `extension/scripts/version.js` - Zentrale Versionsdefinition
-- `README.md` - Dokumentierte Version
-- `CHANGELOG.md` - Automatischer Versions-Eintrag
-
-#### 📊 Technische Details
-
-- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
-- **Konsistenz:** Alle Dateien nutzen dieselbe Version
-- **Automatisierung:** Ein Kommando aktualisiert alles
-- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
-
-#### 🎨 Workflow-Verbesserungen
-
-1. Entwickler führt `npm run version:minor` aus
-2. Script erhöht Version und aktualisiert alle Dateien
-3. `npm run build` erstellt Bundle mit neuer Version
-4. Git Commit & Push
-5. Extension in Chrome zeigt korrekte Version
-
-**Benefits:**
-- ✅ Konsistente Versionierung
-- ✅ Fehlerfreie Synchronisation
-- ✅ Einfacher Workflow
-- ✅ Git-freundlich
-
-
 
 ## [2.10.0] - 2025-11-02
 

@@ -87,7 +87,8 @@ class GitHubFeedbackService {
     body += `## 📊 System-Informationen\n\n`;
     body += `- **Extension Version:** ${context.version || 'Unbekannt'}\n`;
     body += `- **Platform:** ${context.platform || 'Unbekannt'}\n`;
-    body += `- **Browser:** ${context.browser || 'Chrome'}\n\n`;
+    body += `- **Browser:** ${context.browser || 'Chrome'}\n`;
+    body += `- **URL:** ${context.url || 'Nicht verfügbar'}\n\n`;
 
     // WICHTIG: E-Mail wird NICHT öffentlich im Issue angezeigt
     // User kann optional eine Benachrichtigungs-E-Mail an chris@beyonder.ch senden
@@ -247,20 +248,12 @@ class GitHubFeedbackService {
     body += `- **Extension Version:** ${context.version || 'Unbekannt'}\n`;
     body += `- **Platform:** ${context.platform || 'Unbekannt'}\n`;
     body += `- **Browser:** ${context.browser || 'Chrome'}\n`;
+    body += `- **URL:** ${context.url || 'Nicht verfügbar'}\n`;
     body += `- **User Agent:** ${context.userAgent || navigator.userAgent}\n`;
     body += `- **Timestamp:** ${new Date().toISOString()}\n\n`;
 
     // WICHTIG: E-Mail wird NICHT öffentlich im Issue angezeigt aus Datenschutzgründen
     // User kann optional eine Benachrichtigungs-E-Mail an chris@beyonder.ch senden mit Issue-Link
-
-    // Screenshot (optional)
-    if (screenshot) {
-      body += `### 📸 Screenshot\n\n`;
-      body += `![Screenshot](${screenshot})\n\n`;
-      body += `<details>\n<summary>Screenshot als Base64 (zum Kopieren)</summary>\n\n`;
-      body += `\`\`\`\n${screenshot}\n\`\`\`\n\n`;
-      body += `</details>\n\n`;
-    }
 
     // Footer
     body += `---\n`;
