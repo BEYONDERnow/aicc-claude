@@ -6,7 +6,7 @@ Willkommen zur **Public Beta** des AI Compliance Checkers! Danke, dass du uns hi
 
 ## 📥 Installation
 
-1. **Lade die Extension** (Link folgt)
+1. **Lade die Extension** [(Aktuelle Version)](https://github.com/chrisbeyeler/aicc-claude/releases/tag/2.10.4)
 2. **Chrome öffnen:** `chrome://extensions/`
 3. **Entwicklermodus aktivieren** (Toggle oben rechts)
 4. **"Entpackte Extension laden"** klicken
