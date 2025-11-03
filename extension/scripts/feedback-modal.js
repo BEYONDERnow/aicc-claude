@@ -269,6 +269,30 @@ class FeedbackModal {
     consentCheckbox?.addEventListener('change', (e) => {
       submitButton.disabled = !e.target.checked;
     });
+
+    // Keyboard Shortcuts
+    const handleKeyboard = (e) => {
+      // ESC zum Schließen
+      if (e.key === 'Escape') {
+        this.close();
+        document.removeEventListener('keydown', handleKeyboard);
+      }
+
+      // Enter zum Abschicken (nur wenn Submit-Button aktiv)
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        if (submitButton && !submitButton.disabled) {
+          e.preventDefault();
+          this.submit();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyboard);
+
+    // Cleanup beim Schließen
+    overlay.addEventListener('remove', () => {
+      document.removeEventListener('keydown', handleKeyboard);
+    });
   }
 
   /**
@@ -412,9 +436,12 @@ class FeedbackModal {
             <a href="${issueUrl}" target="_blank" class="aicc-feedback-success-link">
               📝 Zum GitHub Issue
             </a>
-            <div style="margin-top: 24px;">
+            <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
               <button class="aicc-feedback-cancel" data-close-modal>
                 Schliessen
+              </button>
+              <button class="aicc-feedback-submit" data-new-feedback style="background: linear-gradient(135deg, #33d099 0%, #00939a 100%); border-color: #33d099;">
+                💬 Weiteres Feedback melden
               </button>
             </div>
           </div>
@@ -424,6 +451,12 @@ class FeedbackModal {
       // Event Listener für Schliessen-Button
       modal.querySelector('[data-close-modal]')?.addEventListener('click', () => {
         overlay.remove();
+      });
+
+      // Event Listener für "Weiteres Feedback" Button
+      modal.querySelector('[data-new-feedback]')?.addEventListener('click', () => {
+        overlay.remove();
+        setTimeout(() => this.open(), 300); // Kurze Verzögerung für smooth transition
       });
 
       return;
@@ -456,9 +489,12 @@ class FeedbackModal {
               </a>
             </div>
           ` : ''}
-          <div style="margin-top: 24px;">
+          <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
             <button class="aicc-feedback-cancel" data-close-modal>
               Schliessen
+            </button>
+            <button class="aicc-feedback-submit" data-new-feedback style="background: linear-gradient(135deg, #33d099 0%, #00939a 100%); border-color: #33d099;">
+              💬 Weiteres Feedback melden
             </button>
           </div>
         </div>
@@ -468,6 +504,12 @@ class FeedbackModal {
     // Event Listener für Schliessen-Button
     modal.querySelector('[data-close-modal]')?.addEventListener('click', () => {
       overlay.remove();
+    });
+
+    // Event Listener für "Weiteres Feedback" Button
+    modal.querySelector('[data-new-feedback]')?.addEventListener('click', () => {
+      overlay.remove();
+      setTimeout(() => this.open(), 300); // Kurze Verzögerung für smooth transition
     });
   }
 
