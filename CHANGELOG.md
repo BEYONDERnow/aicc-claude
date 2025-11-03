@@ -49,65 +49,95 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [2.10.4] - 2025-11-03
 
-### 🎨 UX-Optimierung: Modales Feedback-Formular
+### 🔒 DSGVO-Compliance: Kritische Datenschutz-Fixes
 
-#### Zusammenfassung
+#### ⚠️ BREAKING CHANGE: Kein automatischer Daten-Transfer mehr
 
-Modernisierung der Modal-UX gemäß aktueller UX-Standards: Optimiertes Padding im scrollbaren Bereich, "Weiteres Feedback melden" Button und Keyboard-Shortcuts (ESC/Ctrl+Enter).
+**Problem:** In vorherigen Versionen wurden automatisch Daten aus User-Prompts (detection context) in öffentliche GitHub Issues übertragen - ein klarer DSGVO-Verstoss.
 
-#### ✅ Verbesserungen
+**Lösung:** Vollständig überarbeitetes Feedback-System nach Privacy-by-Design Prinzip.
 
-**1. Optimiertes Padding für scrollbare Bereiche** 📐
+#### ✅ Änderungen
 
-- **Overlay-Body (content.css:481):** `padding: 32px 40px 32px 32px` (vorher: `padding: 0`)
-  - Inhalt klebt nicht mehr am Rand
-  - Mehr Abstand zur Scrollbar (rechts: 40px)
-- **Modal-Body (content.css:796):** `padding: 32px 40px 32px 32px` (vorher: `padding: 32px`)
-  - Konsistent mit Overlay-Body
-- **Feedback-Modal-Body (feedback.css:124):** `padding: 32px 40px 32px 32px` + `scroll-behavior: smooth`
-  - Smooth Scroll-Verhalten
-- **Responsive Design:** Mobile-Variante mit `padding: 24px 32px 24px 24px`
+**1. Automatische Datenerfassung entfernt** 🚫
 
-**2. "Weiteres Feedback melden" Button** 💬
+- **KEINE automatische Übertragung** von detection-context mehr
+  - Kein erkannter Wert aus Prompt
+  - Kein Kontext (±50 Zeichen) aus Prompt
+  - Keine automatische Extraktion sensibler Daten
+- **User entscheidet** was geteilt wird
+  - User beschreibt Problem selbst
+  - User wählt bewusst, welche Informationen geteilt werden
+  - Prominent platzierte Datenschutz-Warnungen
 
-- **Position:** Neben "Schließen" Button im Success-Screen
-- **Funktion:** Öffnet neues Feedback-Formular nach erfolgreicher Übermittlung
-- **UX:** Smooth transition mit 300ms Verzögerung
-- **Implementierung:**
-  - Fallback-Modus Success-Screen (feedback-modal.js:415-422)
-  - Normal-Modus Success-Screen (feedback-modal.js:462-469)
-  - Event Listeners mit auto-cleanup (feedback-modal.js:432-436, 485-489)
+**2. E-Mail-Feld entfernt** 📧
 
-**3. Keyboard-Shortcuts** ⌨️
+- **Kein E-Mail-Feld** mehr im Feedback-Modal
+- Privacy-First: Keine öffentliche Anzeige von E-Mails in GitHub Issues
+- Nutzer können optional selbst Kontakt aufnehmen
 
-- **ESC:** Schließt das Modal (feedback-modal.js:276-279)
-- **Ctrl+Enter / Cmd+Enter:** Sendet Feedback (wenn Submit-Button aktiv)
-  - Nur aktiv wenn Consent-Checkbox aktiviert (feedback-modal.js:282-287)
-- **Auto-Cleanup:** Event Listeners werden beim Schließen entfernt (feedback-modal.js:293-295)
+**3. Button-Text korrigiert** ✏️
 
-**4. Verbessertes Spacing** 📏
+- **"Feedback melden"** statt "Feedback senden" / "Falsch erkannt melden"
+- Konsistent auf allen Modals (Warning Overlay)
+- Englisch: "Report feedback"
 
-- **Formular-Felder:** `margin-bottom: 28px` (vorher: 24px) (feedback.css:186)
-  - Bessere visuelle Hierarchie
-  - Mehr Atemraum zwischen Feldern
+**4. Prominente Datenschutz-Warnungen** ⚠️
+
+- **Privacy Warning** direkt über Kommentar-Feld:
+  - "⚠️ Bitte keine sensiblen Daten (Namen, E-Mails, etc.) eingeben!"
+  - Gelber Hintergrund (#FFF9E6), roter Text (#E33A4E)
+  - Gut sichtbar positioniert
+- **Updated Privacy Notice**:
+  - Klare Auflistung was übertragen wird
+  - Explizite Warnung vor sensiblen Daten
+  - DSGVO-konformer Hinweis
+
+**5. Nur System-Informationen übertragen** 📊
+
+Übertragene Daten (öffentlich auf GitHub):
+- ✅ Feedback-Typ (Bug, Feature Request, etc.)
+- ✅ User-Beschreibung (vom User selbst formuliert)
+- ✅ Extension Version
+- ✅ Platform, Browser, User Agent
+- ✅ URL der Seite
+- ✅ Timestamp
+
+NICHT mehr übertragen:
+- ❌ Detection-Context aus Prompt
+- ❌ Erkannter Wert aus User-Eingabe
+- ❌ Kontext rund um erkannten Wert
+- ❌ E-Mail-Adresse
+- ❌ Screenshots
+
+#### Geänderte Dateien
+
+- `extension/scripts/content.js` - Button text + detection-context removal
+- `extension/scripts/feedback-modal.js` - E-Mail + detection removal, Privacy warning
+- `extension/scripts/github-feedback.js` - Komplette Entfernung detection handling
+- `extension/styles/feedback.css` - Privacy warning styling
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
 
 #### 📊 Technische Details
 
-- **Dateien geändert:**
-  - `extension/styles/content.css` (3 Änderungen)
-  - `extension/styles/feedback.css` (2 Änderungen)
-  - `extension/scripts/feedback-modal.js` (6 Änderungen)
-- **Backward-kompatibel:** Alle Änderungen sind nicht-breaking
-- **Performance:** Keine spürbare Auswirkung durch Keyboard-Event-Handling
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
 
-#### 🎯 User Experience Impact
+#### 🎨 Workflow-Verbesserungen
 
-- ✅ **Bessere Lesbarkeit:** Inhalt nicht mehr am Rand gequetscht
-- ✅ **Schnellerer Workflow:** Mehrere Feedbacks ohne Modal-Schließen
-- ✅ **Power-User Freundlich:** Keyboard-Shortcuts für effiziente Navigation
-- ✅ **Moderne UX-Standards:** Padding, Spacing, Accessibility
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
 
----
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
 
 
 

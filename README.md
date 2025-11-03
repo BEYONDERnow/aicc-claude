@@ -990,4 +990,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.10.4** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - UX-Optimierung für modernes Feedback!
+**Version 2.10.4** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!

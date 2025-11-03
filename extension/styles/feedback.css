@@ -300,6 +300,21 @@
   cursor: pointer;
 }
 
+/* ===== PRIVACY WARNING (Above Comment Field) ===== */
+.aicc-feedback-privacy-warning {
+  background: #FFF9E6;
+  border: 2px solid #FCC001;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #E33A4E;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* ===== PRIVACY NOTICE ===== */
 .aicc-feedback-privacy {
   background: linear-gradient(135deg, rgba(51, 208, 153, 0.1) 0%, rgba(70, 191, 237, 0.1) 100%);

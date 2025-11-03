@@ -1356,7 +1356,7 @@ class ComplianceMonitor {
           </div>
           <div style="display: flex; gap: 12px; align-items: center;">
             <button class="aicc-btn aicc-btn-secondary aicc-feedback-report" data-element-id="${Date.now()}">
-              ${this.currentLang === 'de' ? '💬 Falsch erkannt melden' : '💬 Report false detection'}
+              ${this.currentLang === 'de' ? '💬 Feedback melden' : '💬 Report feedback'}
             </button>
             <button class="aicc-btn aicc-btn-primary aicc-overlay-ok">
               ${this.currentLang === 'de' ? 'Verstanden' : 'Got it'}
@@ -1407,21 +1407,10 @@ class ComplianceMonitor {
       feedbackBtn.addEventListener('click', () => {
         close(); // Overlay schliessen
 
-        // Ersten/kritischsten Detection als Context nehmen
-        const firstDetection = analysis.detections[0];
-        const detectionContext = {
-          value: firstDetection.match,
-          type: firstDetection.name,
-          severity: firstDetection.severity,
-          description: firstDetection.description,
-          context: this.extractContext(element, firstDetection.match)
-        };
-
-        // Feedback-Modal öffnen
+        // Feedback-Modal öffnen (OHNE detection-context für DSGVO-Konformität)
         const feedbackModal = new FeedbackModal();
         feedbackModal.open({
-          preselectedType: 'false-positive',
-          detection: detectionContext
+          preselectedType: 'false-positive'
         });
       });
     }
