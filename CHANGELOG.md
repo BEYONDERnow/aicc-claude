@@ -7,6 +7,46 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.10.2] - 2025-11-03
+
+### 🎨 UX/Lesbarkeit Verbesserungen
+
+#### Screenshot-Upload entfernt
+- **Screenshot-Feature komplett deaktiviert**
+  - Service Worker und screenshot-capture.js nicht mehr verwendet
+  - Einfacherer, zuverlässigerer Feedback-Flow
+- **Upload-Hinweis hinzugefügt**
+  - Blauer Info-Box: "📎 Screenshots hinzufügen?"
+  - Hinweis auf GitHub Upload-Möglichkeit nach dem Absenden
+  - Nutzer können Screenshots direkt auf GitHub hochladen
+
+#### Lesbarkeit deutlich verbessert
+- **Montserrat Regular (font-weight: 400)** für alle Fließtexte
+  - Privacy Notice
+  - Checkbox-Labels
+  - Success-Messages
+  - Upload-Hinweis
+  - Subtitle
+- **Bessere Textkontraste** (#333B49 statt #61666D)
+- **Optimierte Schriftgrößen** (13px für bessere Lesbarkeit)
+
+#### Vollständige Detection-Daten im Issue
+- **URL wird jetzt übertragen** (context.url)
+- **Alle Detection-Informationen vollständig**:
+  - Erkannter Wert
+  - Typ (z.B. "Name", "E-Mail")
+  - Schweregrad
+  - Beschreibung
+  - Kontext (±50 Zeichen um den Wert)
+  - URL der Seite
+
+#### Technische Verbesserungen
+- Feedback-Modal ohne Service Worker Dependencies
+- Robusterer Code ohne Screenshot-Komplexität
+- Privacy Notice aktualisiert (Screenshot entfernt)
+
+---
+
 ## [2.10.1] - 2025-11-03
 
 ### 🔧 Bugfixes: Feedback-System Stabilität & UX
