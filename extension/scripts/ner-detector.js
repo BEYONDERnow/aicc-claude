@@ -27,12 +27,14 @@ export class NERDetector {
     this.errorLogged = false; // Verhindert mehrfache Error-Logs
 
     // Prüfe Storage-Einstellung (optional)
-    chrome.storage?.local.get(['nerEnabled'], (result) => {
-      this.nerEnabled = result.nerEnabled === true;
-      if (this.nerEnabled) {
-        console.log('[AI Compliance NER] Feature aktiviert - Models werden lazy geladen');
-      }
-    });
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      chrome.storage.local.get(['nerEnabled'], (result) => {
+        this.nerEnabled = result.nerEnabled === true;
+        if (this.nerEnabled) {
+          console.log('[AI Compliance NER] Feature aktiviert - Models werden lazy geladen');
+        }
+      });
+    }
   }
 
   /**
