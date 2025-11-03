@@ -47,6 +47,100 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.10.4] - 2025-11-03
+
+### 🔒 DSGVO-Compliance: Kritische Datenschutz-Fixes
+
+#### ⚠️ BREAKING CHANGE: Kein automatischer Daten-Transfer mehr
+
+**Problem:** In vorherigen Versionen wurden automatisch Daten aus User-Prompts (detection context) in öffentliche GitHub Issues übertragen - ein klarer DSGVO-Verstoss.
+
+**Lösung:** Vollständig überarbeitetes Feedback-System nach Privacy-by-Design Prinzip.
+
+#### ✅ Änderungen
+
+**1. Automatische Datenerfassung entfernt** 🚫
+
+- **KEINE automatische Übertragung** von detection-context mehr
+  - Kein erkannter Wert aus Prompt
+  - Kein Kontext (±50 Zeichen) aus Prompt
+  - Keine automatische Extraktion sensibler Daten
+- **User entscheidet** was geteilt wird
+  - User beschreibt Problem selbst
+  - User wählt bewusst, welche Informationen geteilt werden
+  - Prominent platzierte Datenschutz-Warnungen
+
+**2. E-Mail-Feld entfernt** 📧
+
+- **Kein E-Mail-Feld** mehr im Feedback-Modal
+- Privacy-First: Keine öffentliche Anzeige von E-Mails in GitHub Issues
+- Nutzer können optional selbst Kontakt aufnehmen
+
+**3. Button-Text korrigiert** ✏️
+
+- **"Feedback melden"** statt "Feedback senden" / "Falsch erkannt melden"
+- Konsistent auf allen Modals (Warning Overlay)
+- Englisch: "Report feedback"
+
+**4. Prominente Datenschutz-Warnungen** ⚠️
+
+- **Privacy Warning** direkt über Kommentar-Feld:
+  - "⚠️ Bitte keine sensiblen Daten (Namen, E-Mails, etc.) eingeben!"
+  - Gelber Hintergrund (#FFF9E6), roter Text (#E33A4E)
+  - Gut sichtbar positioniert
+- **Updated Privacy Notice**:
+  - Klare Auflistung was übertragen wird
+  - Explizite Warnung vor sensiblen Daten
+  - DSGVO-konformer Hinweis
+
+**5. Nur System-Informationen übertragen** 📊
+
+Übertragene Daten (öffentlich auf GitHub):
+- ✅ Feedback-Typ (Bug, Feature Request, etc.)
+- ✅ User-Beschreibung (vom User selbst formuliert)
+- ✅ Extension Version
+- ✅ Platform, Browser, User Agent
+- ✅ URL der Seite
+- ✅ Timestamp
+
+NICHT mehr übertragen:
+- ❌ Detection-Context aus Prompt
+- ❌ Erkannter Wert aus User-Eingabe
+- ❌ Kontext rund um erkannten Wert
+- ❌ E-Mail-Adresse
+- ❌ Screenshots
+
+#### Geänderte Dateien
+
+- `extension/scripts/content.js` - Button text + detection-context removal
+- `extension/scripts/feedback-modal.js` - E-Mail + detection removal, Privacy warning
+- `extension/scripts/github-feedback.js` - Komplette Entfernung detection handling
+- `extension/styles/feedback.css` - Privacy warning styling
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
+
 ## [2.10.2] - 2025-11-03
 
 ### 🚀 Feature: Einzelnamen-Erkennung aktiviert
