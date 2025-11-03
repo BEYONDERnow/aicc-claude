@@ -201,7 +201,7 @@
 }
 
 .aicc-feedback-label .optional {
-  color: #61666D;
+  color: #333B49;
   font-size: 11px;
   font-weight: 500;
   text-transform: none;
@@ -256,18 +256,20 @@
 .aicc-feedback-screenshot-loading {
   padding: 60px;
   text-align: center;
-  color: #61666D;
+  color: #333B49;
   font-size: 14px;
+  font-weight: 500;
 }
 
 .aicc-feedback-screenshot-error {
   padding: 20px;
-  background: #FFF5F5;
-  border: 2px solid #E33A4E;
+  background: #FFF9E6;
+  border: 2px solid #FF9220;
   border-radius: 12px;
-  color: #E33A4E;
+  color: #101E35;
   font-size: 13px;
   text-align: center;
+  font-weight: 500;
 }
 
 /* ===== CHECKBOX ===== */
@@ -317,15 +319,15 @@
 }
 
 .aicc-feedback-privacy-text {
-  font-size: 12px;
-  color: #61666D;
+  font-size: 13px;
+  color: #333B49;
   line-height: 1.6;
   margin-bottom: 12px;
 }
 
 .aicc-feedback-privacy-list {
-  font-size: 12px;
-  color: #61666D;
+  font-size: 13px;
+  color: #333B49;
   line-height: 1.8;
   padding-left: 20px;
   margin: 0;
@@ -372,7 +374,7 @@
 
 .aicc-feedback-cancel {
   background: #F6F7F8;
-  color: #61666D;
+  color: #333B49;
   border: 2px solid #DDE1E6;
 }
 
@@ -418,7 +420,7 @@
 
 .aicc-feedback-success-text {
   font-size: 14px;
-  color: #61666D;
+  color: #333B49;
   line-height: 1.6;
   margin-bottom: 24px;
 }
