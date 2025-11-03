@@ -45,6 +45,62 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.10.2] - 2025-11-03
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
+- **Git-Integration:** Unterstützt Git-Tags für Versionierung
+- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version
+
+**3. Aktualisierte Dateien** 📝
+
+- `extension/manifest.json` - Chrome Extension Version
+- `package.json` - NPM Package Version
+- `extension/popup.html` - Angezeigter Version String
+- `extension/scripts/version.js` - Zentrale Versionsdefinition
+- `README.md` - Dokumentierte Version
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
+
 ## [2.10.0] - 2025-11-02
 
 ### 🎉 Feature: Public Beta Feedback-System mit GitHub Issues Integration

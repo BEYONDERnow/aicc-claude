@@ -1,6 +1,6 @@
 /**
  * AI Compliance Checker - Compromise.js NER Integration
- * ML-quality NER without ML dependencies + Enhanced Filtering
+ * Version: 2.10.2 - ML-quality NER without ML dependencies + Enhanced Filtering
  *
  * Verwendet Compromise.js für Named Entity Recognition:
  * - Keine Lexikon-Abhängigkeit (erkennt auch unbekannte Namen)
