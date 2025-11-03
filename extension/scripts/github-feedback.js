@@ -89,9 +89,8 @@ class GitHubFeedbackService {
     body += `- **Platform:** ${context.platform || 'Unbekannt'}\n`;
     body += `- **Browser:** ${context.browser || 'Chrome'}\n\n`;
 
-    if (email) {
-      body += `## 📧 Kontakt\n\n- **E-Mail:** ${email}\n\n`;
-    }
+    // WICHTIG: E-Mail wird NICHT öffentlich im Issue angezeigt
+    // User kann optional eine Benachrichtigungs-E-Mail an chris@beyonder.ch senden
 
     body += `*Feedback gesendet via AI Compliance Checker Beta*`;
 
@@ -251,11 +250,8 @@ class GitHubFeedbackService {
     body += `- **User Agent:** ${context.userAgent || navigator.userAgent}\n`;
     body += `- **Timestamp:** ${new Date().toISOString()}\n\n`;
 
-    // E-Mail (optional)
-    if (email) {
-      body += `### 📧 Kontakt\n\n`;
-      body += `- **E-Mail:** ${email}\n\n`;
-    }
+    // WICHTIG: E-Mail wird NICHT öffentlich im Issue angezeigt aus Datenschutzgründen
+    // User kann optional eine Benachrichtigungs-E-Mail an chris@beyonder.ch senden mit Issue-Link
 
     // Screenshot (optional)
     if (screenshot) {

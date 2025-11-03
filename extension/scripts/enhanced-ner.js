@@ -72,10 +72,10 @@ export class EnhancedNERDetector {
       'ChatGippity', 'Chatshippity', 'Bard', 'Copilot', 'LLaMA', 'Mistral',
       'Glot', 'Replit', 'CodePen', 'JSFiddle', 'Codesandbox',
 
-      // v2.3.6: Häufige Verben (oft am Satzanfang großgeschrieben)
+      // v2.3.6: Häufige Verben (oft am Satzanfang grossgeschrieben)
       'Programmieren', 'Entwickeln', 'Implementieren', 'Erstellen', 'Bearbeiten',
       'Hinzufügen', 'Entfernen', 'Löschen', 'Speichern', 'Laden', 'Öffnen',
-      'Schließen', 'Starten', 'Stoppen', 'Prüfen', 'Testen', 'Debuggen'
+      'Schliessen', 'Starten', 'Stoppen', 'Prüfen', 'Testen', 'Debuggen'
     ]);
 
     // Kontext-Marker die auf Namen hinweisen

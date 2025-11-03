@@ -54,7 +54,9 @@
   max-width: 600px;
   width: 90%;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   animation: aiccSlideUp 0.3s ease;
   font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -120,6 +122,8 @@
 /* ===== MODAL BODY ===== */
 .aicc-feedback-body {
   padding: 32px;
+  overflow-y: auto;
+  flex: 1;
 }
 
 /* ===== TYPE SELECTOR ===== */
@@ -495,20 +499,19 @@
 }
 
 /* ===== SCROLLBAR STYLING ===== */
-.aicc-feedback-modal::-webkit-scrollbar {
+.aicc-feedback-body::-webkit-scrollbar {
   width: 8px;
 }
 
-.aicc-feedback-modal::-webkit-scrollbar-track {
+.aicc-feedback-body::-webkit-scrollbar-track {
   background: #F6F7F8;
-  border-radius: 0 24px 24px 0;
 }
 
-.aicc-feedback-modal::-webkit-scrollbar-thumb {
+.aicc-feedback-body::-webkit-scrollbar-thumb {
   background: linear-gradient(135deg, #e33a74 0%, #FF9220 100%);
   border-radius: 4px;
 }
 
-.aicc-feedback-modal::-webkit-scrollbar-thumb:hover {
+.aicc-feedback-body::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, #d02a64 0%, #e88310 100%);
 }

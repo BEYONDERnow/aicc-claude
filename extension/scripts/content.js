@@ -1405,7 +1405,7 @@ class ComplianceMonitor {
     const feedbackBtn = overlay.querySelector('.aicc-feedback-report');
     if (feedbackBtn) {
       feedbackBtn.addEventListener('click', () => {
-        close(); // Overlay schließen
+        close(); // Overlay schliessen
 
         // Ersten/kritischsten Detection als Context nehmen
         const firstDetection = analysis.detections[0];
