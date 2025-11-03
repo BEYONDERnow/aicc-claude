@@ -47,6 +47,70 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.10.4] - 2025-11-03
+
+### 🎨 UX-Optimierung: Modales Feedback-Formular
+
+#### Zusammenfassung
+
+Modernisierung der Modal-UX gemäß aktueller UX-Standards: Optimiertes Padding im scrollbaren Bereich, "Weiteres Feedback melden" Button und Keyboard-Shortcuts (ESC/Ctrl+Enter).
+
+#### ✅ Verbesserungen
+
+**1. Optimiertes Padding für scrollbare Bereiche** 📐
+
+- **Overlay-Body (content.css:481):** `padding: 32px 40px 32px 32px` (vorher: `padding: 0`)
+  - Inhalt klebt nicht mehr am Rand
+  - Mehr Abstand zur Scrollbar (rechts: 40px)
+- **Modal-Body (content.css:796):** `padding: 32px 40px 32px 32px` (vorher: `padding: 32px`)
+  - Konsistent mit Overlay-Body
+- **Feedback-Modal-Body (feedback.css:124):** `padding: 32px 40px 32px 32px` + `scroll-behavior: smooth`
+  - Smooth Scroll-Verhalten
+- **Responsive Design:** Mobile-Variante mit `padding: 24px 32px 24px 24px`
+
+**2. "Weiteres Feedback melden" Button** 💬
+
+- **Position:** Neben "Schließen" Button im Success-Screen
+- **Funktion:** Öffnet neues Feedback-Formular nach erfolgreicher Übermittlung
+- **UX:** Smooth transition mit 300ms Verzögerung
+- **Implementierung:**
+  - Fallback-Modus Success-Screen (feedback-modal.js:415-422)
+  - Normal-Modus Success-Screen (feedback-modal.js:462-469)
+  - Event Listeners mit auto-cleanup (feedback-modal.js:432-436, 485-489)
+
+**3. Keyboard-Shortcuts** ⌨️
+
+- **ESC:** Schließt das Modal (feedback-modal.js:276-279)
+- **Ctrl+Enter / Cmd+Enter:** Sendet Feedback (wenn Submit-Button aktiv)
+  - Nur aktiv wenn Consent-Checkbox aktiviert (feedback-modal.js:282-287)
+- **Auto-Cleanup:** Event Listeners werden beim Schließen entfernt (feedback-modal.js:293-295)
+
+**4. Verbessertes Spacing** 📏
+
+- **Formular-Felder:** `margin-bottom: 28px` (vorher: 24px) (feedback.css:186)
+  - Bessere visuelle Hierarchie
+  - Mehr Atemraum zwischen Feldern
+
+#### 📊 Technische Details
+
+- **Dateien geändert:**
+  - `extension/styles/content.css` (3 Änderungen)
+  - `extension/styles/feedback.css` (2 Änderungen)
+  - `extension/scripts/feedback-modal.js` (6 Änderungen)
+- **Backward-kompatibel:** Alle Änderungen sind nicht-breaking
+- **Performance:** Keine spürbare Auswirkung durch Keyboard-Event-Handling
+
+#### 🎯 User Experience Impact
+
+- ✅ **Bessere Lesbarkeit:** Inhalt nicht mehr am Rand gequetscht
+- ✅ **Schnellerer Workflow:** Mehrere Feedbacks ohne Modal-Schließen
+- ✅ **Power-User Freundlich:** Keyboard-Shortcuts für effiziente Navigation
+- ✅ **Moderne UX-Standards:** Padding, Spacing, Accessibility
+
+---
+
+
+
 ## [2.10.2] - 2025-11-03
 
 ### 🚀 Feature: Einzelnamen-Erkennung aktiviert
