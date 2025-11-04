@@ -79,6 +79,9 @@ body.aicc-modal-open .aicc-overlay-container {
 
 .aicc-status-icon-wrapper {
   position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 999999;
   pointer-events: all;
 }
@@ -91,16 +94,29 @@ body.aicc-modal-open .aicc-overlay-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: move; /* Zeigt an, dass Icon verschiebbar ist */
   /* Kontrast-Schatten für bessere Sichtbarkeit auf hellen Websites */
   box-shadow:
-    0 0 0 2px white,
+    0 0 0 2px rgba(255, 255, 255, 0.8),
     0 0 0 4px rgba(16, 30, 53, 0.2),
     0 4px 16px rgba(16, 30, 53, 0.3);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  /* Milchglas-Transparenz statt festem Weiß */
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Dragging state */
+.aicc-status-icon.dragging {
+  cursor: grabbing;
+  transform: scale(1.1);
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 0 0 4px rgba(70, 191, 237, 0.5),
+    0 8px 32px rgba(16, 30, 53, 0.4);
+  transition: none; /* Keine Transition während Drag */
 }
 
 /* Safe state = slightly smaller but still visible */
@@ -127,22 +143,22 @@ body.aicc-modal-open .aicc-overlay-container {
   height: 28px;
 }
 
-.aicc-status-icon:hover {
+.aicc-status-icon:hover:not(.dragging) {
   transform: scale(1.15);
   box-shadow:
-    0 0 0 2px white,
+    0 0 0 2px rgba(255, 255, 255, 0.9),
     0 0 0 4px rgba(16, 30, 53, 0.3),
     0 6px 24px rgba(16, 30, 53, 0.4);
 }
 
-.aicc-status-icon:active {
+.aicc-status-icon:active:not(.dragging) {
   transform: scale(0.95);
 }
 
 .aicc-status-icon:focus {
   outline: none;
   box-shadow:
-    0 0 0 2px white,
+    0 0 0 2px rgba(255, 255, 255, 0.9),
     0 0 0 4px rgba(70, 191, 237, 0.6),
     0 4px 20px rgba(70, 191, 237, 0.4);
 }
@@ -366,8 +382,9 @@ body.aicc-modal-open .aicc-overlay-container {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(16, 30, 53, 0.75);
-  backdrop-filter: blur(6px);
+  background: rgba(16, 30, 53, 0.4);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 .aicc-overlay-content {
@@ -461,10 +478,76 @@ body.aicc-modal-open .aicc-overlay-container {
 }
 
 .aicc-overlay-body {
-  padding: 32px;
+  padding: 32px 40px 32px 32px;
   overflow-y: auto;
   flex: 1;
   background: var(--beyonder-white-smoke);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tab System für Multi-Input */
+.aicc-tabs-header {
+  display: flex;
+  gap: 8px;
+  padding: 20px 32px 0 32px;
+  background: var(--beyonder-white-smoke);
+  border-bottom: 2px solid var(--beyonder-grey-light);
+}
+
+.aicc-tab-button {
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--beyonder-grey-dark);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.aicc-tab-button:hover {
+  color: var(--beyonder-midnight);
+  background: rgba(16, 30, 53, 0.05);
+}
+
+.aicc-tab-button.active {
+  color: var(--beyonder-midnight);
+  border-bottom-color: var(--beyonder-pink);
+}
+
+.aicc-tab-badge {
+  display: inline-block;
+  background: var(--status-error);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 6px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.aicc-tab-badge.warning {
+  background: var(--status-warning);
+  color: var(--beyonder-midnight);
+}
+
+.aicc-tab-badge.safe {
+  background: var(--status-ok);
+}
+
+.aicc-tab-content {
+  display: none;
+  padding: 32px;
+}
+
+.aicc-tab-content.active {
+  display: block;
 }
 
 .aicc-overlay-footer {
@@ -619,8 +702,9 @@ body.aicc-modal-open .aicc-overlay-container {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(16, 30, 53, 0.85);
-  backdrop-filter: blur(8px);
+  background: rgba(16, 30, 53, 0.4);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 .aicc-modal-content {
@@ -709,7 +793,7 @@ body.aicc-modal-open .aicc-overlay-container {
 }
 
 .aicc-modal-body {
-  padding: 32px;
+  padding: 32px 40px 32px 32px;
   overflow-y: auto;
   flex: 1;
 }
@@ -958,7 +1042,7 @@ body.aicc-modal-open .aicc-overlay-container {
 
   .aicc-overlay-body,
   .aicc-modal-body {
-    padding: 24px;
+    padding: 24px 32px 24px 24px;
   }
 
   .aicc-overlay-footer,

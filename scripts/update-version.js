@@ -157,6 +157,12 @@ function syncVersion(newVersion) {
         ['\\*\\*Version [0-9.]+\\*\\*', `**Version ${newVersion}**`],
         ['Version [0-9.]+ BETA', `Version ${newVersion} BETA`]
       ]
+    },
+    {
+      file: 'extension/scripts/content.js',
+      replacements: [
+        ['Validierungsreport v[0-9.]+', `Validierungsreport v${newVersion}`]
+      ]
     }
   ];
 

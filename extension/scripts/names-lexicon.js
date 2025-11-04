@@ -8,7 +8,6 @@
  * - B2B International: ES, PT, PL, NL, nordische Länder (800 Namen)
  *
  * Total: ~6600 Namen, ~150KB
- * Version: 2.2.0
  */
 
 // ============================================================================

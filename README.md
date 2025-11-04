@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.9.1** • by BEYONDER
+**Version 2.10.4** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -15,33 +15,99 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.9.1 (Aktuell) - 2025-11-01
+### Version 2.10.4 (Aktuell) - 2025-11-03
 
-**🐛 Critical Bugfix: chrome.storage undefined**
+**🎨 UX-Optimierung: Modales Feedback-Formular**
 
-#### 🎯 Problem gelöst
+#### 🚀 Verbesserungen
+- **Optimiertes Padding**: Scrollbare Bereiche mit mehr Abstand zum Rand (40px rechts statt 32px)
+- **"Weiteres Feedback" Button**: Im Success-Screen neben "Schließen" zum direkten Senden weiterer Feedbacks
+- **Keyboard-Shortcuts**: ESC zum Schließen, Ctrl+Enter zum Abschicken
+- **Verbessertes Spacing**: Formular-Felder mit 28px Abstand (vorher: 24px)
 
-**TypeError: Cannot read properties of undefined (reading 'local')** ✅ BEHOBEN
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#2104---2025-11-03)
+
+---
+
+### Version 2.10.3 (Vorherige) - 2025-11-03
+
+**🎨 UX/Lesbarkeit Verbesserungen (Feedback-System)**
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#2103---2025-11-03)
+
+---
+
+### Version 2.10.0 - 2025-11-02
+
+**🎉 Feature: Public Beta Feedback-System mit GitHub Issues Integration**
+
+#### 🚀 Neue Features
+- **GitHub Issues API**: Automatische Issue-Erstellung mit strukturierten Templates (Bug, False-Positive, False-Negative, Feature-Request)
+- **Screenshot-Capture**: Automatische Screenshots mit Compression (JPEG 80%, max 2MB)
+- **Feedback-Modal**: Modernes UI mit Typ-Auswahl, Detection-Context, Privacy-Notice und Opt-In
+- **Feedback-Buttons**: Im Extension-Popup und Modal-Overlay ("Falsch erkannt melden")
+- **Service Worker**: Manifest V3 Background Script für Screenshot-Capture
+- **DSGVO-konform**: Explizites Opt-In, transparente Privacy-Notice, optionale E-Mail/Screenshot
+
+#### 📊 Vorteile
+- ✅ Einfaches Bug-Reporting direkt aus der Extension
+- ✅ False-Positive/Negative-Meldungen mit automatischem Kontext (Wert, Typ, ±50 Zeichen)
+- ✅ Screenshots helfen bei der Fehleranalyse
+- ✅ GitHub Issues für strukturiertes Tracking
+- ✅ Transparente Datenübertragung (DSGVO-konform)
+- ✅ **Fallback-Modus**: Funktioniert auch ohne API-Konfiguration (öffnet vorausgefülltes GitHub Issue)
+
+#### 🔧 Setup (für Entwickler)
+Das Feedback-System funktioniert sofort im **Fallback-Modus** (öffnet GitHub Issues im Browser).
+
+**Optional:** Für automatische Issue-Erstellung via API:
+- **GitHub App** (empfohlen für Public Beta): Siehe [GITHUB_APP_SETUP.md](./GITHUB_APP_SETUP.md)
+- **Personal Access Token** (schnell für Tests): Siehe [FEEDBACK_SETUP.md](./FEEDBACK_SETUP.md)
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#2100---2025-11-02)
+
+---
+
+### Version 2.9.3 (Vorherige) - 2025-11-02
+
+**🚀 Feature: Optimierter Validierungsreport mit Kontext, Position & Annotation**
+
+#### 🎯 Neue Features
+- **Kontext bei Erkennungen**: ±50 Zeichen um jede Erkennung + Position im Text
+- **Annotierter Prompt**: Erkennungen markiert als `[1:NAME]`, `[2:IBAN]` im Text
+- **False-Negative-Prüfung**: Strukturierte Checkliste aller nicht erkannten Kriterien
+- **Erkennungsmethode**: Zeigt ob NER/KI, Regex, Pattern oder Lexikon verwendet wurde
+- **Metriken-Anleitung**: Precision, Recall, F1-Score Formeln für objektive Bewertung
+
+#### 📊 Vorteile
+- ✅ Schnellere Validierung durch sofort erkennbaren Kontext
+- ✅ False Negatives einfacher zu finden (annotierter Prompt + Checkliste)
+- ✅ Bessere Verbesserungs-Insights durch strukturierte Pattern-Analyse
+- ✅ Objektive Metriken für Qualitätsvergleich zwischen Versionen
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#292---2025-11-01)
+
+---
+
+### Version 2.9.1 - 2025-11-01
+
+**🔧 Fixes: Vollständige Prompt-Extraktion & chrome.storage Bugfix**
+
+#### 🐛 Problem 1: Lange Prompts wurden abgeschnitten
+- Bei Prompts >10k Zeichen zeigte der Validierungsreport nur einen Teil des Textes
+- **Ursache:** `innerText` gibt nur gerenderten/sichtbaren Text zurück (lazy rendering)
+- **Lösung:** Neue Methode `getFullElementText()` verwendet `textContent` statt `innerText`
+
+#### 🐛 Problem 2: chrome.storage undefined Error
+- **TypeError: Cannot read properties of undefined (reading 'local')**
 - Content-Script versuchte auf `chrome.storage.local` zuzugreifen, aber `chrome.storage` war `undefined`
-- Trat auf in `showWarningModal()` (Zeile 1524) und `showOverlay()` (Zeile 1212)
 - **Ursache:** Race Condition bei Extension-Initialisierung oder Reload
+- **Lösung:** Defensive try-catch Prüfung mit silentFail Fallback
 
-#### 🔧 Implementierte Lösung
-
-**Defensive Prüfung vor Chrome API Zugriff**
-```javascript
-// v2.9.1: DEFENSIVE - Prüfe ob chrome.storage verfügbar ist
-if (chrome && chrome.storage && chrome.storage.local) {
-  const result = await chrome.storage.local.get(['aicc_developer_mode']);
-  isDeveloperMode = result.aicc_developer_mode || false;
-}
-```
-
-#### ✅ Benefits
-- Verhindert TypeError komplett
-- Graceful Degradation: Feature funktioniert mit Fallback (developerMode=false)
-- Keine Breaking Changes
-- Logging bleibt für andere Fehler erhalten
+#### ✅ Auswirkung
+- ✅ Reports enthalten **vollständigen Prompt** (auch bei 15k+ Zeichen)
+- ✅ Keine Truncation durch Browser-Optimierungen
+- ✅ Verhindert TypeError komplett mit Graceful Degradation
 
 > **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#291---2025-11-01)
 
@@ -924,4 +990,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.9.1** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Chrome Storage Bugfix!
+**Version 2.10.4** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!

@@ -7,8 +7,764 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.10.3] - 2025-11-03
+
+### 🎨 UX/Lesbarkeit Verbesserungen (Feedback-System)
+
+#### Screenshot-Upload entfernt
+- **Screenshot-Feature komplett deaktiviert**
+  - Service Worker und screenshot-capture.js nicht mehr verwendet
+  - Einfacherer, zuverlässigerer Feedback-Flow
+- **Upload-Hinweis hinzugefügt**
+  - Blauer Info-Box: "📎 Screenshots hinzufügen?"
+  - Hinweis auf GitHub Upload-Möglichkeit nach dem Absenden
+  - Nutzer können Screenshots direkt auf GitHub hochladen
+
+#### Lesbarkeit deutlich verbessert
+- **Montserrat Regular (font-weight: 400)** für alle Fließtexte
+  - Privacy Notice
+  - Checkbox-Labels
+  - Success-Messages
+  - Upload-Hinweis
+  - Subtitle
+- **Bessere Textkontraste** (#333B49 statt #61666D)
+- **Optimierte Schriftgrößen** (13px für bessere Lesbarkeit)
+
+#### Vollständige Detection-Daten im Issue
+- **URL wird jetzt übertragen** (context.url)
+- **Alle Detection-Informationen vollständig**:
+  - Erkannter Wert
+  - Typ (z.B. "Name", "E-Mail")
+  - Schweregrad
+  - Beschreibung
+  - Kontext (±50 Zeichen um den Wert)
+  - URL der Seite
+
+#### Technische Verbesserungen
+- Feedback-Modal ohne Service Worker Dependencies
+- Robusterer Code ohne Screenshot-Komplexität
+- Privacy Notice aktualisiert (Screenshot entfernt)
+
+---
+
+## [2.10.4] - 2025-11-03
+
+### 🔒 DSGVO-Compliance: Kritische Datenschutz-Fixes
+
+#### ⚠️ BREAKING CHANGE: Kein automatischer Daten-Transfer mehr
+
+**Problem:** In vorherigen Versionen wurden automatisch Daten aus User-Prompts (detection context) in öffentliche GitHub Issues übertragen - ein klarer DSGVO-Verstoss.
+
+**Lösung:** Vollständig überarbeitetes Feedback-System nach Privacy-by-Design Prinzip.
+
+#### ✅ Änderungen
+
+**1. Automatische Datenerfassung entfernt** 🚫
+
+- **KEINE automatische Übertragung** von detection-context mehr
+  - Kein erkannter Wert aus Prompt
+  - Kein Kontext (±50 Zeichen) aus Prompt
+  - Keine automatische Extraktion sensibler Daten
+- **User entscheidet** was geteilt wird
+  - User beschreibt Problem selbst
+  - User wählt bewusst, welche Informationen geteilt werden
+  - Prominent platzierte Datenschutz-Warnungen
+
+**2. E-Mail-Feld entfernt** 📧
+
+- **Kein E-Mail-Feld** mehr im Feedback-Modal
+- Privacy-First: Keine öffentliche Anzeige von E-Mails in GitHub Issues
+- Nutzer können optional selbst Kontakt aufnehmen
+
+**3. Button-Text korrigiert** ✏️
+
+- **"Feedback melden"** statt "Feedback senden" / "Falsch erkannt melden"
+- Konsistent auf allen Modals (Warning Overlay)
+- Englisch: "Report feedback"
+
+**4. Prominente Datenschutz-Warnungen** ⚠️
+
+- **Privacy Warning** direkt über Kommentar-Feld:
+  - "⚠️ Bitte keine sensiblen Daten (Namen, E-Mails, etc.) eingeben!"
+  - Gelber Hintergrund (#FFF9E6), roter Text (#E33A4E)
+  - Gut sichtbar positioniert
+- **Updated Privacy Notice**:
+  - Klare Auflistung was übertragen wird
+  - Explizite Warnung vor sensiblen Daten
+  - DSGVO-konformer Hinweis
+
+**5. Nur System-Informationen übertragen** 📊
+
+Übertragene Daten (öffentlich auf GitHub):
+- ✅ Feedback-Typ (Bug, Feature Request, etc.)
+- ✅ User-Beschreibung (vom User selbst formuliert)
+- ✅ Extension Version
+- ✅ Platform, Browser, User Agent
+- ✅ URL der Seite
+- ✅ Timestamp
+
+NICHT mehr übertragen:
+- ❌ Detection-Context aus Prompt
+- ❌ Erkannter Wert aus User-Eingabe
+- ❌ Kontext rund um erkannten Wert
+- ❌ E-Mail-Adresse
+- ❌ Screenshots
+
+#### Geänderte Dateien
+
+- `extension/scripts/content.js` - Button text + detection-context removal
+- `extension/scripts/feedback-modal.js` - E-Mail + detection removal, Privacy warning
+- `extension/scripts/github-feedback.js` - Komplette Entfernung detection handling
+- `extension/styles/feedback.css` - Privacy warning styling
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
+
+## [2.10.2] - 2025-11-03
+
+### 🚀 Feature: Einzelnamen-Erkennung aktiviert
+
+#### Zusammenfassung
+Alle Namen werden jetzt einzeln erkannt - keine Filter mehr für häufige Vornamen. Recall verbessert von ~98% auf ~100%.
+
+#### Änderungen
+- **Einzelname-Filter entfernt** (commonFirstNames-Check)
+- **Alle Namen einzeln erkannt**: Chris, Michael, Giuseppe, Marie, etc.
+- **Minimale Längenprüfung**: Nur 1-Zeichen-Wörter werden gefiltert
+- **Recall: ~98% → ~100%**
+
+#### Technische Details
+- `detector.js`: `cleanNEREntity()` vereinfacht
+- Nur noch "I", "a" werden gefiltert
+- Version konsistent in allen Dateien: 2.10.2
+
+---
+
+## [2.10.1] - 2025-11-03
+
+### 🔧 Bugfixes: Feedback-System Stabilität & UX
+
+#### Kritische Fixes
+- **NON-BLOCKING Scripts**: Alle Feedback-Scripts (github-feedback.js, screenshot-capture.js, feedback-modal.js) mit try-catch gesichert
+  - Fehler im Feedback-System blockieren NICHT mehr die Haupt-Extension
+  - Export-Fehler werden abgefangen und geloggt (non-blocking)
+  - FeedbackModal Constructor mit Fehlerbehandlung
+- **Screenshot-Feature optional**: Service Worker Connection-Fehler blockieren nicht mehr
+  - Benutzerfreundliche Fehlermeldung statt technischem Fehler
+  - "Screenshot-Feature nicht verfügbar" Message mit Hinweis
+  - Checkbox wird automatisch deaktiviert bei Fehler
+
+#### UX & Design Verbesserungen
+- **Kontrast verbessert** für bessere Lesbarkeit:
+  - Texte von #61666D auf #333B49 (höherer Kontrast)
+  - Font-Size von 12px auf 13px erhöht
+  - Screenshot-Fehler: Warnung statt Fehler-Rot (orange #FF9220)
+- **Modal Scrolling Fix**:
+  - Nur `.aicc-feedback-body` scrollt (nicht ganzes Modal)
+  - Border-Radius bleibt sauber und passt perfekt
+  - Scrollbar-Styling nur auf Body
+- **Schliessen-Button Fix**: Event Listener statt onclick (funktioniert jetzt korrekt)
+
+#### Privacy Verbesserungen
+- **E-Mail Privacy**: E-Mail wird NICHT mehr öffentlich im GitHub Issue angezeigt
+  - Stattdessen: Optional mailto: Link an chris@beyonder.ch nach Absenden
+  - Privacy Notice aktualisiert mit klarem Hinweis
+- **Schweizer Rechtschreibung**: ß → ss in allen User-sichtbaren Texten
+
+#### Technische Details
+- Service Worker Connection Test mit 2s Timeout
+- Bessere Fehlermeldungen: "Could not establish connection" → benutzerfreundlich
+- Robustere Fehlerbehandlung in allen neuen Modulen
+
+---
+
+## [2.10.0] - 2025-11-02
+
+### 🎉 Feature: Public Beta Feedback-System mit GitHub Issues Integration
+
+#### Zusammenfassung
+Umfassendes **Beta-Feedback-System** für einfache Bug-Reports, False-Positive/Negative-Meldungen und Feature-Requests. Nutzer können Feedback mit automatischen Screenshots und vollständigem Kontext direkt als GitHub Issues senden - **DSGVO-konform mit explizitem Opt-In**.
+
+#### 🚀 Neue Features
+
+**1. GitHub Issues API Integration** 📝
+- Automatische Issue-Erstellung auf GitHub mit strukturierten Templates
+- Labels: `bug`, `false-positive`, `false-negative`, `feature-request`, `beta-feedback`
+- Screenshot-Upload als Base64 in Markdown
+- System-Informationen (Version, Platform, Browser) automatisch erfasst
+- Datei: `scripts/github-feedback.js`
+
+**2. Screenshot-Capture System** 📸
+- Automatische Screenshot-Erstellung beim Öffnen des Feedback-Modals
+- Compression (JPEG 80%, max 2MB) für optimale Dateigröße
+- Canvas-basierte Verarbeitung mit max. 1920px Breite
+- Service Worker Integration für chrome.tabs.captureVisibleTab()
+- Dateien: `scripts/screenshot-capture.js`, `background.js`
+
+**3. Modernes Feedback-Modal** 💬
+- **Typ-Auswahl**: Bug / False-Positive / False-Negative / Feature-Request
+- **Formular-Felder**:
+  - Beschreibung (Pflicht)
+  - E-Mail (optional für Rückfragen)
+  - Screenshot-Preview mit Toggle
+- **Detection-Context** (bei False-Positive/Negative):
+  - Zeigt erkannten Wert, Typ, Schweregrad, Kontext
+  - Automatisch befüllt beim Klick auf "Falsch erkannt melden"
+- **Privacy Notice**: Transparente Info über übertragene Daten
+- **Opt-In Checkbox**: Explizite Zustimmung erforderlich (DSGVO-konform)
+- **Success-State**: Bestätigung mit Link zum erstellten GitHub Issue
+- Dateien: `scripts/feedback-modal.js`, `styles/feedback.css`
+
+**4. Feedback-Buttons überall** 🎯
+- **Extension-Popup**: Prominenter "💬 Feedback senden" Button
+- **Modal-Overlay**: "💬 Falsch erkannt melden" Button im Footer
+- **Context-Integration**: Erkennung wird als Context übergeben (Wert, Typ, ±50 Zeichen Kontext)
+- Intelligentes Routing:
+  - Auf AI-Plattformen: Öffnet Feedback-Modal
+  - Auf anderen Seiten: Öffnet GitHub Issues direkt
+
+**5. Manifest V3 Service Worker** ⚙️
+- Background Service Worker für Screenshot-Capture
+- Message-Passing zwischen Content Script und Service Worker
+- Permissions: `activeTab`, `https://api.github.com/*`
+- Datei: `background.js`
+
+#### 🔧 Technische Details
+
+**Neue Dateien**:
+- `extension/scripts/github-feedback.js` - GitHub API Service
+- `extension/scripts/screenshot-capture.js` - Screenshot-Capture Modul
+- `extension/scripts/feedback-modal.js` - Feedback-Modal Manager
+- `extension/styles/feedback.css` - BEYONDER Design für Feedback-UI
+- `extension/background.js` - Manifest V3 Service Worker
+
+**Erweiterte Dateien**:
+- `extension/manifest.json` - Permissions (`activeTab`), Service Worker, neue Content Scripts
+- `extension/popup.html` - Feedback-Button Section
+- `extension/popup.js` - Message-Passing an Content Script
+- `extension/scripts/content.js` - Message Listener, Feedback-Button im Overlay, `extractContext()` Methode
+
+**GitHub API Configuration**:
+```javascript
+// In scripts/github-feedback.js
+this.config = {
+  owner: 'chrisbeyeler',
+  repo: 'aicc-claude',
+  token: '',  // PAT muss eingetragen werden
+};
+```
+
+**Setup-Anleitung** (für Entwickler):
+1. GitHub Personal Access Token erstellen mit `public_repo` oder `repo` scope
+2. Token in `scripts/github-feedback.js` → `config.token` eintragen
+3. **WICHTIG**: Token NICHT committen (im .gitignore oder Environment Variable)
+4. Extension neu laden
+
+#### 📊 User Experience
+
+**Feedback-Flow (Beispiel False-Positive)**:
+1. User sieht orange Warnung bei "Hans" (fälschlicherweise als Name erkannt)
+2. Klickt auf Status-Icon → Overlay öffnet sich
+3. Klickt "💬 Falsch erkannt melden" im Footer
+4. Feedback-Modal öffnet sich:
+   - Typ: "False Positive" (vorselektiert)
+   - Detection: "Hans" + Kontext automatisch befüllt
+   - Screenshot bereits erstellt (Preview sichtbar)
+   - User gibt Kommentar ein: "Das ist kein Name, sondern..."
+   - User akzeptiert Privacy Notice
+5. Submit → GitHub Issue erstellt
+6. Success-Message mit Link zum Issue
+
+**DSGVO-Konformität**:
+- ✅ Explizites Opt-In vor Datenübertragung (Checkbox Pflicht)
+- ✅ Transparente Privacy-Notice (welche Daten, wohin, warum)
+- ✅ Optional: E-Mail-Angabe
+- ✅ Optional: Screenshot-Upload (Toggle)
+- ✅ Link zu GitHub Issues (User kann Issues einsehen)
+- ✅ Kein automatisches Tracking oder Telemetrie
+
+#### 🎨 Design
+
+**BEYONDER Design System**:
+- Gradient-Header: Aquamarine → Midnight Blue
+- Primary-Button: Pink → Orange → Gold Gradient
+- Privacy-Notice: Grün mit Icon
+- Opt-In Box: Gelb hervorgehoben
+- Responsive Layout (max 600px Modal, 90vh)
+- Smooth Animations (Fade-in, Slide-up)
+- Custom Scrollbar mit Gradient
+
+#### ⚠️ Bekannte Limitationen
+
+1. **GitHub Token Management**: Token muss manuell in Code eingetragen werden (keine UI-Option)
+2. **Screenshot Permissions**: activeTab permission erforderlich (User wird beim Update gefragt)
+3. **GitHub Rate Limits**: 5000 requests/hour (ausreichend für Beta)
+4. **Issue-Size**: Screenshots max 2MB (GitHub API Limit)
+
+#### 🔜 Nächste Schritte (v2.11+)
+
+- [ ] Token-Management via Extension-Popup (ohne Code-Edit)
+- [ ] Screenshot-Blur-Tool für sensible Bereiche
+- [ ] Multi-Detection-Auswahl (mehrere Erkennungen gleichzeitig melden)
+- [ ] Offline-Queue (Feedback später senden wenn offline)
+- [ ] Alternative Backends (Supabase, Tally, Email)
+
+#### 📄 Commit Details
+- `feat: GitHub Issues API integration for beta feedback`
+- `feat: Screenshot capture with Service Worker`
+- `feat: Feedback Modal with privacy opt-in`
+- `feat: Feedback buttons in popup and overlay`
+- `chore: bump version to 2.10.0`
+
+---
+
+## [2.9.2] - 2025-11-01
+
+### 🚀 Feature: Optimierter Validierungsreport mit Kontext, Position & Annotation
+
+#### Zusammenfassung
+Der Validierungsreport wurde komplett überarbeitet für eine **optimale Analyse durch Claude**. Statt nur erkannte Werte zu zeigen, enthält der Report jetzt Kontext, Positionen, Erkennungsmethoden, einen annotierten Prompt und eine strukturierte False-Negative-Prüfung.
+
+#### 🎯 Neue Features
+
+**1. Erkennungen mit Kontext-Informationen** 📍
+- **Kontext anzeigen**: ±50 Zeichen um jede Erkennung
+- **Position im Text**: Zeichen-Offset (z.B. 234-248)
+- **Erkennungsmethode**: NER/KI, Regex, Pattern, Lexikon
+- **Beispiel**: `...mein Kollege **Max Mustermann** arbeitet... | Position 234-248 | NER/KI`
+
+**2. Annotierter Prompt** 🏷️
+- Erkennungen werden direkt im Prompt markiert: `[1:NAME]`, `[2:IBAN]`, etc.
+- Ermöglicht sofortige visuelle Erfassung aller Erkennungen
+- False Negatives (nicht markierte sensible Daten) werden sofort sichtbar
+
+**3. False-Negative-Prüfung** ✅
+- Strukturierte Checkliste aller nicht erkannten Kriterien
+- Getrennt nach kritischen Daten und Warnungen
+- Inklusive Beschreibung was gesucht werden sollte
+
+**4. Verbesserte Validierungs-Anweisungen** 📊
+- Klare Schritte für True/False Positive Validierung
+- Formeln für Precision, Recall & F1-Score
+- Anforderung für Verbesserungsvorschläge
+
+#### Technische Details
+- `content.js:1349-1555` - Komplett überarbeitete `generateValidationReport()` Methode
+- Helper-Funktion `getContext()` - Extrahiert Kontext um Erkennungen
+- Helper-Funktion `getMethod()` - Bestimmt Erkennungsmethode aus ID
+- Annotation-Algorithmus verhindert Überlappungen
+
+#### Vorher vs. Nachher
+
+**Vorher (v2.9.1)**:
+```markdown
+| # | Kriterium | Wert |
+|---
+
+## [2.10.0] - 2025-11-02
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
+- **Git-Integration:** Unterstützt Git-Tags für Versionierung
+- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version
+
+**3. Aktualisierte Dateien** 📝
+
+- `extension/manifest.json` - Chrome Extension Version
+- `package.json` - NPM Package Version
+- `extension/popup.html` - Angezeigter Version String
+- `extension/scripts/version.js` - Zentrale Versionsdefinition
+- `README.md` - Dokumentierte Version
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
+
+## [2.9.8] - 2025-11-02
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
+- **Git-Integration:** Unterstützt Git-Tags für Versionierung
+- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version
+
+**3. Aktualisierte Dateien** 📝
+
+- `extension/manifest.json` - Chrome Extension Version
+- `package.json` - NPM Package Version
+- `extension/popup.html` - Angezeigter Version String
+- `extension/scripts/version.js` - Zentrale Versionsdefinition
+- `README.md` - Dokumentierte Version
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
+
+## [2.9.7] - 2025-11-02
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
+- **Git-Integration:** Unterstützt Git-Tags für Versionierung
+- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version
+
+**3. Aktualisierte Dateien** 📝
+
+- `extension/manifest.json` - Chrome Extension Version
+- `package.json` - NPM Package Version
+- `extension/popup.html` - Angezeigter Version String
+- `extension/scripts/version.js` - Zentrale Versionsdefinition
+- `README.md` - Dokumentierte Version
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
+
+## [2.9.6] - 2025-11-02
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
+- **Git-Integration:** Unterstützt Git-Tags für Versionierung
+- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version
+
+**3. Aktualisierte Dateien** 📝
+
+- `extension/manifest.json` - Chrome Extension Version
+- `package.json` - NPM Package Version
+- `extension/popup.html` - Angezeigter Version String
+- `extension/scripts/version.js` - Zentrale Versionsdefinition
+- `README.md` - Dokumentierte Version
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
+
+## [2.9.5] - 2025-11-02
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
+- **Git-Integration:** Unterstützt Git-Tags für Versionierung
+- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version
+
+**3. Aktualisierte Dateien** 📝
+
+- `extension/manifest.json` - Chrome Extension Version
+- `package.json` - NPM Package Version
+- `extension/popup.html` - Angezeigter Version String
+- `extension/scripts/version.js` - Zentrale Versionsdefinition
+- `README.md` - Dokumentierte Version
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
+
+## [2.9.4] - 2025-11-02
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
+- **Git-Integration:** Unterstützt Git-Tags für Versionierung
+- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version
+
+**3. Aktualisierte Dateien** 📝
+
+- `extension/manifest.json` - Chrome Extension Version
+- `package.json` - NPM Package Version
+- `extension/popup.html` - Angezeigter Version String
+- `extension/scripts/version.js` - Zentrale Versionsdefinition
+- `README.md` - Dokumentierte Version
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+|-----------|------|
+| 1 | Name | `Max Mustermann` |
+```
+
+**Nachher (v2.9.2)**:
+```markdown
+| # | Kriterium | Wert | Kontext | Position | Methode |
+|---|-----------|------|---------|----------|---------|
+| 1 | Name | `Max Mustermann` | ...Kollege **Max Mustermann** arbeitet... | 234-248 | NER/KI |
+
+## Prompt (annotiert)
+```
+...mein Kollege [1:NAME] arbeitet seit...
+```
+
+## False-Negative-Prüfung
+- [ ] **Telefonnummer**: Prüfe auf +41 79 123 45 67
+- [ ] **Adresse**: Prüfe auf Straße, PLZ, Ort
+```
+
+#### Auswirkung
+- ✅ **Schnellere Validierung**: Kontext macht True/False Positives sofort erkennbar
+- ✅ **Bessere False-Negative-Erkennung**: Annotierter Prompt + Checkliste
+- ✅ **Präzisere Metriken**: Precision, Recall, F1-Score für objektive Bewertung
+- ✅ **Verbesserungs-Insights**: Strukturierte Erfassung von Pattern-Problemen
+
+---
+
 ## [2.9.1] - 2025-11-01
 
+### 🔧 Fix: Vollständige Prompt-Extraktion für Validierungsreports
+
+#### Problem
+Bei langen Prompts (>10k Zeichen) wurde der Text im Validierungsreport durch lazy rendering abgeschnitten. Dies verhinderte eine vollständige Analyse durch Claude zur Validierung der Erkennungen.
+
+#### Lösung
+- **Neue Methode `getFullElementText()`** verwendet `textContent` statt `innerText`
+- `textContent` gibt immer den vollständigen Text zurück, unabhängig vom DOM-Rendering
+- Nur für Report-Generierung verwendet - Detection-Performance unverändert
+
+#### Technische Details
+- `content.js:679-686` - Neue Methode für vollständige Text-Extraktion
+- `content.js:1343` - Report verwendet jetzt `getFullElementText()`
+- Report-Versionsinfo auf v2.9.1 aktualisiert
+
+#### Auswirkung
+✅ Validierungsreports enthalten jetzt **immer den vollständigen Prompt**, auch bei 15k+ Zeichen
+✅ Keine Truncation durch virtuelles Scrolling oder Lazy Loading
+✅ Präzisere Validierung durch Claude möglich
 ### 🐛 Critical Bugfix: chrome.storage undefined
 
 #### Zusammenfassung
@@ -64,6 +820,60 @@ if (chrome && chrome.storage && chrome.storage.local) {
 - ✅ Entwicklermodus ON/OFF Toggle funktioniert normal
 
 ---
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
+- **Git-Integration:** Unterstützt Git-Tags für Versionierung
+- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version
+
+**3. Aktualisierte Dateien** 📝
+
+- `extension/manifest.json` - Chrome Extension Version
+- `package.json` - NPM Package Version
+- `extension/popup.html` - Angezeigter Version String
+- `extension/scripts/version.js` - Zentrale Versionsdefinition
+- `README.md` - Dokumentierte Version
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
 
 ## [2.9.0] - 2025-11-01
 
@@ -175,6 +985,62 @@ npm run version:sync
 ```
 
 ---
+
+## [2.9.1] - 2025-11-01
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
+- **Git-Integration:** Unterstützt Git-Tags für Versionierung
+- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version
+
+**3. Aktualisierte Dateien** 📝
+
+- `extension/manifest.json` - Chrome Extension Version
+- `package.json` - NPM Package Version
+- `extension/popup.html` - Angezeigter Version String
+- `extension/scripts/version.js` - Zentrale Versionsdefinition
+- `README.md` - Dokumentierte Version
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
 
 ## [2.8.0] - 2025-11-01
 
