@@ -23,6 +23,10 @@
  * ✅ Technische Begriff-Filter ("Quality-Assurance" nicht als Organisation)
  * ✅ Erhöhte Mindestlänge (Namen/Orte/Orgs >= 3-4 Zeichen)
  *
+ * v2.6.2 Bug Fixes:
+ * ✅ FIX: "Could not find position for: Karl-" - Bereinige trailing/leading Bindestriche
+ * ✅ FIX: Erweiterte Word Boundary Detection inkl. Bindestriche für hyphenated names
+ *
  * Trade-off: +284KB Bundle Size (~342KB total vs. ~58KB vorher)
  */
 
@@ -69,7 +73,7 @@ export class CompromiseNER {
       /^[a-z]+[A-Z][a-z]+$/ // camelCase
     ];
 
-    console.log('[AI Compliance Checker] CompromiseNER v2.6.1 initialisiert (mit Stopword-Filter)');
+    console.log('[AI Compliance Checker] CompromiseNER v2.6.2 initialisiert (mit Stopword-Filter & Hyphenated Name Fix)');
   }
 
   /**
@@ -125,6 +129,11 @@ export class CompromiseNER {
           .replace(/[.,;!?]+$/, '')
           .trim();
 
+        // v2.6.2 FIX: Bereinige trailing/leading Bindestriche
+        // "Karl-" → "Karl" (von "Karl-Peter" abgeschnitten)
+        // "-Peter" → "Peter"
+        personText = personText.replace(/^-+|-+$/g, '').trim();
+
         // v2.6.1: Filtere Stopwords und technische Begriffe
         if (this.isStopwordOrTechnical(personText)) {
           continue;
@@ -146,7 +155,8 @@ export class CompromiseNER {
         const positions = this.findAllOccurrences(text, personText);
 
         if (positions.length === 0) {
-          console.warn('[CompromiseNER] Could not find position for:', personText);
+          // v2.6.2: Nur noch debug log statt warning (kann bei dynamischen UIs normal sein)
+          console.debug('[CompromiseNER] Could not find position for:', personText);
           continue;
         }
 
@@ -197,8 +207,10 @@ export class CompromiseNER {
         ? text[foundPos + searchText.length]
         : ' ';
 
-      const isWordBoundaryBefore = /[\s,.!?;:()\[\]{}"'\n\r\t]/.test(beforeChar);
-      const isWordBoundaryAfter = /[\s,.!?;:()\[\]{}"'\n\r\t]/.test(afterChar);
+      // v2.6.2: Erweiterte Word Boundary Detection inkl. Bindestriche
+      // Bindestriche sind Word Boundaries für Namen wie "Karl-Peter", "Anne-Marie"
+      const isWordBoundaryBefore = /[\s,.!?;:()\[\]{}"'\n\r\t-]/.test(beforeChar);
+      const isWordBoundaryAfter = /[\s,.!?;:()\[\]{}"'\n\r\t-]/.test(afterChar);
 
       if (isWordBoundaryBefore && isWordBoundaryAfter) {
         positions.push(foundPos);
@@ -504,7 +516,7 @@ export class CompromiseNER {
  */
 export function getDetectorInfo() {
   return {
-    version: '2.6.0',
+    version: '2.6.2',
     type: 'Compromise.js NER (ML-quality without ML)',
     engine: 'compromise.js',
     dependencies: 'compromise (~284KB)',

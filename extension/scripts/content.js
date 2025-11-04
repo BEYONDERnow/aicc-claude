@@ -1042,6 +1042,11 @@ class ComplianceMonitor {
    * NEUE IMPLEMENTIERUNG: Verwendet Overlay-Technik ohne DOM-Modification
    */
   highlightText(element, analysis) {
+    // DEFENSIVE CHECK: Prüfe ob Element noch im DOM ist (wichtig für dynamische UIs wie Claude Artifacts)
+    if (!element || !document.body.contains(element)) {
+      return;
+    }
+
     // Erstelle oder hole Overlay-Container für dieses Element
     let overlayContainer = this.overlayContainers.get(element);
 
@@ -1054,7 +1059,7 @@ class ComplianceMonitor {
     if (!overlayContainer) {
       overlayContainer = this.createOverlayContainer(element);
       if (!overlayContainer) {
-        // Konnte keinen Container erstellen
+        // Konnte keinen Container erstellen (Element wurde aus DOM entfernt)
         return;
       }
       this.overlayContainers.set(element, overlayContainer);
@@ -1079,7 +1084,7 @@ class ComplianceMonitor {
       // Finde das Parent-Element für relative Positionierung
       const parent = element.parentElement;
       if (!parent) {
-        console.warn('[AICC] Element has no parent, cannot create overlay');
+        // Element wurde aus DOM entfernt - silent fail (wird bereits in highlightText() geprüft)
         return null;
       }
 
