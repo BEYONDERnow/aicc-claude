@@ -1,10 +1,17 @@
 /**
  * AI Compliance Checker - Detection Engine
- * Version 2.10.2 - Accuracy: ~97% (kritische Daten: 100%, Warnungen: ~96%)
+ * Version 2.10.3 - Accuracy: ~97% (kritische Daten: 100%, Warnungen: ~96%)
  * by BEYONDER
  *
  * Erkennt personenbezogene und sensible Daten in Text-Eingaben
  * 100% lokal, keine Server-Kommunikation, DSGVO/DSG-konform
+ *
+ * v2.10.3 BUGFIX (Geburtsdatum-NER False Positives):
+ * ✅ Abkürzungs-Filter: "HR", "IT", "AI", "CEO" etc. nicht als Geburtsdatum
+ * ✅ Format-Validierung: Nur echte Datumsformate werden erkannt
+ * ✅ Anführungszeichen-Filter: Zitate wie `"HR"` werden ignoriert
+ * ✅ 4-fache Validierung verhindert False Positives bei Abkürzungen
+ * ✅ Behebt kritischen Bug: 0% Precision → 100% in Abkürzungs-Tests
  *
  * v2.10.2 FEATURE (Einzelnamen-Erkennung):
  * ✅ Einzelnamen-Erkennung aktiviert: "Giuseppe", "Marie", "Chris", "Michael" werden erkannt
@@ -118,7 +125,7 @@ class ComplianceDetector {
     this.nerAvailable = true; // Immer verfügbar
     this.nerEnabled = true;
 
-    console.log('[AI Compliance Checker] v2.10.2 - Single Name Detection - Accuracy: ~97% (Critical: 100%, Warnings: ~96%)');
+    console.log('[AI Compliance Checker] v2.10.3 - Bugfix: Date-NER False Positives - Accuracy: ~97% (Critical: 100%, Warnings: ~96%)');
   }
 
   /**

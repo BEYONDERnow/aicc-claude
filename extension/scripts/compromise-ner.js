@@ -1,6 +1,6 @@
 /**
  * AI Compliance Checker - Compromise.js NER Integration
- * Version: 2.10.2 - ML-quality NER without ML dependencies + Enhanced Filtering
+ * Version: 2.10.3 - ML-quality NER without ML dependencies + Enhanced Filtering
  *
  * Verwendet Compromise.js für Named Entity Recognition:
  * - Keine Lexikon-Abhängigkeit (erkennt auch unbekannte Namen)
@@ -13,6 +13,13 @@
  * ✅ "Ich traf Maria" → erkennt "Maria" (vorher nicht erkannt)
  * ✅ "Der Große Erfolg" → NICHT als Name erkannt (vorher False Positive)
  * ✅ "Hans-Peter Schmidt" → als EINEN Namen erkannt (vorher 2 separate)
+ *
+ * v2.10.3 Bugfix (Geburtsdatum-NER):
+ * ✅ 4-fache Validierung für Geburtsdaten-Erkennung
+ * ✅ Abkürzungs-Blacklist: "HR", "IT", "AI", etc. nicht als Datum
+ * ✅ Format-Validierung: Nur echte Datumsformate (TT.MM.JJJJ, YYYY, etc.)
+ * ✅ Anführungszeichen-Filter: `"HR"` wird ignoriert
+ * ✅ Behebt: False Positive bei Abkürzungen in Anführungszeichen
  *
  * v2.9.2 Improvements:
  * ✅ Erweiterte Stopword-Liste (110+ Wörter inkl. "information über")
@@ -73,7 +80,22 @@ export class CompromiseNER {
       /^[a-z]+[A-Z][a-z]+$/ // camelCase
     ];
 
-    console.log('[AI Compliance Checker] CompromiseNER v2.6.2 initialisiert (mit Stopword-Filter & Hyphenated Name Fix)');
+    // v2.10.3: Abkürzungs-Blacklist für Geburtsdatum-Erkennung
+    // Diese Abkürzungen werden NIEMALS als Geburtsdatum erkannt
+    this.dateAbbreviationBlacklist = new Set([
+      // Business/HR
+      'hr', 'it', 'ceo', 'cfo', 'cto', 'coo', 'cio', 'pr', 'vp',
+      // Tech
+      'ai', 'ml', 'nlp', 'api', 'ui', 'ux', 'db', 'os', 'sdk', 'ide',
+      // Länder
+      'usa', 'uk', 'eu', 'ch', 'de', 'at', 'fr', 'it', 'es', 'nl',
+      // Dateiformate
+      'pdf', 'jpg', 'png', 'gif', 'mp4', 'mp3', 'zip', 'csv', 'xml', 'json',
+      // Sonstiges
+      'etc', 'usw', 'bzw', 'ca', 'evtl', 'ggf', 'inkl', 'excl', 'vs', 'max', 'min'
+    ]);
+
+    console.log('[AI Compliance Checker] CompromiseNER v2.10.4 initialisiert (mit Stopword-Filter + Date-Validierung)');
   }
 
   /**
@@ -95,6 +117,48 @@ export class CompromiseNER {
     }
 
     return false;
+  }
+
+  /**
+   * v2.10.3: Prüft ob Text ein gültiges Datumsformat hat
+   * @param {string} text - Der zu prüfende Text
+   * @returns {boolean} True wenn gültiges Datumsformat
+   */
+  isValidDateFormat(text) {
+    const cleaned = text.replace(/["'\.]/g, '').trim();
+
+    // Pattern für gültige Datumsformate
+    const datePatterns = [
+      /^\d{1,2}\.\d{1,2}\.\d{2,4}$/,         // 15.03.1985, 1.5.85
+      /^\d{1,2}\/\d{1,2}\/\d{2,4}$/,         // 03/15/1985
+      /^\d{4}-\d{2}-\d{2}$/,                  // 1985-03-15 (ISO)
+      /^\d{4}$/,                              // 1985 (nur Jahr)
+      /^(19|20)\d{2}$/,                       // 1900-2099 (nur Jahr, spezifisch)
+      /^geboren\s+\d{4}$/i,                   // geboren 1985
+      /^\d{1,2}\s+\w+\s+\d{4}$/i,            // 15 März 1985
+      /^\w+\s+\d{1,2},?\s+\d{4}$/i           // March 15, 1985
+    ];
+
+    return datePatterns.some(pattern => pattern.test(cleaned));
+  }
+
+  /**
+   * v2.10.3: Prüft ob Text eine bekannte Abkürzung ist
+   * @param {string} text - Der zu prüfende Text
+   * @returns {boolean} True wenn bekannte Abkürzung
+   */
+  isDateAbbreviation(text) {
+    const cleaned = text.replace(/["'\.]/g, '').trim().toLowerCase();
+    return this.dateAbbreviationBlacklist.has(cleaned);
+  }
+
+  /**
+   * v2.10.3: Prüft ob Text in Anführungszeichen steht
+   * @param {string} text - Der zu prüfende Text
+   * @returns {boolean} True wenn in Anführungszeichen
+   */
+  isQuotedText(text) {
+    return /^["'].*["']\.?$/.test(text);
   }
 
   /**
@@ -282,8 +346,28 @@ export class CompromiseNER {
       for (const date of dates) {
         const dateText = date.text.trim();
 
-        // Filtere sehr kurze Daten (z.B. einzelne Monate)
-        if (dateText.length < 4) {
+        // v2.10.3: Fix 1 - Mindestlänge (ohne Satzzeichen)
+        const cleanedText = dateText.replace(/["'\.]/g, '').trim();
+        if (cleanedText.length < 4) {
+          console.log(`[NER Date] Zu kurz: "${dateText}" (${cleanedText.length} Zeichen) - gefiltert`);
+          continue;
+        }
+
+        // v2.10.3: Fix 2 - Format-Validierung
+        if (!this.isValidDateFormat(dateText)) {
+          console.log(`[NER Date] Kein gültiges Datumsformat: "${dateText}" - gefiltert`);
+          continue;
+        }
+
+        // v2.10.3: Fix 3 - Abkürzungs-Filter
+        if (this.isDateAbbreviation(dateText)) {
+          console.log(`[NER Date] Bekannte Abkürzung: "${dateText}" - gefiltert`);
+          continue;
+        }
+
+        // v2.10.3: Fix 4 - Anführungszeichen-Filter
+        if (this.isQuotedText(dateText)) {
+          console.log(`[NER Date] Text in Anführungszeichen: "${dateText}" - gefiltert`);
           continue;
         }
 
