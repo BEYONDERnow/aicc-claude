@@ -1042,6 +1042,11 @@ class ComplianceMonitor {
    * NEUE IMPLEMENTIERUNG: Verwendet Overlay-Technik ohne DOM-Modification
    */
   highlightText(element, analysis) {
+    // DEFENSIVE CHECK: Prüfe ob Element noch im DOM ist (wichtig für dynamische UIs wie Claude Artifacts)
+    if (!element || !document.body.contains(element)) {
+      return;
+    }
+
     // Erstelle oder hole Overlay-Container für dieses Element
     let overlayContainer = this.overlayContainers.get(element);
 
@@ -1054,7 +1059,7 @@ class ComplianceMonitor {
     if (!overlayContainer) {
       overlayContainer = this.createOverlayContainer(element);
       if (!overlayContainer) {
-        // Konnte keinen Container erstellen
+        // Konnte keinen Container erstellen (Element wurde aus DOM entfernt)
         return;
       }
       this.overlayContainers.set(element, overlayContainer);
@@ -1079,7 +1084,7 @@ class ComplianceMonitor {
       // Finde das Parent-Element für relative Positionierung
       const parent = element.parentElement;
       if (!parent) {
-        console.warn('[AICC] Element has no parent, cannot create overlay');
+        // Element wurde aus DOM entfernt - silent fail (wird bereits in highlightText() geprüft)
         return null;
       }
 
@@ -1356,7 +1361,7 @@ class ComplianceMonitor {
           </div>
           <div style="display: flex; gap: 12px; align-items: center;">
             <button class="aicc-btn aicc-btn-secondary aicc-feedback-report" data-element-id="${Date.now()}">
-              ${this.currentLang === 'de' ? '💬 Falsch erkannt melden' : '💬 Report false detection'}
+              ${this.currentLang === 'de' ? '💬 Feedback melden' : '💬 Report feedback'}
             </button>
             <button class="aicc-btn aicc-btn-primary aicc-overlay-ok">
               ${this.currentLang === 'de' ? 'Verstanden' : 'Got it'}
@@ -1407,21 +1412,10 @@ class ComplianceMonitor {
       feedbackBtn.addEventListener('click', () => {
         close(); // Overlay schliessen
 
-        // Ersten/kritischsten Detection als Context nehmen
-        const firstDetection = analysis.detections[0];
-        const detectionContext = {
-          value: firstDetection.match,
-          type: firstDetection.name,
-          severity: firstDetection.severity,
-          description: firstDetection.description,
-          context: this.extractContext(element, firstDetection.match)
-        };
-
-        // Feedback-Modal öffnen
+        // Feedback-Modal öffnen (OHNE detection-context für DSGVO-Konformität)
         const feedbackModal = new FeedbackModal();
         feedbackModal.open({
-          preselectedType: 'false-positive',
-          detection: detectionContext
+          preselectedType: 'false-positive'
         });
       });
     }
@@ -1499,7 +1493,7 @@ class ComplianceMonitor {
     allDetections.sort((a, b) => a.start - b.start);
 
     // Erstelle Markdown-Report
-    let report = `# AI Compliance Checker - Validierungsreport v2.10.3
+    let report = `# AI Compliance Checker - Validierungsreport v2.10.4
 
 ## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.

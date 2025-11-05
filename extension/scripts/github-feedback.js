@@ -66,31 +66,19 @@ class GitHubFeedbackService {
    * Generiert GitHub Issues URL (Fallback wenn keine API verfügbar)
    */
   generateIssueUrl(feedbackData) {
-    const { type, comment, email, context, detection } = feedbackData;
+    const { type, comment, context } = feedbackData;
 
     // Titel generieren
-    const title = this.generateTitle(type, detection);
+    const title = this.generateTitle(type);
 
     // Body generieren (vereinfacht für URL)
     let body = `## 📝 Beschreibung\n\n${comment}\n\n`;
 
-    if (detection) {
-      body += `## 🔍 Erkennungs-Details\n\n`;
-      body += `- **Erkannter Wert:** \`${detection.value}\`\n`;
-      body += `- **Erkannt als:** ${detection.type}\n`;
-      if (detection.context) {
-        body += `- **Kontext:** "${detection.context}"\n`;
-      }
-      body += '\n';
-    }
-
     body += `## 📊 System-Informationen\n\n`;
     body += `- **Extension Version:** ${context.version || 'Unbekannt'}\n`;
     body += `- **Platform:** ${context.platform || 'Unbekannt'}\n`;
-    body += `- **Browser:** ${context.browser || 'Chrome'}\n\n`;
-
-    // WICHTIG: E-Mail wird NICHT öffentlich im Issue angezeigt
-    // User kann optional eine Benachrichtigungs-E-Mail an chris@beyonder.ch senden
+    body += `- **Browser:** ${context.browser || 'Chrome'}\n`;
+    body += `- **URL:** ${context.url || 'Nicht verfügbar'}\n\n`;
 
     body += `*Feedback gesendet via AI Compliance Checker Beta*`;
 
@@ -108,11 +96,8 @@ class GitHubFeedbackService {
    *
    * @param {Object} feedbackData
    * @param {string} feedbackData.type - 'bug' | 'false-positive' | 'false-negative' | 'feature-request'
-   * @param {string} feedbackData.comment - User Kommentar
-   * @param {string} feedbackData.email - User E-Mail (optional)
-   * @param {string} feedbackData.screenshot - Base64 Screenshot (optional)
+   * @param {string} feedbackData.comment - User Kommentar (DSGVO: keine sensiblen Daten)
    * @param {Object} feedbackData.context - Zusätzlicher Kontext (Platform, Version, etc.)
-   * @param {Object} feedbackData.detection - Info über Erkennung (bei false-positive/negative)
    * @returns {Promise<Object>} - GitHub Issue Response
    */
   async createIssue(feedbackData) {
@@ -174,13 +159,13 @@ class GitHubFeedbackService {
    * Baut die Issue-Daten basierend auf Feedback-Typ
    */
   buildIssueData(feedbackData) {
-    const { type, comment, email, screenshot, context, detection } = feedbackData;
+    const { type, comment, context } = feedbackData;
 
     // Titel generieren
-    const title = this.generateTitle(type, detection);
+    const title = this.generateTitle(type);
 
     // Body generieren
-    const body = this.generateBody(type, comment, email, screenshot, context, detection);
+    const body = this.generateBody(type, comment, context);
 
     // Labels auswählen
     const labels = this.labels[type] || ['beta-feedback'];
@@ -195,7 +180,7 @@ class GitHubFeedbackService {
   /**
    * Generiert Issue-Titel
    */
-  generateTitle(type, detection) {
+  generateTitle(type) {
     const typeLabels = {
       'bug': '🐛 Bug Report',
       'false-positive': '⚠️ False Positive',
@@ -203,68 +188,30 @@ class GitHubFeedbackService {
       'feature-request': '💡 Feature Request'
     };
 
-    let title = typeLabels[type] || 'Beta Feedback';
-
-    // Bei Detection-Feedback: Wert im Titel
-    if (detection && detection.value) {
-      const shortValue = detection.value.length > 30
-        ? detection.value.substring(0, 30) + '...'
-        : detection.value;
-      title += `: "${shortValue}"`;
-    }
-
-    return title;
+    return typeLabels[type] || 'Beta Feedback';
   }
 
   /**
-   * Generiert Issue-Body mit Markdown-Template
+   * Generiert Issue-Body mit Markdown-Template (DSGVO-konform)
    */
-  generateBody(type, comment, email, screenshot, context, detection) {
+  generateBody(type, comment, context) {
     let body = `## ${this.getTypeEmoji(type)} ${this.getTypeTitle(type)}\n\n`;
 
-    // User Kommentar
+    // User Kommentar (vom User selbst beschrieben, keine automatische Datenerfassung)
     body += `### 📝 Beschreibung\n\n${comment}\n\n`;
-
-    // Detection Details (bei false-positive/negative)
-    if (detection) {
-      body += `### 🔍 Erkennungs-Details\n\n`;
-      body += `- **Erkannter Wert:** \`${detection.value}\`\n`;
-      body += `- **Erkannt als:** ${detection.type} (${detection.severity})\n`;
-
-      if (detection.context) {
-        body += `- **Kontext:** "${detection.context}"\n`;
-      }
-
-      if (detection.description) {
-        body += `- **Beschreibung:** ${detection.description}\n`;
-      }
-
-      body += '\n';
-    }
 
     // System-Informationen
     body += `### 📊 System-Informationen\n\n`;
     body += `- **Extension Version:** ${context.version || 'Unbekannt'}\n`;
     body += `- **Platform:** ${context.platform || 'Unbekannt'}\n`;
     body += `- **Browser:** ${context.browser || 'Chrome'}\n`;
+    body += `- **URL:** ${context.url || 'Nicht verfügbar'}\n`;
     body += `- **User Agent:** ${context.userAgent || navigator.userAgent}\n`;
     body += `- **Timestamp:** ${new Date().toISOString()}\n\n`;
 
-    // WICHTIG: E-Mail wird NICHT öffentlich im Issue angezeigt aus Datenschutzgründen
-    // User kann optional eine Benachrichtigungs-E-Mail an chris@beyonder.ch senden mit Issue-Link
-
-    // Screenshot (optional)
-    if (screenshot) {
-      body += `### 📸 Screenshot\n\n`;
-      body += `![Screenshot](${screenshot})\n\n`;
-      body += `<details>\n<summary>Screenshot als Base64 (zum Kopieren)</summary>\n\n`;
-      body += `\`\`\`\n${screenshot}\n\`\`\`\n\n`;
-      body += `</details>\n\n`;
-    }
-
     // Footer
     body += `---\n`;
-    body += `*Automatisch generiert von AI Compliance Checker Beta Feedback System*\n`;
+    body += `*Feedback gesendet via AI Compliance Checker Beta (DSGVO-konform)*\n`;
 
     return body;
   }

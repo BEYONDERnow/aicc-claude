@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.10.3** • by BEYONDER
+**Version 2.10.4** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -15,7 +15,29 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.10.0 (Aktuell) - 2025-11-02
+### Version 2.10.4 (Aktuell) - 2025-11-03
+
+**🎨 UX-Optimierung: Modales Feedback-Formular**
+
+#### 🚀 Verbesserungen
+- **Optimiertes Padding**: Scrollbare Bereiche mit mehr Abstand zum Rand (40px rechts statt 32px)
+- **"Weiteres Feedback" Button**: Im Success-Screen neben "Schließen" zum direkten Senden weiterer Feedbacks
+- **Keyboard-Shortcuts**: ESC zum Schließen, Ctrl+Enter zum Abschicken
+- **Verbessertes Spacing**: Formular-Felder mit 28px Abstand (vorher: 24px)
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#2104---2025-11-03)
+
+---
+
+### Version 2.10.3 (Vorherige) - 2025-11-03
+
+**🎨 UX/Lesbarkeit Verbesserungen (Feedback-System)**
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#2103---2025-11-03)
+
+---
+
+### Version 2.10.0 - 2025-11-02
 
 **🎉 Feature: Public Beta Feedback-System mit GitHub Issues Integration**
 
@@ -968,4 +990,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.10.3** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!
+**Version 2.10.4** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!

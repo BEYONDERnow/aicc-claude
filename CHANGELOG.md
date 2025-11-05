@@ -7,43 +7,55 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
-## [2.10.1] - 2025-11-03
+## [2.10.4] - 2025-11-03
 
-### 🔧 Bugfixes: Feedback-System Stabilität & UX
+### 🎨 UX/Lesbarkeit Verbesserungen (Feedback-System)
 
-#### Kritische Fixes
-- **NON-BLOCKING Scripts**: Alle Feedback-Scripts (github-feedback.js, screenshot-capture.js, feedback-modal.js) mit try-catch gesichert
-  - Fehler im Feedback-System blockieren NICHT mehr die Haupt-Extension
-  - Export-Fehler werden abgefangen und geloggt (non-blocking)
-  - FeedbackModal Constructor mit Fehlerbehandlung
-- **Screenshot-Feature optional**: Service Worker Connection-Fehler blockieren nicht mehr
-  - Benutzerfreundliche Fehlermeldung statt technischem Fehler
-  - "Screenshot-Feature nicht verfügbar" Message mit Hinweis
-  - Checkbox wird automatisch deaktiviert bei Fehler
+#### Screenshot-Upload entfernt
+- **Screenshot-Feature komplett deaktiviert**
+  - Service Worker und screenshot-capture.js nicht mehr verwendet
+  - Einfacherer, zuverlässigerer Feedback-Flow
+- **Upload-Hinweis hinzugefügt**
+  - Blauer Info-Box: "📎 Screenshots hinzufügen?"
+  - Hinweis auf GitHub Upload-Möglichkeit nach dem Absenden
+  - Nutzer können Screenshots direkt auf GitHub hochladen
 
-#### UX & Design Verbesserungen
-- **Kontrast verbessert** für bessere Lesbarkeit:
-  - Texte von #61666D auf #333B49 (höherer Kontrast)
-  - Font-Size von 12px auf 13px erhöht
-  - Screenshot-Fehler: Warnung statt Fehler-Rot (orange #FF9220)
-- **Modal Scrolling Fix**:
-  - Nur `.aicc-feedback-body` scrollt (nicht ganzes Modal)
-  - Border-Radius bleibt sauber und passt perfekt
-  - Scrollbar-Styling nur auf Body
-- **Schliessen-Button Fix**: Event Listener statt onclick (funktioniert jetzt korrekt)
+#### Lesbarkeit deutlich verbessert
+- **Montserrat Regular (font-weight: 400)** für alle Fließtexte
+  - Privacy Notice
+  - Checkbox-Labels
+  - Success-Messages
+  - Upload-Hinweis
+  - Subtitle
+- **Bessere Textkontraste** (#333B49 statt #61666D)
+- **Optimierte Schriftgrößen** (13px für bessere Lesbarkeit)
 
-#### Privacy Verbesserungen
-- **E-Mail Privacy**: E-Mail wird NICHT mehr öffentlich im GitHub Issue angezeigt
-  - Stattdessen: Optional mailto: Link an chris@beyonder.ch nach Absenden
-  - Privacy Notice aktualisiert mit klarem Hinweis
-- **Schweizer Rechtschreibung**: ß → ss in allen User-sichtbaren Texten
+#### Vollständige Detection-Daten im Issue
+- **URL wird jetzt übertragen** (context.url)
+- **Alle Detection-Informationen vollständig**:
+  - Erkannter Wert
+  - Typ (z.B. "Name", "E-Mail")
+  - Schweregrad
+  - Beschreibung
+  - Kontext (±50 Zeichen um den Wert)
+  - URL der Seite
 
-#### Technische Details
-- Service Worker Connection Test mit 2s Timeout
-- Bessere Fehlermeldungen: "Could not establish connection" → benutzerfreundlich
-- Robustere Fehlerbehandlung in allen neuen Modulen
+#### Technische Verbesserungen
+- Feedback-Modal ohne Service Worker Dependencies
+- Robusterer Code ohne Screenshot-Komplexität
+- Privacy Notice aktualisiert (Screenshot entfernt)
 
 ---
+
+## [2.10.4] - 2025-11-03
+
+### 🔒 DSGVO-Compliance: Kritische Datenschutz-Fixes
+
+#### ⚠️ BREAKING CHANGE: Kein automatischer Daten-Transfer mehr
+
+**Problem:** In vorherigen Versionen wurden automatisch Daten aus User-Prompts (detection context) in öffentliche GitHub Issues übertragen - ein klarer DSGVO-Verstoss.
+
+**Lösung:** Vollständig überarbeitetes Feedback-System nach Privacy-by-Design Prinzip.
 
 ## [2.10.3] - 2025-11-05
 
@@ -103,35 +115,63 @@ Einführung eines zentralen Versionsverwaltungssystems für konsistente Versioni
 
 ## [2.10.2] - 2025-11-03
 
-### 🔧 Zentrale Versionsverwaltung
+**1. Automatische Datenerfassung entfernt** 🚫
 
-#### Zusammenfassung
+- **KEINE automatische Übertragung** von detection-context mehr
+  - Kein erkannter Wert aus Prompt
+  - Kein Kontext (±50 Zeichen) aus Prompt
+  - Keine automatische Extraktion sensibler Daten
+- **User entscheidet** was geteilt wird
+  - User beschreibt Problem selbst
+  - User wählt bewusst, welche Informationen geteilt werden
+  - Prominent platzierte Datenschutz-Warnungen
 
-Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+**2. E-Mail-Feld entfernt** 📧
 
-#### ✅ Neue Features
+- **Kein E-Mail-Feld** mehr im Feedback-Modal
+- Privacy-First: Keine öffentliche Anzeige von E-Mails in GitHub Issues
+- Nutzer können optional selbst Kontakt aufnehmen
 
-**1. Zentrale Version Management** 🎯
+**3. Button-Text korrigiert** ✏️
 
-- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
-- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
-- **Git-Integration:** Unterstützt Git-Tags für Versionierung
-- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+- **"Feedback melden"** statt "Feedback senden" / "Falsch erkannt melden"
+- Konsistent auf allen Modals (Warning Overlay)
+- Englisch: "Report feedback"
 
-**2. NPM-Scripts für Versionierung** ⚙️
+**4. Prominente Datenschutz-Warnungen** ⚠️
 
-- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
-- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
-- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
-- `npm run version:sync` - Synchronisiert aktuelle Version
+- **Privacy Warning** direkt über Kommentar-Feld:
+  - "⚠️ Bitte keine sensiblen Daten (Namen, E-Mails, etc.) eingeben!"
+  - Gelber Hintergrund (#FFF9E6), roter Text (#E33A4E)
+  - Gut sichtbar positioniert
+- **Updated Privacy Notice**:
+  - Klare Auflistung was übertragen wird
+  - Explizite Warnung vor sensiblen Daten
+  - DSGVO-konformer Hinweis
 
-**3. Aktualisierte Dateien** 📝
+**5. Nur System-Informationen übertragen** 📊
 
-- `extension/manifest.json` - Chrome Extension Version
-- `package.json` - NPM Package Version
-- `extension/popup.html` - Angezeigter Version String
-- `extension/scripts/version.js` - Zentrale Versionsdefinition
-- `README.md` - Dokumentierte Version
+Übertragene Daten (öffentlich auf GitHub):
+- ✅ Feedback-Typ (Bug, Feature Request, etc.)
+- ✅ User-Beschreibung (vom User selbst formuliert)
+- ✅ Extension Version
+- ✅ Platform, Browser, User Agent
+- ✅ URL der Seite
+- ✅ Timestamp
+
+NICHT mehr übertragen:
+- ❌ Detection-Context aus Prompt
+- ❌ Erkannter Wert aus User-Eingabe
+- ❌ Kontext rund um erkannten Wert
+- ❌ E-Mail-Adresse
+- ❌ Screenshots
+
+#### Geänderte Dateien
+
+- `extension/scripts/content.js` - Button text + detection-context removal
+- `extension/scripts/feedback-modal.js` - E-Mail + detection removal, Privacy warning
+- `extension/scripts/github-feedback.js` - Komplette Entfernung detection handling
+- `extension/styles/feedback.css` - Privacy warning styling
 - `CHANGELOG.md` - Automatischer Versions-Eintrag
 
 #### 📊 Technische Details
@@ -156,6 +196,64 @@ Einführung eines zentralen Versionsverwaltungssystems für konsistente Versioni
 - ✅ Git-freundlich
 
 
+
+## [2.10.2] - 2025-11-03
+
+### 🚀 Feature: Einzelnamen-Erkennung aktiviert
+
+#### Zusammenfassung
+Alle Namen werden jetzt einzeln erkannt - keine Filter mehr für häufige Vornamen. Recall verbessert von ~98% auf ~100%.
+
+#### Änderungen
+- **Einzelname-Filter entfernt** (commonFirstNames-Check)
+- **Alle Namen einzeln erkannt**: Chris, Michael, Giuseppe, Marie, etc.
+- **Minimale Längenprüfung**: Nur 1-Zeichen-Wörter werden gefiltert
+- **Recall: ~98% → ~100%**
+
+#### Technische Details
+- `detector.js`: `cleanNEREntity()` vereinfacht
+- Nur noch "I", "a" werden gefiltert
+- Version konsistent in allen Dateien: 2.10.2
+
+---
+
+## [2.10.1] - 2025-11-03
+
+### 🔧 Bugfixes: Feedback-System Stabilität & UX
+
+#### Kritische Fixes
+- **NON-BLOCKING Scripts**: Alle Feedback-Scripts (github-feedback.js, screenshot-capture.js, feedback-modal.js) mit try-catch gesichert
+  - Fehler im Feedback-System blockieren NICHT mehr die Haupt-Extension
+  - Export-Fehler werden abgefangen und geloggt (non-blocking)
+  - FeedbackModal Constructor mit Fehlerbehandlung
+- **Screenshot-Feature optional**: Service Worker Connection-Fehler blockieren nicht mehr
+  - Benutzerfreundliche Fehlermeldung statt technischem Fehler
+  - "Screenshot-Feature nicht verfügbar" Message mit Hinweis
+  - Checkbox wird automatisch deaktiviert bei Fehler
+
+#### UX & Design Verbesserungen
+- **Kontrast verbessert** für bessere Lesbarkeit:
+  - Texte von #61666D auf #333B49 (höherer Kontrast)
+  - Font-Size von 12px auf 13px erhöht
+  - Screenshot-Fehler: Warnung statt Fehler-Rot (orange #FF9220)
+- **Modal Scrolling Fix**:
+  - Nur `.aicc-feedback-body` scrollt (nicht ganzes Modal)
+  - Border-Radius bleibt sauber und passt perfekt
+  - Scrollbar-Styling nur auf Body
+- **Schliessen-Button Fix**: Event Listener statt onclick (funktioniert jetzt korrekt)
+
+#### Privacy Verbesserungen
+- **E-Mail Privacy**: E-Mail wird NICHT mehr öffentlich im GitHub Issue angezeigt
+  - Stattdessen: Optional mailto: Link an chris@beyonder.ch nach Absenden
+  - Privacy Notice aktualisiert mit klarem Hinweis
+- **Schweizer Rechtschreibung**: ß → ss in allen User-sichtbaren Texten
+
+#### Technische Details
+- Service Worker Connection Test mit 2s Timeout
+- Bessere Fehlermeldungen: "Could not establish connection" → benutzerfreundlich
+- Robustere Fehlerbehandlung in allen neuen Modulen
+
+---
 
 ## [2.10.0] - 2025-11-02
 
