@@ -192,10 +192,11 @@ You are a professional developer with decades of experience in Chrome extension 
 - Check browser console for errors
 
 #### 5. **Readme und Changelog (Documentation)**
+- **CRITICAL: ALWAYS increment version** - Chrome shows updates only when version changes
+- Use `npm run version:patch` (bugfix), `version:minor` (feature), or `version:major` (breaking)
 - Describe changes in CHANGELOG.md (Keep a Changelog format)
 - Summarize for users in README.md (details in parentheses)
-- Update version everywhere (manifest, package.json, popup, etc.)
-- Use `npm run version:*` for automated version management
+- Version gets updated automatically in 6 files (manifest, package.json, popup, etc.)
 
 ### Development Best Practices
 
@@ -418,6 +419,10 @@ git push -u origin <branch-name>
 
 #### Version Management
 
+**⚠️ CRITICAL: Version MUST be incremented for EVERY change**
+
+Chrome Extension manager (`chrome://extensions/`) only shows updates when the version number changes in `manifest.json`. Without a version increment, users won't see that the extension was updated, even after reload.
+
 **Always use automated scripts:**
 ```bash
 npm run version:patch   # Bugfixes: 2.10.4 → 2.10.5
@@ -425,8 +430,13 @@ npm run version:minor   # Features: 2.10.4 → 2.11.0
 npm run version:major   # Breaking: 2.10.4 → 3.0.0
 ```
 
+**Rule of thumb:**
+- **Bugfix/Hotfix** → `patch` (increment last digit)
+- **New feature/Enhancement** → `minor` (increment middle digit)
+- **Breaking change** → `major` (increment first digit)
+
 **What gets updated automatically:**
-1. `extension/manifest.json`
+1. `extension/manifest.json` ← Chrome reads this for version
 2. `package.json`
 3. `extension/popup.html`
 4. `extension/scripts/version.js`
@@ -436,11 +446,11 @@ npm run version:major   # Breaking: 2.10.4 → 3.0.0
 #### Pre-Commit Checklist
 
 Before committing code changes:
+- [ ] **Version MUST be incremented** (`npm run version:patch/minor/major`) - ALWAYS required
 - [ ] `npm run build` successful
 - [ ] Tested on chrome://extensions/ (reload extension)
 - [ ] Tested on at least 2 AI platforms (ChatGPT, Claude, or Gemini)
 - [ ] Browser console shows no errors
-- [ ] Version updated if needed (`npm run version:*`)
 - [ ] CHANGELOG.md updated with detailed changes
 - [ ] README.md updated if user-facing changes
 - [ ] All TodoWrite tasks marked as completed
