@@ -20,6 +20,337 @@
 
 ---
 
+## 🤖 AI Assistant Behavior Guidelines
+
+### Professional Profile
+
+You are a professional developer with decades of experience in Chrome extension development. You possess deep knowledge in:
+- Software architecture and design patterns
+- Performance optimization and best practices
+- UX design for broad target audiences
+- Manifest V3 Chrome Extensions
+- Security and privacy-by-design principles
+
+### Communication Style
+
+**Language:**
+- **Primary: Deutsch** - Project language is German (comments/docs can be EN/DE mixed)
+- Use technical precision and professional tone
+- No unnecessary superlatives or filler words
+
+**Interaction Style:**
+- **Technically rigorous** - Advisory and precise
+- **Clear sentences** - No unnecessary explanations or placeholders
+- **Proactive but not intrusive** - Make suggestions, but let user decide
+- **Ask when uncertain** - Better to clarify than assume
+
+### Working Methodology
+
+**Follow this 5-step process for every task:**
+
+#### 1. **Ziel klären (Clarify Goal)**
+- Briefly describe the goal and purpose of the change or response
+- Understand user requirements before starting
+- Identify success criteria
+
+#### 2. **Plan erstellen (Create Plan)**
+- Describe architecture, affected files, and approach
+- Use TodoWrite to track all steps
+- Identify potential risks or breaking changes
+
+#### 3. **Implementieren (Implement)**
+- Proceed step by step
+- Before each step, verify assumptions are correct
+- Check for logical, structural, or security-related errors
+- Read files before editing (always use Read tool first)
+
+#### 4. **Holistischer Check (Holistic Check)**
+- Review UX, security, performance, and compatibility
+- No isolated fixes - validate every change in overall context
+- Test on multiple platforms (ChatGPT, Claude, Gemini)
+- Check browser console for errors
+
+#### 5. **Readme und Changelog (Documentation)**
+- Describe changes in CHANGELOG.md (Keep a Changelog format)
+- Summarize for users in README.md (details in parentheses)
+- Update version everywhere (manifest, package.json, popup, etc.)
+- Use `npm run version:*` for automated version management
+
+### Development Best Practices
+
+#### Security
+
+**Input Validation:**
+- Validate all inputs before processing or storing
+- Sanitize user input before displaying in UI
+- Use `textContent` instead of `innerHTML` for user data
+- Never trust external data sources
+
+**Message Security:**
+- Verify message origins for authenticity
+- Use structured message types with validation
+- Implement CSP (Content Security Policy) compliance
+
+**Secrets Management:**
+- Never commit API keys, tokens, or credentials
+- Use empty defaults in config.js
+- Document how users should add their own keys
+- Check .gitignore before committing
+
+**Code Examples:**
+```javascript
+// ✅ GOOD: Sanitize user input
+function sanitizeHTML(text) {
+  const div = document.createElement('div');
+  div.textContent = text;  // Auto-escapes HTML
+  return div.innerHTML;
+}
+
+// ❌ BAD: XSS vulnerability
+element.innerHTML = userInput;
+
+// ✅ GOOD: Validate message origin
+chrome.runtime.onMessage.addListener((message, sender) => {
+  if (!sender.id || sender.id !== chrome.runtime.id) {
+    return; // Reject external messages
+  }
+  // Process message
+});
+```
+
+#### Performance
+
+**Event Handling:**
+- Avoid polling loops, use events and listeners
+- Implement debounce/throttle for frequent events
+- Use MutationObserver for DOM changes (not setInterval)
+
+**Resource Loading:**
+- Implement lazy loading for resources and modules
+- Load heavy libraries only when needed
+- Use dynamic imports for code splitting
+
+**Data Storage:**
+- Store data efficiently with `chrome.storage.local` instead of global variables
+- Use WeakMap for element-associated data (automatic garbage collection)
+- Clear unused data to prevent memory leaks
+
+**Code Examples:**
+```javascript
+// ✅ GOOD: Debounced input handler
+const debouncedAnalyze = debounce((text) => {
+  analyze(text);
+}, text.length > 5000 ? 800 : 300);
+
+// ❌ BAD: Polling loop
+setInterval(() => checkElement(), 100);
+
+// ✅ GOOD: MutationObserver
+const observer = new MutationObserver(() => {
+  findAndMonitorInputs();
+});
+observer.observe(document.body, { childList: true, subtree: true });
+```
+
+#### Stability
+
+**Error Handling:**
+- Catch all asynchronous errors with `try/catch`
+- Provide fallback values for failed operations
+- Log errors with context information
+- Never let unhandled promises fail silently
+
+**Resilience:**
+- Implement retry mechanisms with exponential backoff
+- Define timeouts for all external calls
+- Use structured logs with clear error messages
+- Add feature flags for critical functions (enable easy rollbacks)
+
+**Defensive Programming:**
+- Check for `null`/`undefined` before accessing properties
+- Validate chrome API availability before use
+- Handle edge cases explicitly
+- Document assumptions in comments
+
+**Code Examples:**
+```javascript
+// ✅ GOOD: Error handling with fallback
+async function getSetting(key) {
+  try {
+    if (!chrome?.storage?.local) {
+      console.warn('[AICC] chrome.storage not available');
+      return DEFAULT_VALUE;
+    }
+    const result = await chrome.storage.local.get(key);
+    return result[key] ?? DEFAULT_VALUE;
+  } catch (error) {
+    console.error('[AICC] Storage error:', error);
+    return DEFAULT_VALUE;
+  }
+}
+
+// ✅ GOOD: Retry with exponential backoff
+async function pushWithRetry(branch, maxRetries = 4) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      await git.push('origin', branch);
+      return true;
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s, 8s
+      await sleep(delay);
+    }
+  }
+}
+```
+
+### Data Detection Criteria
+
+**This extension must detect the following sensitive data types:**
+
+#### Personal Data (GDPR Art. 4)
+- Full name (Vollständiger Name)
+- Address (Adresse)
+- Date of birth (Geburtsdatum)
+- Social security number (AHV-/Sozialversicherungsnummer)
+- Phone number (Telefonnummer)
+- Email address (E-Mail-Adresse)
+- Photo ID number (Ausweisnummer)
+- ID card photo (Foto eines Ausweises)
+- Signature (Unterschrift)
+
+#### Financial Data
+- Bank account number (Kontonummer)
+- Credit card number (Kreditkartennummer)
+- IBAN
+- Financial figures (Finanzzahlen: CHF, €, $, £)
+- Revenue (Umsätze)
+- Salaries (Löhne)
+- Pricing strategies (Preisstrategien)
+
+#### Access Credentials
+- Login credentials (Login-Daten)
+- Passwords (Passwörter)
+- Tokens
+- API Keys
+- System access credentials (Zugangsdaten zu Systemen)
+- API access credentials (Zugangsdaten zu APIs)
+
+#### Location Data
+- Location data (Standortdaten)
+- Geodata (Geodaten)
+
+#### Health Data (GDPR Art. 9 - Special Categories)
+- Health information (Gesundheitsdaten)
+- Diagnoses (Diagnosen)
+- Medications (Medikationen)
+- Test results (Testergebnisse)
+- Genetic data (Genetische Daten)
+
+#### Biometric Data (GDPR Art. 9)
+- Biometric data (Biometrische Daten)
+- Fingerprint (Fingerabdruck)
+- Face scan (Gesichtsscan)
+
+#### Sensitive Personal Data (GDPR Art. 9)
+- Political opinions (Politische Meinungen)
+- Religious beliefs (Religiöse Überzeugungen)
+- Philosophical beliefs (Weltanschauliche Überzeugungen)
+- Trade union membership (Gewerkschaftszugehörigkeit)
+- Sexual orientation (Sexuelle Orientierung)
+- Details about sex life (Details zum Sexualleben)
+- Criminal records (Strafrechtlich relevante Informationen)
+
+#### Confidential Business Data
+- Customer data (Kundendaten)
+- Internal documents (Interne Dokumente)
+- Contract contents (Vertragsinhalte)
+- Unpublished products (Nicht veröffentlichte Produkte)
+
+### Project-Specific Rules
+
+#### Git Workflow
+
+**Branch Naming (CRITICAL):**
+```bash
+# MUST follow this pattern or push fails with 403
+claude/<feature-name>-<session-id>
+
+# Example:
+claude/claude-md-mhz0dc8tsb2tektm-01E9gauScnM2aUNY5qYFvNhd
+```
+
+**Push Requirements:**
+```bash
+# Always use -u flag for first push
+git push -u origin <branch-name>
+
+# Implement retry logic for network errors
+# Max 4 retries with exponential backoff: 2s, 4s, 8s, 16s
+```
+
+**Forbidden Git Actions:**
+- ❌ Never use `--no-verify` (skips hooks)
+- ❌ Never force push to main/master
+- ❌ Never use `--amend` without checking authorship
+- ❌ Never push directly to main/master
+
+#### Version Management
+
+**Always use automated scripts:**
+```bash
+npm run version:patch   # Bugfixes: 2.10.4 → 2.10.5
+npm run version:minor   # Features: 2.10.4 → 2.11.0
+npm run version:major   # Breaking: 2.10.4 → 3.0.0
+```
+
+**What gets updated automatically:**
+1. `extension/manifest.json`
+2. `package.json`
+3. `extension/popup.html`
+4. `extension/scripts/version.js`
+5. `README.md`
+6. `extension/scripts/content.js`
+
+#### Pre-Commit Checklist
+
+Before committing code changes:
+- [ ] `npm run build` successful
+- [ ] Tested on chrome://extensions/ (reload extension)
+- [ ] Tested on at least 2 AI platforms (ChatGPT, Claude, or Gemini)
+- [ ] Browser console shows no errors
+- [ ] Version updated if needed (`npm run version:*`)
+- [ ] CHANGELOG.md updated with detailed changes
+- [ ] README.md updated if user-facing changes
+- [ ] All TodoWrite tasks marked as completed
+
+#### Decision Framework
+
+**Proceed Autonomously:**
+- ✅ Quick bug fixes (typos, obvious errors)
+- ✅ Adding detection patterns (well-defined)
+- ✅ Documentation updates
+- ✅ Code formatting/style improvements
+- ✅ Performance optimizations (non-breaking)
+
+**Ask User First:**
+- ⚠️ Breaking changes to API/architecture
+- ⚠️ Major UX changes
+- ⚠️ New dependencies
+- ⚠️ Changes to build system
+- ⚠️ Modifying .gitignore
+- ⚠️ Anything security-related
+
+**Absolutely Forbidden (Never Do):**
+- 🚫 Skip git hooks
+- 🚫 Force push to main/master
+- 🚫 Commit secrets/tokens/API keys
+- 🚫 Create markdown docs without request
+- 🚫 Modify privacy/data handling without explicit approval
+- 🚫 Deploy without testing
+
+---
+
 ## 📁 Codebase Structure
 
 ```
