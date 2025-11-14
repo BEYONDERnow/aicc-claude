@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.10.4** • by BEYONDER
+**Version 2.10.5** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -15,7 +15,22 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.10.4 (Aktuell) - 2025-11-03
+### Version 2.10.5 (Aktuell) - 2025-11-14
+
+**🐛 Kritische Bugfixes: Plugin-Deaktivierung & UI-Verbesserung**
+
+#### 🚀 Fixes
+- **Plugin-Deaktivierung wirkt jetzt auf ALLEN Plattformen** (ChatGPT, Claude, Gemini)
+  - Problem behoben: Deaktivierung funktionierte nur auf ChatGPT
+  - Lösung: Message Broadcasting an alle Tabs + sofortige Reaktion
+- **Toggle-Switch verschoben**: Jetzt direkt neben Status-Display für bessere Sichtbarkeit
+- **Instant-Deaktivierung**: Kein Tab-Reload mehr nötig
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#2105---2025-11-14)
+
+---
+
+### Version 2.10.4 (Vorherige) - 2025-11-03
 
 **🎨 UX-Optimierung: Modales Feedback-Formular**
 
@@ -29,7 +44,7 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 ---
 
-### Version 2.10.3 (Vorherige) - 2025-11-03
+### Version 2.10.3 - 2025-11-03
 
 **🎨 UX/Lesbarkeit Verbesserungen (Feedback-System)**
 
@@ -990,4 +1005,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.10.4** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!
+**Version 2.10.5** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!

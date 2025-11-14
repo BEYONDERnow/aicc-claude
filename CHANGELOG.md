@@ -47,6 +47,97 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.10.5] - 2025-11-14
+
+### 🐛 Kritische Bugfixes
+
+#### Plugin-Deaktivierung funktioniert jetzt auf ALLEN Plattformen
+- **Problem behoben**: Deaktivierung wirkte nur auf ChatGPT, nicht auf Claude/Gemini
+- **Root Cause**: Content-Scripts auf bereits geladenen Tabs erhielten Storage-Änderungen nicht
+- **Lösung**: Message Broadcasting an ALLE Tabs bei Toggle-Änderung
+  - `popup.js` sendet jetzt `toggleExtension` Message an alle offenen Tabs
+  - `content.js` lauscht auf Message und reagiert sofort
+  - Extension wird instant deaktiviert/aktiviert (kein Tab-Reload nötig)
+
+#### UI/UX Verbesserung
+- **Toggle-Switch verschoben**: Jetzt direkt neben dem Status-Display
+  - Vorher: Versteckt in Einstellungen weiter unten
+  - Jetzt: Prominent sichtbar direkt beim Status
+  - Bessere Sichtbarkeit und schnellerer Zugriff
+
+#### Interne Bugfixes
+- **`stopMonitoring()` Bug behoben**:
+  - Verwendete nicht-existierende `this.statusIcons` Property
+  - Korrigiert zu `this.globalStatusIcon`
+  - DOM Observer wird jetzt korrekt gestoppt
+  - Alle Overlays und Analysen werden vollständig aufgeräumt
+
+### 🔧 Technische Verbesserungen
+- **Message-basierte Kommunikation** zwischen Popup und Content-Scripts
+- **Globale Monitor-Referenz** ermöglicht dynamisches Start/Stop
+- **Zuverlässigere Deaktivierung** über alle unterstützten Plattformen
+
+### 🧪 Getestet auf
+- ✅ ChatGPT (chat.openai.com, chatgpt.com)
+- ✅ Claude (claude.ai)
+- ✅ Gemini (gemini.google.com)
+
+---
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
+- **Git-Integration:** Unterstützt Git-Tags für Versionierung
+- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version
+
+**3. Aktualisierte Dateien** 📝
+
+- `extension/manifest.json` - Chrome Extension Version
+- `package.json` - NPM Package Version
+- `extension/popup.html` - Angezeigter Version String
+- `extension/scripts/version.js` - Zentrale Versionsdefinition
+- `README.md` - Dokumentierte Version
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
+
 ## [2.10.4] - 2025-11-03
 
 ### 🔒 DSGVO-Compliance: Kritische Datenschutz-Fixes
