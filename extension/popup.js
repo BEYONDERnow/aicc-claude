@@ -42,18 +42,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Update Status Display
         updateStatusDisplay(isEnabled);
 
-        // Visual feedback
-        const settingInfo = extensionEnabledToggle.closest('.setting-item').querySelector('.setting-info p');
-        const originalText = settingInfo.textContent;
-        settingInfo.textContent = isEnabled
-          ? '✅ Extension aktiviert - Überwachung läuft'
-          : '✅ Extension deaktiviert';
-        settingInfo.style.color = 'var(--status-ok)';
+        // CRITICAL: Broadcast to ALL tabs (not just active tab)
+        // This ensures instant deactivation across all platforms
+        const tabs = await chrome.tabs.query({});
+        console.log('[AI Compliance Checker] Broadcasting extension state to', tabs.length, 'tabs');
 
-        setTimeout(() => {
-          settingInfo.textContent = originalText;
-          settingInfo.style.color = '';
-        }, 2000);
+        for (const tab of tabs) {
+          // Skip tabs without valid URL (chrome://, edge://, etc.)
+          if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('edge://')) {
+            continue;
+          }
+
+          try {
+            await chrome.tabs.sendMessage(tab.id, {
+              action: 'toggleExtension',
+              enabled: isEnabled
+            });
+          } catch (err) {
+            // Tab might not have content script loaded, ignore
+            console.debug('[AI Compliance Checker] Could not send message to tab', tab.id, err.message);
+          }
+        }
+
       } catch (error) {
         console.error('[AI Compliance Checker] Error saving settings:', error);
       }

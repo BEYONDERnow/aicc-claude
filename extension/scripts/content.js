@@ -88,13 +88,11 @@ class ComplianceMonitor {
   stopMonitoring() {
     console.log('[AI Compliance Checker] Stopping monitoring...');
 
-    // Entferne alle Status-Icons
-    this.statusIcons.forEach((iconWrapper) => {
-      if (iconWrapper && iconWrapper.parentNode) {
-        iconWrapper.parentNode.removeChild(iconWrapper);
-      }
-    });
-    this.statusIcons.clear();
+    // Entferne globales Status-Icon
+    if (this.globalStatusIcon && this.globalStatusIcon.parentNode) {
+      this.globalStatusIcon.parentNode.removeChild(this.globalStatusIcon);
+      this.globalStatusIcon = null;
+    }
 
     // Entferne alle Overlays
     this.overlayContainers.forEach((container) => {
@@ -104,11 +102,20 @@ class ComplianceMonitor {
     });
     this.overlayContainers.clear();
 
+    // Stoppe DOM Observer
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+
     // Entferne Event Listener von monitored elements
     this.monitoredElements.forEach((listeners, element) => {
       // Event Listener werden automatisch entfernt wenn Element nicht mehr referenziert wird
     });
     this.monitoredElements.clear();
+
+    // Leere alle Analysen
+    this.currentAnalysis.clear();
 
     console.log('[AI Compliance Checker] Monitoring stopped');
   }
@@ -1469,7 +1476,7 @@ class ComplianceMonitor {
     allDetections.sort((a, b) => a.start - b.start);
 
     // Erstelle Markdown-Report
-    let report = `# AI Compliance Checker - Validierungsreport v2.10.4
+    let report = `# AI Compliance Checker - Validierungsreport v2.10.5
 
 ## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
@@ -1985,18 +1992,21 @@ Prüfe ob folgende Kategorien übersehen wurden:
   }
 }
 
+// Global reference to monitor for dynamic enable/disable
+let complianceMonitor = null;
+
 // Starte Monitor wenn Seite geladen ist
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
-    new ComplianceMonitor();
+    complianceMonitor = new ComplianceMonitor();
   });
 } else {
-  new ComplianceMonitor();
+  complianceMonitor = new ComplianceMonitor();
 }
 
 /**
- * Message Listener für Feedback-System
- * Empfängt Messages von Popup und öffnet Feedback-Modal
+ * Message Listener für Feedback-System & Extension Toggle
+ * Empfängt Messages von Popup und öffnet Feedback-Modal oder toggle Extension
  */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'openFeedbackModal') {
@@ -2008,6 +2018,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: true });
     } catch (error) {
       console.error('[AI Compliance Checker] Error opening feedback modal:', error);
+      sendResponse({ success: false, error: error.message });
+    }
+  }
+
+  // v2.10.5: Instant toggle extension on/off (all platforms)
+  if (message.action === 'toggleExtension') {
+    try {
+      const isEnabled = message.enabled;
+      console.log('[AI Compliance Checker] Received toggle message:', isEnabled);
+
+      if (isEnabled) {
+        // Aktiviere Extension
+        if (!complianceMonitor) {
+          complianceMonitor = new ComplianceMonitor();
+        } else {
+          complianceMonitor.startMonitoring();
+        }
+      } else {
+        // Deaktiviere Extension
+        if (complianceMonitor) {
+          complianceMonitor.stopMonitoring();
+        }
+      }
+
+      sendResponse({ success: true, enabled: isEnabled });
+    } catch (error) {
+      console.error('[AI Compliance Checker] Error toggling extension:', error);
       sendResponse({ success: false, error: error.message });
     }
   }
