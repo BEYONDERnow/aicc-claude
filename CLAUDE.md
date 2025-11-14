@@ -20,6 +20,127 @@
 
 ---
 
+## 🚨 KRITISCHE VERHALTENSANFORDERUNGEN (NON-NEGOTIABLE)
+
+**Diese Anforderungen sind ABSOLUT VERPFLICHTEND und dürfen NIEMALS verletzt werden:**
+
+### ✅ Grundfunktionalität MUSS IMMER gewährleistet sein
+
+#### 1. **Modal MUSS bei JEDEM Submit mit sensiblen Daten erscheinen**
+   - **VERBOTEN**: Submit-Events durchlassen ohne Modal anzuzeigen wenn sensible Daten erkannt wurden
+   - **PFLICHT**: IMMER eine **frische, synchrone Analyse** VOR jedem Submit durchführen
+   - **PFLICHT**: Auf das Analyse-Resultat **warten** (async/await) bevor Submit erlaubt wird
+   - **VERBOTEN**: Auf debounced/cached Analysen verlassen - diese können veraltet sein!
+
+   **Code-Muster (PFLICHT):**
+   ```javascript
+   // ✅ RICHTIG: Blockiere Submit, führe frische Analyse durch, WARTE auf Resultat
+   handleSubmit(element, event) {
+     event.preventDefault();
+     event.stopPropagation();
+     event.stopImmediatePropagation();
+
+     this.analyzeElement(element).then(() => {
+       const analysis = this.currentAnalysis.get(element);
+       if (analysis.status === 'critical' || analysis.status === 'warning') {
+         this.showWarningModal(analysis, element);
+       } else {
+         this.simulateSubmit(element);
+       }
+     });
+   }
+
+   // ❌ FALSCH: Verlässt sich auf veraltete Analyse
+   handleSubmit(element, event) {
+     const analysis = this.currentAnalysis.get(element); // Könnte veraltet sein!
+     if (analysis && analysis.status === 'warning') {
+       this.showWarningModal(analysis, element);
+     }
+     // Submit läuft durch ohne frische Prüfung!
+   }
+   ```
+
+#### 2. **Analyse MUSS bei JEDEM Input-Change laufen**
+   - **PFLICHT**: Bei jedem Input-Event (`input`, `paste`, `keydown`) muss Analyse getriggert werden
+   - **PFLICHT**: Debouncing ist OK für Performance, ABER Submit-Handler MÜSSEN frisch analysieren
+   - **VERBOTEN**: Analysen überspringen weil "zu schnell getippt" oder "debounce läuft noch"
+
+   **Timing-Garantie:**
+   - Input-Events → Debounced Analysis (300-800ms) für UI-Updates
+   - Submit-Events → **SOFORTIGE** Fresh Analysis (0ms Delay, blockierend)
+
+#### 3. **Leeres Input MUSS alte Detektionen löschen**
+   - **PFLICHT**: Nach Submit muss das UI **sofort** alte Highlights/Icons löschen
+   - **PFLICHT**: Mehrfache Neuanalyse nach Submit (100ms, 300ms, 600ms) um asynchrones Leeren zu catchen
+   - **VERBOTEN**: Alte Detektionen im UI lassen wenn Input leer ist
+
+   **Code-Muster (PFLICHT):**
+   ```javascript
+   // ✅ RICHTIG: Sofortiges UI-Update + mehrfache Neuanalyse
+   simulateSubmit(element) {
+     const emptyAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
+     this.currentAnalysis.set(element, emptyAnalysis);
+
+     // SOFORT UI aktualisieren
+     this.updateStatusIcon();
+     this.highlightText(element, emptyAnalysis);
+
+     // Submit ausführen
+     submitButton.click();
+
+     // MEHRFACH neu analysieren (asynchrones Leeren catchen)
+     setTimeout(() => this.analyzeElement(element), 100);
+     setTimeout(() => this.analyzeElement(element), 300);
+     setTimeout(() => this.analyzeElement(element), 600);
+   }
+   ```
+
+#### 4. **Race Conditions MÜSSEN vermieden werden**
+   - **VERBOTEN**: Submit durchlassen während Analyse läuft
+   - **PFLICHT**: Event-Handler MÜSSEN `preventDefault()` + `stopImmediatePropagation()` nutzen
+   - **PFLICHT**: Submit ERST erlauben NACHDEM Analyse abgeschlossen ist (`await` oder `.then()`)
+
+   **Kritische Stellen:**
+   - `handleKeyDown()` - Enter-Taste → MUSS blockieren bis Analyse fertig
+   - `attachSubmitButtonHandler()` - Button-Click → MUSS blockieren bis Analyse fertig
+   - `handleInput()` - Debouncing OK, ABER Submit-Handler ignorieren Debounce!
+
+### 🧪 Testkriterien (PFLICHT vor jedem Commit)
+
+**Diese Szenarien MÜSSEN ALLE funktionieren:**
+
+1. **Schnell-Tipp-Test**:
+   - User tippt "test@example.com" und drückt SOFORT Enter (< 300ms)
+   - ✅ Modal MUSS erscheinen (keine Race Condition!)
+
+2. **Leeres-Feld-Test**:
+   - User tippt "test@example.com", wartet, löscht alles, drückt Enter
+   - ✅ Submit geht durch OHNE Modal, Icon zeigt ✅ Safe
+
+3. **Nach-Submit-Test**:
+   - User tippt "test@example.com", bestätigt Modal, Submit erfolgt
+   - ✅ Input-Feld wird geleert, Icon zeigt sofort ✅ Safe (keine alten Highlights!)
+
+4. **Multi-Submit-Test**:
+   - User sendet 3 Nachrichten hintereinander (eine safe, eine critical, eine safe)
+   - ✅ Modal erscheint NUR bei critical, die anderen gehen direkt durch
+
+**Wenn EINES dieser Tests fehlschlägt → CRITICAL BUG → SOFORT FIXEN!**
+
+### 📋 Checkliste für Code-Reviews
+
+Bevor Code committed wird, prüfe:
+
+- [ ] Submit-Handler führen **frische Analyse** durch (nicht cached/debounced)
+- [ ] Submit-Handler **warten** auf Analyse-Resultat (`await` oder `.then()`)
+- [ ] Submit-Handler nutzen `preventDefault()` + `stopImmediatePropagation()`
+- [ ] `simulateSubmit()` updated UI **sofort** (nicht erst nach 1 Sekunde)
+- [ ] `simulateSubmit()` analysiert **mehrfach** neu (100ms, 300ms, 600ms)
+- [ ] Keine Race Conditions zwischen Input-Debounce und Submit
+- [ ] `detector.analyze('')` gibt `{ status: 'safe', detections: [] }` zurück
+
+---
+
 ## 🤖 AI Assistant Behavior Guidelines
 
 ### Professional Profile

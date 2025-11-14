@@ -357,63 +357,35 @@ class ComplianceMonitor {
       submitButton.setAttribute('data-aicc-monitored', 'true');
 
       // Füge Click-Handler hinzu (capture phase!)
+      // v2.10.4 FIX: IMMER vor Submit frische Analyse durchführen
       submitButton.addEventListener('click', (e) => {
-        // v2.3.5: Prüfe SOFORT auf Dateien (synchron!)
-        const attachedFiles = this.detectAttachedFiles(element);
+        console.log('[AICC Submit] Button clicked - BLOCKING for fresh analysis...');
 
-        let analysis = this.currentAnalysis.get(element);
+        // KRITISCH: IMMER blockieren und frische Analyse durchführen
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
 
-        // Wenn Dateien gefunden wurden, aber Analysis noch nicht aktualisiert
-        if (attachedFiles.length > 0) {
-          console.log('[AICC Submit] Files detected:', attachedFiles.length);
+        // Führe SOFORT eine frische Analyse durch (async)
+        this.analyzeElement(element).then(() => {
+          const analysis = this.currentAnalysis.get(element);
+          console.log('[AICC Submit] Fresh analysis:', analysis ? `Status: ${analysis.status}, Detections: ${analysis.detections?.length || 0}` : 'NONE');
 
-          // Blockiere Submit und führe volle Analyse durch
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-
-          // Führe Analyse mit File-Detection durch
-          this.analyzeElement(element).then(() => {
-            const newAnalysis = this.currentAnalysis.get(element);
-            if (newAnalysis && (newAnalysis.status === 'critical' || newAnalysis.status === 'warning')) {
-              this.showWarningModal(newAnalysis, element, submitButton);
-            } else {
-              // Sende nach Analyse
-              this.simulateSubmit(element);
-            }
-          });
-
-          return false;
-        }
-
-        // v2.6.0 FIX: Wenn KEINE Analyse vorhanden ODER Warnungen erkannt
-        if (!analysis || analysis.status === 'critical' || analysis.status === 'warning') {
-          console.log('[AICC Submit] BLOCKING - Analysis:', analysis ? analysis.status : 'NONE');
-
-          // Blockiere den originalen Click
-          e.preventDefault();
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-
-          // Wenn keine Analyse vorhanden, führe sie jetzt durch
-          if (!analysis) {
-            console.log('[AICC Submit] No analysis found - running analysis...');
-            this.analyzeElement(element).then(() => {
-              const newAnalysis = this.currentAnalysis.get(element);
-              if (newAnalysis && (newAnalysis.status === 'critical' || newAnalysis.status === 'warning')) {
-                this.showWarningModal(newAnalysis, element, submitButton);
-              } else {
-                // Keine Warnungen, sende normal
-                this.simulateSubmit(element);
-              }
-            });
-          } else {
-            // Analyse vorhanden mit Warnungen - zeige Modal
+          // Entscheidung basierend auf frischer Analyse
+          if (analysis && (analysis.status === 'critical' || analysis.status === 'warning')) {
+            console.log('[AICC Submit] Detections found - Showing modal');
             this.showWarningModal(analysis, element, submitButton);
+          } else {
+            console.log('[AICC Submit] Safe - Submitting');
+            this.simulateSubmit(element);
           }
+        }).catch(error => {
+          console.error('[AICC Submit] Analysis failed:', error);
+          // Bei Fehler: Sicherheitshalber durchlassen
+          this.simulateSubmit(element);
+        });
 
-          return false;
-        }
+        return false;
       }, { capture: true });
 
       console.log('[AI Compliance Checker] Monitoring submit button:', submitButton);
@@ -556,45 +528,44 @@ class ComplianceMonitor {
 
   /**
    * Handle KeyDown Event - Prüfe Enter-Taste
+   * v2.10.4 FIX: IMMER vor Submit frische Analyse durchführen (synchron warten)
    */
   handleKeyDown(element, event) {
     // Enter ohne Shift = Absenden
     if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
-      console.log('[AICC KeyDown] Enter pressed, checking analysis...');
+      console.log('[AICC KeyDown] Enter pressed - BLOCKING for fresh analysis...');
 
-      // v2.3.5: Prüfe SOFORT auf Dateien (synchron!)
-      const attachedFiles = this.detectAttachedFiles(element);
+      // KRITISCH: IMMER blockieren und frische Analyse durchführen
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
 
-      let analysis = this.currentAnalysis.get(element);
-      console.log('[AICC KeyDown] Analysis:', analysis ? `Status: ${analysis.status}, Detections: ${analysis.detections?.length || 0}` : 'NONE');
-      console.log('[AICC KeyDown] Files:', attachedFiles.length);
+      // Führe SOFORT eine frische Analyse durch (async)
+      this.analyzeElement(element).then(() => {
+        const analysis = this.currentAnalysis.get(element);
+        console.log('[AICC KeyDown] Fresh analysis:', analysis ? `Status: ${analysis.status}, Detections: ${analysis.detections?.length || 0}` : 'NONE');
 
-      // Wenn Dateien gefunden ODER keine Analysis vorhanden ODER Warnungen
-      if (attachedFiles.length > 0 || !analysis || (analysis && (analysis.status === 'critical' || analysis.status === 'warning'))) {
-        console.log('[AICC KeyDown] BLOCKING - Running analysis...');
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        // Entscheidung basierend auf frischer Analyse
+        if (analysis && (analysis.status === 'critical' || analysis.status === 'warning')) {
+          console.log('[AICC KeyDown] Detections found - Showing modal');
+          this.showWarningModal(analysis, element);
+        } else {
+          console.log('[AICC KeyDown] Safe - Submitting');
+          this.simulateSubmit(element);
+        }
+      }).catch(error => {
+        console.error('[AICC KeyDown] Analysis failed:', error);
+        // Bei Fehler: Sicherheitshalber durchlassen
+        this.simulateSubmit(element);
+      });
 
-        // Analysiere (inkl. File-Detection) und zeige dann Modal falls nötig
-        this.analyzeElement(element).then(() => {
-          const newAnalysis = this.currentAnalysis.get(element);
-          if (newAnalysis && (newAnalysis.status === 'critical' || newAnalysis.status === 'warning')) {
-            this.showWarningModal(newAnalysis, element);
-          } else {
-            // Keine Warnungen, sende normal
-            this.simulateSubmit(element);
-          }
-        });
-        return false;
-      }
-
-      console.log('[AICC KeyDown] Safe - Allowing submit');
+      return false;
     }
   }
 
   /**
    * Simuliert das Absenden (wenn Analyse safe ist)
+   * v2.10.4 FIX: Sofortiges UI-Update und schnellere Neuanalyse
    */
   simulateSubmit(element) {
     console.log('[AICC] Simulating submit after analysis...');
@@ -602,6 +573,10 @@ class ComplianceMonitor {
     // Temporär: Status auf safe setzen
     const tempAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
     this.currentAnalysis.set(element, tempAnalysis);
+
+    // SOFORT UI aktualisieren (Icon + Highlights löschen)
+    this.updateStatusIcon();
+    this.highlightText(element, tempAnalysis);
 
     // Suche Submit-Button
     const submitButton = this.findSubmitButton(element);
@@ -620,10 +595,11 @@ class ComplianceMonitor {
       element.dispatchEvent(event);
     }
 
-    // Nach 1 Sekunde: Analysiere neu
-    setTimeout(() => {
-      this.analyzeElement(element);
-    }, 1000);
+    // SCHNELLER neu analysieren (100ms statt 1000ms)
+    // Mehrfach-Prüfung falls Element asynchron geleert wird
+    setTimeout(() => this.analyzeElement(element), 100);
+    setTimeout(() => this.analyzeElement(element), 300);
+    setTimeout(() => this.analyzeElement(element), 600);
   }
 
   /**
