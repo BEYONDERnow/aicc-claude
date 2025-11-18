@@ -25,6 +25,9 @@ class ComplianceMonitor {
     // Overlay containers for virtual highlighting
     this.overlayContainers = new Map();
 
+    // v2.10.5 FIX: Track elements we're currently submitting to prevent infinite loops
+    this.currentlySubmitting = new WeakSet();
+
     this.init();
   }
 
@@ -354,6 +357,7 @@ class ComplianceMonitor {
 
   /**
    * Hängt Click-Handler an Submit-Buttons an
+   * v2.10.5 FIX: Verhindere Endlosschleife durch currentlySubmitting-Check
    */
   attachSubmitButtonHandler(element) {
     // Finde Submit-Button für dieses Element
@@ -365,7 +369,14 @@ class ComplianceMonitor {
 
       // Füge Click-Handler hinzu (capture phase!)
       // v2.10.4 FIX: IMMER vor Submit frische Analyse durchführen
+      // v2.10.5 FIX: Verhindere Endlosschleife durch currentlySubmitting-Check
       submitButton.addEventListener('click', (e) => {
+        // v2.10.5 FIX: Ignoriere wenn wir gerade selbst submitten (verhindert Endlosschleife)
+        if (this.currentlySubmitting.has(element)) {
+          console.log('[AICC Submit] Ignoring button click - already submitting');
+          return; // Lasse Submit durch
+        }
+
         console.log('[AICC Submit] Button clicked - BLOCKING for fresh analysis...');
 
         // KRITISCH: IMMER blockieren und frische Analyse durchführen
@@ -536,10 +547,17 @@ class ComplianceMonitor {
   /**
    * Handle KeyDown Event - Prüfe Enter-Taste
    * v2.10.4 FIX: IMMER vor Submit frische Analyse durchführen (synchron warten)
+   * v2.10.5 FIX: Verhindere Endlosschleife durch currentlySubmitting-Check
    */
   handleKeyDown(element, event) {
     // Enter ohne Shift = Absenden
     if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+      // v2.10.5 FIX: Ignoriere wenn wir gerade selbst submitten (verhindert Endlosschleife)
+      if (this.currentlySubmitting.has(element)) {
+        console.log('[AICC KeyDown] Ignoring - already submitting');
+        return; // Lasse Submit durch
+      }
+
       console.log('[AICC KeyDown] Enter pressed - BLOCKING for fresh analysis...');
 
       // KRITISCH: IMMER blockieren und frische Analyse durchführen
@@ -573,9 +591,14 @@ class ComplianceMonitor {
   /**
    * Simuliert das Absenden (wenn Analyse safe ist)
    * v2.10.4 FIX: Sofortiges UI-Update und schnellere Neuanalyse
+   * v2.10.5 FIX: Setze currentlySubmitting-Flag um Endlosschleife zu verhindern
    */
   simulateSubmit(element) {
     console.log('[AICC] Simulating submit after analysis...');
+
+    // v2.10.5 FIX: Markiere Element als "wird gerade submitted"
+    // Dies verhindert dass unsere Event-Handler die Submit-Events nochmal abfangen → Endlosschleife
+    this.currentlySubmitting.add(element);
 
     // Temporär: Status auf safe setzen
     const tempAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
@@ -601,6 +624,12 @@ class ComplianceMonitor {
       });
       element.dispatchEvent(event);
     }
+
+    // v2.10.5 FIX: Nach Submit Flag zurücksetzen (nach 500ms damit Submit sicher durchgelaufen ist)
+    setTimeout(() => {
+      this.currentlySubmitting.delete(element);
+      console.log('[AICC] Submit completed - re-enabling monitoring');
+    }, 500);
 
     // SCHNELLER neu analysieren (100ms statt 1000ms)
     // Mehrfach-Prüfung falls Element asynchron geleert wird
@@ -1476,7 +1505,7 @@ class ComplianceMonitor {
     allDetections.sort((a, b) => a.start - b.start);
 
     // Erstelle Markdown-Report
-    let report = `# AI Compliance Checker - Validierungsreport v2.10.5
+    let report = `# AI Compliance Checker - Validierungsreport v2.10.6
 
 ## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
@@ -1815,25 +1844,18 @@ Prüfe ob folgende Kategorien übersehen wurden:
 
         // Warte kurz, dann simuliere das Absenden
         setTimeout(() => {
+          // v2.10.5 FIX: Markiere Element als "wird gerade submitted"
+          // Dies verhindert dass unsere Event-Handler die Submit-Events nochmal abfangen → Endlosschleife
+          this.currentlySubmitting.add(element);
+
           // Temporär: Analysestatus auf "safe" setzen, damit unser Handler nicht nochmal greift
           const tempAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
           this.currentAnalysis.set(element, tempAnalysis);
 
           // Wenn Submit-Button übergeben wurde, klicke darauf
           if (submitButton) {
-            // Entferne temporär unser Monitoring-Attribut
-            const wasMonitored = submitButton.getAttribute('data-aicc-monitored');
-            submitButton.removeAttribute('data-aicc-monitored');
-
-            // Klicke Button
+            // v2.10.5: Keine Attribut-Manipulation mehr nötig - currentlySubmitting verhindert Re-Trigger
             submitButton.click();
-
-            // Stelle Monitoring wieder her (nach kurzer Verzögerung)
-            setTimeout(() => {
-              if (wasMonitored) {
-                submitButton.setAttribute('data-aicc-monitored', 'true');
-              }
-            }, 500);
           } else {
             // Fallback: Suche Submit-Button oder simuliere Enter
             const foundButton = this.findSubmitButton(element);
@@ -1852,6 +1874,12 @@ Prüfe ob folgende Kategorien übersehen wurden:
               element.dispatchEvent(event);
             }
           }
+
+          // v2.10.5 FIX: Nach Submit Flag zurücksetzen (nach 500ms damit Submit sicher durchgelaufen ist)
+          setTimeout(() => {
+            this.currentlySubmitting.delete(element);
+            console.log('[AICC Modal] Submit completed - re-enabling monitoring');
+          }, 500);
 
           // Nach 1 Sekunde: Analysiere neu (für nächste Nachricht)
           setTimeout(() => {

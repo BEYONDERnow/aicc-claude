@@ -47,6 +47,99 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.10.6] - 2025-11-18
+
+### 🚨 KRITISCHE Bugfixes - Submit-Endlosschleifen behoben
+
+#### 🐛 Problem 1: Browser-Freeze in Gemini beim Absenden
+- **Symptom**: Browser hängt sich komplett auf beim Drücken von Enter oder Submit-Button
+- **Root Cause**: Endlosschleife in Event-Handler-Kette
+  - `simulateSubmit()` klickt Submit-Button → triggert `attachSubmitButtonHandler()` → blockiert → führt Analyse durch → ruft wieder `simulateSubmit()` auf → **Endlosschleife**
+  - Bei fehlendem Button: `simulateSubmit()` dispatched Enter-Event → `handleKeyDown()` (capture:true) fängt Event ab → blockiert → **Endlosschleife**
+
+#### 🐛 Problem 2: Modal erscheint nicht in ChatGPT
+- **Symptom**: Warnungs-Modal wird nicht angezeigt obwohl sensible Daten erkannt wurden
+- **Root Cause**: Race Condition zwischen Submit-Attempts und Event-Handler-Kette
+
+#### ✅ Lösung: currentlySubmitting WeakSet
+- **Neuer Mechanismus**: `this.currentlySubmitting` WeakSet verhindert Re-Triggering
+- **Flow**:
+  1. BEVOR Submit simuliert wird → Element in `currentlySubmitting` hinzufügen
+  2. Event-Handler prüfen ob Element in Set ist → wenn ja, ignorieren (Submit durchlassen)
+  3. NACH 500ms → Element aus Set entfernen
+- **Geänderte Stellen**:
+  - `constructor()` → WeakSet initialisiert
+  - `handleKeyDown()` → Prüft `currentlySubmitting` am Anfang (content.js:547-550)
+  - `attachSubmitButtonHandler()` → Prüft `currentlySubmitting` am Anfang (content.js:374-378)
+  - `simulateSubmit()` → Setzt/entfernt Flag (content.js:599-632)
+  - `showWarningModal()` "Send Anyway"-Button → Setzt/entfernt Flag (content.js:1847-1882)
+
+#### 🧪 Betroffene Plattformen
+- ✅ Gemini (Browser-Freeze komplett behoben)
+- ✅ ChatGPT (Modal erscheint jetzt zuverlässig)
+- ✅ Claude (präventiv gefixt)
+
+#### 📊 Technische Details
+- **WeakSet Vorteil**: Automatisches Garbage Collection wenn Element aus DOM entfernt wird
+- **Timing**: 500ms Timeout verhindert Re-Triggering während Submit-Flow
+- **Backward Compatible**: Keine Breaking Changes
+
+---
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
+- **Git-Integration:** Unterstützt Git-Tags für Versionierung
+- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version
+
+**3. Aktualisierte Dateien** 📝
+
+- `extension/manifest.json` - Chrome Extension Version
+- `package.json` - NPM Package Version
+- `extension/popup.html` - Angezeigter Version String
+- `extension/scripts/version.js` - Zentrale Versionsdefinition
+- `README.md` - Dokumentierte Version
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
+
 ## [2.10.5] - 2025-11-14
 
 ### 🐛 Kritische Bugfixes
