@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
   "name": "AI Compliance Checker",
-  "version": "2.10.6",
+  "version": "2.10.9",
   "description": "Schützt Ihre sensiblen Daten bei ChatGPT, Claude & Gemini. Erkennt Namen, Geburtsdaten, Standorte, Geldbeträge, Organisationen, E-Mails, IBAN uvm. 100% lokal, DSGVO-konform.",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "tabs"
   ],
   "host_permissions": [
     "https://chat.openai.com/*",

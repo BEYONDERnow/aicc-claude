@@ -37,6 +37,21 @@ class ComplianceMonitor {
   async init() {
     console.log('[AI Compliance Checker by BEYONDER] Initialized on', this.platforms.name);
 
+    // v2.10.7 FIX: Storage-Listener ZUERST registrieren (MUSS immer aktiv sein,
+    // auch wenn Extension deaktiviert ist, damit Re-Aktivierung auf ALLEN Tabs funktioniert)
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (namespace === 'local' && changes.aicc_extension_enabled) {
+        const newValue = changes.aicc_extension_enabled.newValue;
+        console.log('[AI Compliance Checker] Extension enabled status changed:', newValue);
+
+        if (newValue === false) {
+          this.stopMonitoring();
+        } else {
+          this.startMonitoring();
+        }
+      }
+    });
+
     // v2.8.1: Prüfe ob Extension aktiviert ist (default: true)
     try {
       const result = await chrome.storage.local.get('aicc_extension_enabled');
@@ -56,22 +71,6 @@ class ComplianceMonitor {
     } else {
       this.startMonitoring();
     }
-
-    // v2.8.1: Lausche auf Storage-Änderungen um Extension dynamisch zu deaktivieren/aktivieren
-    chrome.storage.onChanged.addListener((changes, namespace) => {
-      if (namespace === 'local' && changes.aicc_extension_enabled) {
-        const newValue = changes.aicc_extension_enabled.newValue;
-        console.log('[AI Compliance Checker] Extension enabled status changed:', newValue);
-
-        if (newValue === false) {
-          // Extension wurde deaktiviert - entferne Icons und stoppe Monitoring
-          this.stopMonitoring();
-        } else {
-          // Extension wurde aktiviert - starte Monitoring
-          this.startMonitoring();
-        }
-      }
-    });
   }
 
   /**
@@ -515,8 +514,21 @@ class ComplianceMonitor {
   handleInput(element) {
     clearTimeout(this.analyzeTimer);
 
-    // Dynamisches Debouncing basierend auf Textlänge
     const text = this.getElementText(element);
+
+    // v2.10.7 FIX: Sofort leeren wenn Text leer ist (kein Debounce nötig)
+    // Verhindert dass alte Detektionen im Icon/UI sichtbar bleiben
+    if (!text || text.trim().length === 0) {
+      const emptyAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
+      this.currentAnalysis.set(element, emptyAnalysis);
+      const info = this.monitoredElements.get(element);
+      if (info) info.lastAnalysis = emptyAnalysis;
+      this.updateStatusIcon();
+      this.highlightText(element, emptyAnalysis);
+      return;
+    }
+
+    // Dynamisches Debouncing basierend auf Textlänge
     const textLength = text.length;
 
     // Performance-Optimierung: Längeres Debouncing bei langem Text
@@ -603,6 +615,10 @@ class ComplianceMonitor {
     // Temporär: Status auf safe setzen
     const tempAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
     this.currentAnalysis.set(element, tempAnalysis);
+
+    // v2.10.7 FIX: AUCH lastAnalysis aktualisieren, da updateStatusIcon() davon liest
+    const info = this.monitoredElements.get(element);
+    if (info) info.lastAnalysis = tempAnalysis;
 
     // SOFORT UI aktualisieren (Icon + Highlights löschen)
     this.updateStatusIcon();
@@ -1059,6 +1075,14 @@ class ComplianceMonitor {
       return;
     }
 
+    // v2.10.8 PERF: Cleanup verwaiste Overlay-Container (Memory Leak Fix)
+    for (const [el, container] of this.overlayContainers.entries()) {
+      if (!document.body.contains(el)) {
+        if (container.parentNode) container.parentNode.removeChild(container);
+        this.overlayContainers.delete(el);
+      }
+    }
+
     // Erstelle oder hole Overlay-Container für dieses Element
     let overlayContainer = this.overlayContainers.get(element);
 
@@ -1134,8 +1158,9 @@ class ComplianceMonitor {
    * Erstellt Overlay-Highlights basierend auf Range API
    */
   createHighlightOverlays(element, analysis, container) {
-    // v2.3.4: Verwende normalizeTextWithSpaces (konsistent mit getElementText)
-    const text = this.normalizeTextWithSpaces(element);
+    // v2.10.8 FIX: Offset-Berechnung MUSS konsistent mit getElementText() sein
+    // getElementText() nutzt innerText/value → keine synthetischen Spaces
+    // Vorher: normalizeTextWithSpaces() fügte Spaces ein → Offset-Drift bei langen Texten
 
     // TreeWalker zum Durchlaufen aller TextNodes
     const walker = document.createTreeWalker(
@@ -1146,21 +1171,10 @@ class ComplianceMonitor {
 
     let currentOffset = 0;
     const textNodes = [];
-    let previousNode = null;
 
-    // v2.3.4: Sammle alle TextNodes mit ihren Offsets (inkl. eingefügte Leerzeichen)
     let node;
     while (node = walker.nextNode()) {
       const nodeText = node.textContent;
-
-      // Prüfe ob Leerzeichen vor diesem Node eingefügt wurde
-      if (previousNode) {
-        const needsSpace = this.needsSpaceBetweenNodes(previousNode, node);
-        if (needsSpace) {
-          currentOffset += 1; // Berücksichtige eingefügtes Leerzeichen
-        }
-      }
-
       textNodes.push({
         node: node,
         start: currentOffset,
@@ -1168,7 +1182,6 @@ class ComplianceMonitor {
         text: nodeText
       });
       currentOffset += nodeText.length;
-      previousNode = node;
     }
 
     // Erstelle Overlays für jede Highlight-Range
@@ -1505,7 +1518,7 @@ class ComplianceMonitor {
     allDetections.sort((a, b) => a.start - b.start);
 
     // Erstelle Markdown-Report
-    let report = `# AI Compliance Checker - Validierungsreport v2.10.6
+    let report = `# AI Compliance Checker - Validierungsreport v2.10.9
 
 ## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
@@ -1689,7 +1702,12 @@ Prüfe ob folgende Kategorien übersehen wurden:
       return aSeverity - bSeverity;
     });
 
-    sortedGroups.forEach(([matchKey, detections]) => {
+    // v2.10.9 PERF: Begrenze angezeigte Einträge für schnelleres Modal-Rendering
+    const MAX_VISIBLE_ROWS = 20;
+    const totalGroups = sortedGroups.length;
+    const visibleGroups = sortedGroups.slice(0, MAX_VISIBLE_ROWS);
+
+    visibleGroups.forEach(([matchKey, detections]) => {
       // Nimm die höchste Severity
       const maxSeverity = detections.some(d => d.severity === 'critical') ? 'critical' : 'warning';
 
@@ -1712,6 +1730,16 @@ Prüfe ob folgende Kategorien übersehen wurden:
       html += `<td><span class="aicc-severity-badge aicc-severity-${maxSeverity}">${this.detector.t(maxSeverity, this.currentLang)}</span></td>`;
       html += '</tr>';
     });
+
+    // Hinweis wenn weitere Einträge vorhanden
+    if (totalGroups > MAX_VISIBLE_ROWS) {
+      const remaining = totalGroups - MAX_VISIBLE_ROWS;
+      html += `<tr><td colspan="4" style="text-align:center; padding:12px; color:#666; font-style:italic;">
+        ${this.currentLang === 'de'
+          ? `+ ${remaining} weitere Erkennung${remaining > 1 ? 'en' : ''} (nicht angezeigt)`
+          : `+ ${remaining} more detection${remaining > 1 ? 's' : ''} (not shown)`}
+      </td></tr>`;
+    }
 
     html += '</tbody></table>';
     return html;
@@ -1743,7 +1771,8 @@ Prüfe ob folgende Kategorien übersehen wurden:
     // WICHTIG: Blende alle Highlight-Overlays aus während Modal offen ist
     document.body.classList.add('aicc-modal-open');
 
-    // v2.7.0: Conditional Report Section
+    // v2.10.9 PERF: Validation Report wird lazy geladen (erst bei Klick)
+    // Vorher: Report wurde sofort generiert (150+ String-Ops auf 7000+ chars = 1-3s)
     const reportSection = isDeveloperMode ? `
           <div class="aicc-validation-report-section">
             <h3>
@@ -1761,7 +1790,7 @@ Prüfe ob folgende Kategorien übersehen wurden:
                   ${this.currentLang === 'de' ? '📋 Kopieren' : '📋 Copy'}
                 </button>
               </div>
-              <pre class="aicc-code-content" id="aicc-validation-report"><code>${this.escapeHtml(this.generateValidationReport(analysis, element, isDeveloperMode))}</code></pre>
+              <pre class="aicc-code-content" id="aicc-validation-report"><code>${this.currentLang === 'de' ? 'Report wird geladen...' : 'Loading report...'}</code></pre>
             </div>
           </div>` : '';
 
@@ -1810,6 +1839,17 @@ Prüfe ob folgende Kategorien übersehen wurden:
 
     document.body.appendChild(modal);
 
+    // v2.10.9 PERF: Validation Report lazy laden (nach Modal-Render)
+    if (isDeveloperMode) {
+      requestAnimationFrame(() => {
+        const reportEl = modal.querySelector('#aicc-validation-report code');
+        if (reportEl) {
+          const report = this.generateValidationReport(analysis, element, isDeveloperMode);
+          reportEl.textContent = report; // textContent ist sicher (kein XSS) und schneller als escapeHtml+innerHTML
+        }
+      });
+    }
+
     // Event Handlers
     const close = () => {
       modal.remove();
@@ -1852,6 +1892,10 @@ Prüfe ob folgende Kategorien übersehen wurden:
           const tempAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
           this.currentAnalysis.set(element, tempAnalysis);
 
+          // v2.10.7 FIX: AUCH lastAnalysis aktualisieren, da updateStatusIcon() davon liest
+          const infoModal = this.monitoredElements.get(element);
+          if (infoModal) infoModal.lastAnalysis = tempAnalysis;
+
           // Wenn Submit-Button übergeben wurde, klicke darauf
           if (submitButton) {
             // v2.10.5: Keine Attribut-Manipulation mehr nötig - currentlySubmitting verhindert Re-Trigger
@@ -1890,10 +1934,12 @@ Prüfe ob folgende Kategorien übersehen wurden:
     }
 
     // Copy button handler (v2.7.0: uses isDeveloperMode)
+    // v2.10.9: Lese Report aus DOM statt nochmals zu generieren
     const copyBtn = modal.querySelector('.aicc-copy-btn');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
-        const reportText = this.generateValidationReport(analysis, element, isDeveloperMode);
+        const reportEl = modal.querySelector('#aicc-validation-report code');
+        const reportText = reportEl ? reportEl.textContent : this.generateValidationReport(analysis, element, isDeveloperMode);
         navigator.clipboard.writeText(reportText).then(() => {
           const originalText = copyBtn.textContent;
           copyBtn.textContent = this.currentLang === 'de' ? '✅ Kopiert!' : '✅ Copied!';
@@ -1931,6 +1977,20 @@ Prüfe ob folgende Kategorien übersehen wurden:
   }
 
   /**
+   * v2.10.7: Prüft ob Submit-Buttons dynamisch ersetzt wurden und hängt Handler neu an
+   * Plattformen wie ChatGPT ersetzen Buttons häufig im DOM
+   */
+  reattachSubmitButtons() {
+    for (const [element] of this.monitoredElements.entries()) {
+      if (!document.contains(element)) continue;
+      const submitButton = this.findSubmitButton(element);
+      if (submitButton && !submitButton.hasAttribute('data-aicc-monitored')) {
+        this.attachSubmitButtonHandler(element);
+      }
+    }
+  }
+
+  /**
    * Beobachtet DOM für neue Eingabefelder
    */
   observeDOM() {
@@ -1939,6 +1999,7 @@ Prüfe ob folgende Kategorien übersehen wurden:
       clearTimeout(this.observerTimeout);
       this.observerTimeout = setTimeout(() => {
         this.findAndMonitorInputs();
+        this.reattachSubmitButtons(); // v2.10.7: Submit-Buttons re-attachen
       }, 200);
     });
 
@@ -1950,6 +2011,7 @@ Prüfe ob folgende Kategorien übersehen wurden:
     // Zusätzlich: Prüfe regelmäßig auf neue Felder (Fallback)
     setInterval(() => {
       this.findAndMonitorInputs();
+      this.reattachSubmitButtons(); // v2.10.7: Submit-Buttons re-attachen
     }, 2000);
   }
 
@@ -2013,10 +2075,12 @@ Prüfe ob folgende Kategorien übersehen wurden:
   /**
    * HTML escapen
    */
+  // v2.10.9 PERF: Wiederverwendbares Element statt 200+ neue DOM-Nodes pro Modal
+  #escapeDiv = document.createElement('div');
+
   escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    this.#escapeDiv.textContent = text;
+    return this.#escapeDiv.innerHTML;
   }
 }
 
