@@ -7,6 +7,37 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.10.8] - 2025-03-19
+
+### ⚡ Performance
+
+#### NER Single-Parse Cache
+
+- **7x `nlp()` Aufrufe → 1x**: Alle 5 detect-Methoden (detectNames, detectDates, detectPlaces, detectMoney, detectOrganizations) teilen jetzt ein einziges geparstes Compromise.js-Dokument
+- **NER-Analysezeit**: ~500ms → ~100ms (80% Reduktion)
+- **Gesamtanalyse bei 7000 Zeichen**: ~685ms → ~285ms
+
+#### Textlängen-Limit
+
+- **Neues Limit: 15'000 Zeichen** verhindert Browser-Freeze bei sehr langen Texten
+- Text wird für die Analyse gekürzt, Warnung wird in die Console geloggt
+- Verhindert bis zu 30s Hänger bei 100KB+ Eingaben
+
+### 🔧 Fixes
+
+#### Highlighting-Offset-Fix
+
+- **Highlights waren bei langen Texten falsch positioniert**
+  - Root Cause: `getElementText()` nutzte `innerText`, aber `createHighlightOverlays()` nutzte `normalizeTextWithSpaces()` mit synthetischen Leerzeichen zwischen Block-Elementen
+  - Fix: Offset-Berechnung nutzt jetzt dieselbe Methode wie Textextraktion (keine synthetischen Spaces mehr)
+
+#### Memory Leak Fix
+
+- **Overlay-Container wurden nie aufgeräumt** wenn DOM-Elemente entfernt wurden
+  - Fix: `highlightText()` bereinigt jetzt verwaiste Container automatisch
+
+---
+
 ## [2.10.7] - 2025-03-19
 
 ### 🐛 Bugfixes
@@ -44,6 +75,62 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
   - Besonders relevant für die Schweizer Diaspora
 
 ---
+
+## [2.10.8] - 2026-03-19
+
+### 🔧 Zentrale Versionsverwaltung
+
+#### Zusammenfassung
+
+Einführung eines zentralen Versionsverwaltungssystems für konsistente Versionierung über alle Dateien hinweg.
+
+#### ✅ Neue Features
+
+**1. Zentrale Version Management** 🎯
+
+- **Single Source of Truth:** `extension/scripts/version.js` ist die zentrale Versionsdefinition
+- **Automatische Synchronisation:** Alle Dateien werden automatisch aktualisiert
+- **Git-Integration:** Unterstützt Git-Tags für Versionierung
+- **Build-Script:** `scripts/update-version.js` verwaltet den Prozess
+
+**2. NPM-Scripts für Versionierung** ⚙️
+
+- `npm run version:patch` - Bugfixes (2.9.0 → 2.9.1)
+- `npm run version:minor` - Neue Features (2.9.0 → 2.10.0)
+- `npm run version:major` - Breaking Changes (2.9.0 → 3.0.0)
+- `npm run version:sync` - Synchronisiert aktuelle Version
+
+**3. Aktualisierte Dateien** 📝
+
+- `extension/manifest.json` - Chrome Extension Version
+- `package.json` - NPM Package Version
+- `extension/popup.html` - Angezeigter Version String
+- `extension/scripts/version.js` - Zentrale Versionsdefinition
+- `README.md` - Dokumentierte Version
+- `CHANGELOG.md` - Automatischer Versions-Eintrag
+
+#### 📊 Technische Details
+
+- **Semantic Versioning:** MAJOR.MINOR.PATCH Format
+- **Konsistenz:** Alle Dateien nutzen dieselbe Version
+- **Automatisierung:** Ein Kommando aktualisiert alles
+- **Fehlerprävention:** Keine manuelle Copy-Paste Fehler mehr
+
+#### 🎨 Workflow-Verbesserungen
+
+1. Entwickler führt `npm run version:minor` aus
+2. Script erhöht Version und aktualisiert alle Dateien
+3. `npm run build` erstellt Bundle mit neuer Version
+4. Git Commit & Push
+5. Extension in Chrome zeigt korrekte Version
+
+**Benefits:**
+- ✅ Konsistente Versionierung
+- ✅ Fehlerfreie Synchronisation
+- ✅ Einfacher Workflow
+- ✅ Git-freundlich
+
+
 
 ## [2.10.4] - 2025-11-03
 

@@ -1075,6 +1075,14 @@ class ComplianceMonitor {
       return;
     }
 
+    // v2.10.8 PERF: Cleanup verwaiste Overlay-Container (Memory Leak Fix)
+    for (const [el, container] of this.overlayContainers.entries()) {
+      if (!document.body.contains(el)) {
+        if (container.parentNode) container.parentNode.removeChild(container);
+        this.overlayContainers.delete(el);
+      }
+    }
+
     // Erstelle oder hole Overlay-Container für dieses Element
     let overlayContainer = this.overlayContainers.get(element);
 
@@ -1150,8 +1158,9 @@ class ComplianceMonitor {
    * Erstellt Overlay-Highlights basierend auf Range API
    */
   createHighlightOverlays(element, analysis, container) {
-    // v2.3.4: Verwende normalizeTextWithSpaces (konsistent mit getElementText)
-    const text = this.normalizeTextWithSpaces(element);
+    // v2.10.8 FIX: Offset-Berechnung MUSS konsistent mit getElementText() sein
+    // getElementText() nutzt innerText/value → keine synthetischen Spaces
+    // Vorher: normalizeTextWithSpaces() fügte Spaces ein → Offset-Drift bei langen Texten
 
     // TreeWalker zum Durchlaufen aller TextNodes
     const walker = document.createTreeWalker(
@@ -1162,21 +1171,10 @@ class ComplianceMonitor {
 
     let currentOffset = 0;
     const textNodes = [];
-    let previousNode = null;
 
-    // v2.3.4: Sammle alle TextNodes mit ihren Offsets (inkl. eingefügte Leerzeichen)
     let node;
     while (node = walker.nextNode()) {
       const nodeText = node.textContent;
-
-      // Prüfe ob Leerzeichen vor diesem Node eingefügt wurde
-      if (previousNode) {
-        const needsSpace = this.needsSpaceBetweenNodes(previousNode, node);
-        if (needsSpace) {
-          currentOffset += 1; // Berücksichtige eingefügtes Leerzeichen
-        }
-      }
-
       textNodes.push({
         node: node,
         start: currentOffset,
@@ -1184,7 +1182,6 @@ class ComplianceMonitor {
         text: nodeText
       });
       currentOffset += nodeText.length;
-      previousNode = node;
     }
 
     // Erstelle Overlays für jede Highlight-Range
@@ -1521,7 +1518,7 @@ class ComplianceMonitor {
     allDetections.sort((a, b) => a.start - b.start);
 
     // Erstelle Markdown-Report
-    let report = `# AI Compliance Checker - Validierungsreport v2.10.7
+    let report = `# AI Compliance Checker - Validierungsreport v2.10.8
 
 ## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
