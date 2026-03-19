@@ -1518,7 +1518,7 @@ class ComplianceMonitor {
     allDetections.sort((a, b) => a.start - b.start);
 
     // Erstelle Markdown-Report
-    let report = `# AI Compliance Checker - Validierungsreport v2.10.8
+    let report = `# AI Compliance Checker - Validierungsreport v2.10.9
 
 ## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
@@ -1702,7 +1702,12 @@ Prüfe ob folgende Kategorien übersehen wurden:
       return aSeverity - bSeverity;
     });
 
-    sortedGroups.forEach(([matchKey, detections]) => {
+    // v2.10.9 PERF: Begrenze angezeigte Einträge für schnelleres Modal-Rendering
+    const MAX_VISIBLE_ROWS = 20;
+    const totalGroups = sortedGroups.length;
+    const visibleGroups = sortedGroups.slice(0, MAX_VISIBLE_ROWS);
+
+    visibleGroups.forEach(([matchKey, detections]) => {
       // Nimm die höchste Severity
       const maxSeverity = detections.some(d => d.severity === 'critical') ? 'critical' : 'warning';
 
@@ -1725,6 +1730,16 @@ Prüfe ob folgende Kategorien übersehen wurden:
       html += `<td><span class="aicc-severity-badge aicc-severity-${maxSeverity}">${this.detector.t(maxSeverity, this.currentLang)}</span></td>`;
       html += '</tr>';
     });
+
+    // Hinweis wenn weitere Einträge vorhanden
+    if (totalGroups > MAX_VISIBLE_ROWS) {
+      const remaining = totalGroups - MAX_VISIBLE_ROWS;
+      html += `<tr><td colspan="4" style="text-align:center; padding:12px; color:#666; font-style:italic;">
+        ${this.currentLang === 'de'
+          ? `+ ${remaining} weitere Erkennung${remaining > 1 ? 'en' : ''} (nicht angezeigt)`
+          : `+ ${remaining} more detection${remaining > 1 ? 's' : ''} (not shown)`}
+      </td></tr>`;
+    }
 
     html += '</tbody></table>';
     return html;
@@ -1756,7 +1771,8 @@ Prüfe ob folgende Kategorien übersehen wurden:
     // WICHTIG: Blende alle Highlight-Overlays aus während Modal offen ist
     document.body.classList.add('aicc-modal-open');
 
-    // v2.7.0: Conditional Report Section
+    // v2.10.9 PERF: Validation Report wird lazy geladen (erst bei Klick)
+    // Vorher: Report wurde sofort generiert (150+ String-Ops auf 7000+ chars = 1-3s)
     const reportSection = isDeveloperMode ? `
           <div class="aicc-validation-report-section">
             <h3>
@@ -1774,7 +1790,7 @@ Prüfe ob folgende Kategorien übersehen wurden:
                   ${this.currentLang === 'de' ? '📋 Kopieren' : '📋 Copy'}
                 </button>
               </div>
-              <pre class="aicc-code-content" id="aicc-validation-report"><code>${this.escapeHtml(this.generateValidationReport(analysis, element, isDeveloperMode))}</code></pre>
+              <pre class="aicc-code-content" id="aicc-validation-report"><code>${this.currentLang === 'de' ? 'Report wird geladen...' : 'Loading report...'}</code></pre>
             </div>
           </div>` : '';
 
@@ -1822,6 +1838,17 @@ Prüfe ob folgende Kategorien übersehen wurden:
     `;
 
     document.body.appendChild(modal);
+
+    // v2.10.9 PERF: Validation Report lazy laden (nach Modal-Render)
+    if (isDeveloperMode) {
+      requestAnimationFrame(() => {
+        const reportEl = modal.querySelector('#aicc-validation-report code');
+        if (reportEl) {
+          const report = this.generateValidationReport(analysis, element, isDeveloperMode);
+          reportEl.textContent = report; // textContent ist sicher (kein XSS) und schneller als escapeHtml+innerHTML
+        }
+      });
+    }
 
     // Event Handlers
     const close = () => {
@@ -1907,10 +1934,12 @@ Prüfe ob folgende Kategorien übersehen wurden:
     }
 
     // Copy button handler (v2.7.0: uses isDeveloperMode)
+    // v2.10.9: Lese Report aus DOM statt nochmals zu generieren
     const copyBtn = modal.querySelector('.aicc-copy-btn');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
-        const reportText = this.generateValidationReport(analysis, element, isDeveloperMode);
+        const reportEl = modal.querySelector('#aicc-validation-report code');
+        const reportText = reportEl ? reportEl.textContent : this.generateValidationReport(analysis, element, isDeveloperMode);
         navigator.clipboard.writeText(reportText).then(() => {
           const originalText = copyBtn.textContent;
           copyBtn.textContent = this.currentLang === 'de' ? '✅ Kopiert!' : '✅ Copied!';
@@ -2046,10 +2075,12 @@ Prüfe ob folgende Kategorien übersehen wurden:
   /**
    * HTML escapen
    */
+  // v2.10.9 PERF: Wiederverwendbares Element statt 200+ neue DOM-Nodes pro Modal
+  #escapeDiv = document.createElement('div');
+
   escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    this.#escapeDiv.textContent = text;
+    return this.#escapeDiv.innerHTML;
   }
 }
 
