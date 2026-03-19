@@ -148,6 +148,51 @@ export const FIRST_NAMES = {
     'Katalin', 'Erzsébet', 'Ágnes', 'Éva', 'Zsuzsanna', 'Judit', 'Andrea', 'Réka'
   ]),
 
+  // BALKAN - Serbisch, Kroatisch, Bosnisch, Albanisch, Montenegrinisch (~200 Namen)
+  // v2.10.7: Häufige Balkan-Namen für CH-Diaspora
+  balkan: new Set([
+    // Serbisch - männlich
+    'Aleksandar', 'Nenad', 'Predrag', 'Slobodan', 'Vojislav', 'Dušan', 'Dusan',
+    'Nemanja', 'Srđan', 'Srdjan', 'Miloš', 'Milos', 'Željko', 'Zeljko',
+    'Zoran', 'Dragan', 'Goran', 'Bojan', 'Dejan', 'Miroslav', 'Radoslav',
+    'Vladislav', 'Tomislav', 'Bratislav', 'Momčilo', 'Momcilo', 'Vuk',
+    'Lazar', 'Stefan', 'Nikola', 'Marko', 'Jovan', 'Petar', 'Đorđe', 'Djordje',
+    'Milorad', 'Milovan', 'Milenko', 'Ljubiša', 'Ljubisa', 'Radovan',
+    'Branislav', 'Mirko', 'Darko', 'Siniša', 'Sinisa', 'Nebojša', 'Nebojsa',
+
+    // Kroatisch - männlich
+    'Ante', 'Ivica', 'Davor', 'Hrvoje', 'Vedran', 'Stjepan',
+    'Zdravko', 'Mislav', 'Krešimir', 'Kresimir', 'Zvonimir', 'Branimir',
+    'Josip', 'Mate', 'Dražen', 'Drazen', 'Igor', 'Stipe', 'Goran',
+
+    // Bosnisch - männlich
+    'Emir', 'Adnan', 'Amir', 'Haris', 'Senad', 'Fikret', 'Samir', 'Kemal',
+    'Mehmed', 'Mustafa', 'Almir', 'Damir', 'Nermin', 'Jasmin', 'Elvir',
+    'Sulejman', 'Muhamed', 'Edhem', 'Irfan', 'Refik',
+
+    // Albanisch - männlich
+    'Agim', 'Blerim', 'Driton', 'Faton', 'Besnik', 'Shpëtim', 'Shpetim',
+    'Ilir', 'Bujar', 'Arben', 'Luan', 'Valon', 'Gentian', 'Kushtrim',
+    'Flamur', 'Bekim', 'Fatmir', 'Ramush', 'Hashim', 'Xhavit',
+    'Visar', 'Florim', 'Ardian', 'Labinot', 'Fisnik', 'Bashkim',
+    'Skënder', 'Skender', 'Avni', 'Nexhat', 'Nexhmedin',
+
+    // Serbisch/Kroatisch - weiblich
+    'Jelena', 'Ivana', 'Milica', 'Dragana', 'Snežana', 'Snezana',
+    'Gordana', 'Mirjana', 'Ljiljana', 'Biljana', 'Tatjana', 'Slavica',
+    'Jasmina', 'Nataša', 'Natasa', 'Vesna', 'Maja', 'Sanja', 'Dubravka',
+    'Ankica', 'Višnja', 'Visnja', 'Ruža', 'Ruza', 'Marina', 'Ana',
+    'Jovana', 'Milena', 'Tijana', 'Aleksandra',
+
+    // Bosnisch - weiblich
+    'Amra', 'Alma', 'Naida', 'Lejla', 'Amela', 'Senada', 'Mediha',
+
+    // Albanisch - weiblich
+    'Mimoza', 'Teuta', 'Donika', 'Vlora', 'Pranvera', 'Vjollca',
+    'Shqipe', 'Drita', 'Flutura', 'Adelina', 'Albana', 'Lindita',
+    'Afërdita', 'Aferdita', 'Zanë', 'Zane', 'Liridona', 'Valdete'
+  ]),
+
   // B2B INTERNATIONAL - Weitere europäische Länder (~800 Namen)
   international: new Set([
     // SPANIEN / PORTUGAL
@@ -313,6 +358,41 @@ export const LAST_NAMES = {
     'Marek', 'Pokorný', 'Pokorny', 'Pospíšil', 'Pospisil', 'Hájek', 'Hajek'
   ]),
 
+  // BALKAN - Serbisch, Kroatisch, Bosnisch, Albanisch (~150 Namen)
+  // v2.10.7: Häufige Balkan-Nachnamen für CH-Diaspora (mit/ohne Akzente)
+  balkan: new Set([
+    // Serbisch
+    'Petrović', 'Petrovic', 'Jovanović', 'Jovanovic', 'Nikolić', 'Nikolic',
+    'Marković', 'Markovic', 'Đorđević', 'Djordjevic', 'Stojanović', 'Stojanovic',
+    'Ilić', 'Ilic', 'Stanković', 'Stankovic', 'Pavlović', 'Pavlovic',
+    'Milošević', 'Milosevic', 'Popović', 'Popovic', 'Živković', 'Zivkovic',
+    'Kostić', 'Kostic', 'Simić', 'Simic', 'Tomić', 'Tomic',
+    'Đukić', 'Djukic', 'Janković', 'Jankovic', 'Mladenović', 'Mladenovic',
+    'Vasić', 'Vasic', 'Obradović', 'Obradovic', 'Lazarević', 'Lazarevic',
+    'Stevanović', 'Stevanovic', 'Ristić', 'Ristic', 'Savić', 'Savic',
+    'Mitrović', 'Mitrovic', 'Filipović', 'Filipovic',
+
+    // Kroatisch
+    'Horvat', 'Kovačević', 'Kovacevic', 'Babić', 'Babic', 'Marić', 'Maric',
+    'Jurić', 'Juric', 'Novak', 'Matić', 'Matic', 'Knežević', 'Knezevic',
+    'Vuković', 'Vukovic', 'Perić', 'Peric', 'Blažević', 'Blazevic',
+
+    // Bosnisch
+    'Hodžić', 'Hodzic', 'Hasanović', 'Hasanovic', 'Begović', 'Begovic',
+    'Mustafić', 'Mustafic', 'Hadžić', 'Hadzic', 'Čaušević', 'Causevic',
+    'Mujić', 'Mujic', 'Halilović', 'Halilovic', 'Đelilović', 'Djelilovic',
+    'Smajlović', 'Smajlovic', 'Mehmedović', 'Mehmedovic',
+    'Omerović', 'Omerovic', 'Delić', 'Delic',
+
+    // Albanisch
+    'Krasniqi', 'Hoxha', 'Berisha', 'Gashi', 'Shala', 'Morina',
+    'Leka', 'Osmani', 'Rama', 'Bytyqi', 'Bytyci', 'Shabani',
+    'Ahmeti', 'Rexhepi', 'Kastrati', 'Tahiri', 'Bekteshi',
+    'Kurti', 'Maliqi', 'Haliti', 'Sadiku', 'Beqiri', 'Dervishi',
+    'Islami', 'Hoti', 'Dedaj', 'Ibrahimi', 'Hasani', 'Gërvalla', 'Gervalla',
+    'Musliu', 'Xhemajli', 'Demiri', 'Salihu', 'Mehmeti'
+  ]),
+
   // B2B INTERNATIONAL (~200 Namen)
   international: new Set([
     // Spanisch/Portugiesisch
@@ -442,6 +522,7 @@ export function getLexiconStats() {
       it: FIRST_NAMES.it.size + LAST_NAMES.it.size,
       en: FIRST_NAMES.en.size + LAST_NAMES.en.size,
       at: FIRST_NAMES.at.size + LAST_NAMES.at.size,
+      balkan: FIRST_NAMES.balkan.size + LAST_NAMES.balkan.size,
       international: FIRST_NAMES.international.size + LAST_NAMES.international.size,
       common: FIRST_NAMES.common.size
     }

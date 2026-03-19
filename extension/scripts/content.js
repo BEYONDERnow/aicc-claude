@@ -37,6 +37,21 @@ class ComplianceMonitor {
   async init() {
     console.log('[AI Compliance Checker by BEYONDER] Initialized on', this.platforms.name);
 
+    // v2.10.7 FIX: Storage-Listener ZUERST registrieren (MUSS immer aktiv sein,
+    // auch wenn Extension deaktiviert ist, damit Re-Aktivierung auf ALLEN Tabs funktioniert)
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (namespace === 'local' && changes.aicc_extension_enabled) {
+        const newValue = changes.aicc_extension_enabled.newValue;
+        console.log('[AI Compliance Checker] Extension enabled status changed:', newValue);
+
+        if (newValue === false) {
+          this.stopMonitoring();
+        } else {
+          this.startMonitoring();
+        }
+      }
+    });
+
     // v2.8.1: Prüfe ob Extension aktiviert ist (default: true)
     try {
       const result = await chrome.storage.local.get('aicc_extension_enabled');
@@ -56,22 +71,6 @@ class ComplianceMonitor {
     } else {
       this.startMonitoring();
     }
-
-    // v2.8.1: Lausche auf Storage-Änderungen um Extension dynamisch zu deaktivieren/aktivieren
-    chrome.storage.onChanged.addListener((changes, namespace) => {
-      if (namespace === 'local' && changes.aicc_extension_enabled) {
-        const newValue = changes.aicc_extension_enabled.newValue;
-        console.log('[AI Compliance Checker] Extension enabled status changed:', newValue);
-
-        if (newValue === false) {
-          // Extension wurde deaktiviert - entferne Icons und stoppe Monitoring
-          this.stopMonitoring();
-        } else {
-          // Extension wurde aktiviert - starte Monitoring
-          this.startMonitoring();
-        }
-      }
-    });
   }
 
   /**
@@ -515,8 +514,21 @@ class ComplianceMonitor {
   handleInput(element) {
     clearTimeout(this.analyzeTimer);
 
-    // Dynamisches Debouncing basierend auf Textlänge
     const text = this.getElementText(element);
+
+    // v2.10.7 FIX: Sofort leeren wenn Text leer ist (kein Debounce nötig)
+    // Verhindert dass alte Detektionen im Icon/UI sichtbar bleiben
+    if (!text || text.trim().length === 0) {
+      const emptyAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
+      this.currentAnalysis.set(element, emptyAnalysis);
+      const info = this.monitoredElements.get(element);
+      if (info) info.lastAnalysis = emptyAnalysis;
+      this.updateStatusIcon();
+      this.highlightText(element, emptyAnalysis);
+      return;
+    }
+
+    // Dynamisches Debouncing basierend auf Textlänge
     const textLength = text.length;
 
     // Performance-Optimierung: Längeres Debouncing bei langem Text
@@ -603,6 +615,10 @@ class ComplianceMonitor {
     // Temporär: Status auf safe setzen
     const tempAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
     this.currentAnalysis.set(element, tempAnalysis);
+
+    // v2.10.7 FIX: AUCH lastAnalysis aktualisieren, da updateStatusIcon() davon liest
+    const info = this.monitoredElements.get(element);
+    if (info) info.lastAnalysis = tempAnalysis;
 
     // SOFORT UI aktualisieren (Icon + Highlights löschen)
     this.updateStatusIcon();
@@ -1505,7 +1521,7 @@ class ComplianceMonitor {
     allDetections.sort((a, b) => a.start - b.start);
 
     // Erstelle Markdown-Report
-    let report = `# AI Compliance Checker - Validierungsreport v2.10.6
+    let report = `# AI Compliance Checker - Validierungsreport v2.10.7
 
 ## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
@@ -1852,6 +1868,10 @@ Prüfe ob folgende Kategorien übersehen wurden:
           const tempAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
           this.currentAnalysis.set(element, tempAnalysis);
 
+          // v2.10.7 FIX: AUCH lastAnalysis aktualisieren, da updateStatusIcon() davon liest
+          const infoModal = this.monitoredElements.get(element);
+          if (infoModal) infoModal.lastAnalysis = tempAnalysis;
+
           // Wenn Submit-Button übergeben wurde, klicke darauf
           if (submitButton) {
             // v2.10.5: Keine Attribut-Manipulation mehr nötig - currentlySubmitting verhindert Re-Trigger
@@ -1931,6 +1951,20 @@ Prüfe ob folgende Kategorien übersehen wurden:
   }
 
   /**
+   * v2.10.7: Prüft ob Submit-Buttons dynamisch ersetzt wurden und hängt Handler neu an
+   * Plattformen wie ChatGPT ersetzen Buttons häufig im DOM
+   */
+  reattachSubmitButtons() {
+    for (const [element] of this.monitoredElements.entries()) {
+      if (!document.contains(element)) continue;
+      const submitButton = this.findSubmitButton(element);
+      if (submitButton && !submitButton.hasAttribute('data-aicc-monitored')) {
+        this.attachSubmitButtonHandler(element);
+      }
+    }
+  }
+
+  /**
    * Beobachtet DOM für neue Eingabefelder
    */
   observeDOM() {
@@ -1939,6 +1973,7 @@ Prüfe ob folgende Kategorien übersehen wurden:
       clearTimeout(this.observerTimeout);
       this.observerTimeout = setTimeout(() => {
         this.findAndMonitorInputs();
+        this.reattachSubmitButtons(); // v2.10.7: Submit-Buttons re-attachen
       }, 200);
     });
 
@@ -1950,6 +1985,7 @@ Prüfe ob folgende Kategorien übersehen wurden:
     // Zusätzlich: Prüfe regelmäßig auf neue Felder (Fallback)
     setInterval(() => {
       this.findAndMonitorInputs();
+      this.reattachSubmitButtons(); // v2.10.7: Submit-Buttons re-attachen
     }, 2000);
   }
 
