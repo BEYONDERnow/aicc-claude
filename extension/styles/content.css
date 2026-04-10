@@ -1277,3 +1277,135 @@ body.aicc-modal-open .aicc-overlay-container {
 .aicc-code-content::-webkit-scrollbar-thumb:hover {
   background: #666666;
 }
+
+/* ===========================
+   v2.11.0 Anonymization Feature
+   =========================== */
+
+/* Anonymize Button (Modal) */
+.aicc-btn-anonymize {
+  background: linear-gradient(135deg, var(--beyonder-aquamarine) 0%, #00939a 100%);
+  color: var(--beyonder-white);
+  box-shadow: 0 4px 16px rgba(51, 208, 153, 0.35);
+  font-weight: 700;
+}
+
+.aicc-btn-anonymize:hover {
+  box-shadow: 0 6px 24px rgba(51, 208, 153, 0.5);
+  transform: translateY(-2px);
+}
+
+.aicc-btn-anonymize:focus {
+  box-shadow: 0 0 0 4px rgba(51, 208, 153, 0.3);
+}
+
+/* De-Anonymization Banner */
+.aicc-deanonymize-banner {
+  margin: 12px 0;
+  padding: 16px 20px;
+  background: rgba(51, 208, 153, 0.08);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 2px solid var(--beyonder-aquamarine);
+  border-radius: 14px;
+  font-family: var(--font-body);
+  animation: fadeIn 0.3s ease-out;
+  box-shadow: 0 4px 16px rgba(51, 208, 153, 0.15);
+}
+
+.aicc-deanonymize-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.aicc-deanonymize-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.aicc-deanonymize-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.aicc-deanonymize-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--beyonder-midnight);
+  line-height: 1.5;
+}
+
+.aicc-deanonymize-text strong {
+  font-weight: 700;
+  color: var(--beyonder-aquamarine);
+}
+
+.aicc-deanonymize-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* De-Anonymize Button */
+.aicc-btn-deanonymize {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, var(--beyonder-aquamarine) 0%, #00939a 100%);
+  color: var(--beyonder-white);
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(51, 208, 153, 0.3);
+}
+
+.aicc-btn-deanonymize:hover {
+  box-shadow: 0 4px 16px rgba(51, 208, 153, 0.45);
+  transform: translateY(-1px);
+}
+
+/* Discard Mapping Button */
+.aicc-btn-discard-mapping {
+  padding: 10px 20px;
+  background: var(--beyonder-white);
+  color: var(--beyonder-grey-dark);
+  border: 1.5px solid var(--beyonder-grey-light);
+  border-radius: 10px;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.aicc-btn-discard-mapping:hover {
+  background: var(--beyonder-white-smoke);
+  border-color: var(--beyonder-grey-dark);
+  color: var(--beyonder-midnight);
+}
+
+/* Responsive: De-Anonymize Banner */
+@media (max-width: 600px) {
+  .aicc-deanonymize-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .aicc-deanonymize-actions {
+    justify-content: stretch;
+  }
+
+  .aicc-deanonymize-actions .aicc-btn-deanonymize,
+  .aicc-deanonymize-actions .aicc-btn-discard-mapping {
+    flex: 1;
+    text-align: center;
+  }
+}

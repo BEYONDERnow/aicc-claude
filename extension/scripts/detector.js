@@ -1020,6 +1020,13 @@ class ComplianceDetector {
       };
     }
 
+    // v2.10.8 PERF: Textlängen-Limit um Browser-Freeze bei sehr langen Texten zu verhindern
+    const MAX_TEXT_LENGTH = 15000;
+    if (text.length > MAX_TEXT_LENGTH) {
+      console.warn(`[AI Compliance Checker] Text truncated for analysis: ${text.length} → ${MAX_TEXT_LENGTH} chars`);
+      text = text.substring(0, MAX_TEXT_LENGTH);
+    }
+
     const detections = [];
     const highlightRanges = [];
 

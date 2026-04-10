@@ -28,6 +28,13 @@ class ComplianceMonitor {
     // v2.10.5 FIX: Track elements we're currently submitting to prevent infinite loops
     this.currentlySubmitting = new WeakSet();
 
+    // v2.11.0: Anonymizer Referenz (globale Instanz aus anonymizer.js)
+    this.anonymizer = typeof textAnonymizer !== 'undefined' ? textAnonymizer : null;
+
+    // v2.11.0: Response Observer für De-Anonymisierung
+    this.responseObserver = null;
+    this.deanonymizeBanners = new WeakSet();
+
     this.init();
   }
 
@@ -36,6 +43,21 @@ class ComplianceMonitor {
    */
   async init() {
     console.log('[AI Compliance Checker by BEYONDER] Initialized on', this.platforms.name);
+
+    // v2.10.7 FIX: Storage-Listener ZUERST registrieren (MUSS immer aktiv sein,
+    // auch wenn Extension deaktiviert ist, damit Re-Aktivierung auf ALLEN Tabs funktioniert)
+    chrome.storage.onChanged.addListener((changes, namespace) => {
+      if (namespace === 'local' && changes.aicc_extension_enabled) {
+        const newValue = changes.aicc_extension_enabled.newValue;
+        console.log('[AI Compliance Checker] Extension enabled status changed:', newValue);
+
+        if (newValue === false) {
+          this.stopMonitoring();
+        } else {
+          this.startMonitoring();
+        }
+      }
+    });
 
     // v2.8.1: Prüfe ob Extension aktiviert ist (default: true)
     try {
@@ -56,22 +78,6 @@ class ComplianceMonitor {
     } else {
       this.startMonitoring();
     }
-
-    // v2.8.1: Lausche auf Storage-Änderungen um Extension dynamisch zu deaktivieren/aktivieren
-    chrome.storage.onChanged.addListener((changes, namespace) => {
-      if (namespace === 'local' && changes.aicc_extension_enabled) {
-        const newValue = changes.aicc_extension_enabled.newValue;
-        console.log('[AI Compliance Checker] Extension enabled status changed:', newValue);
-
-        if (newValue === false) {
-          // Extension wurde deaktiviert - entferne Icons und stoppe Monitoring
-          this.stopMonitoring();
-        } else {
-          // Extension wurde aktiviert - starte Monitoring
-          this.startMonitoring();
-        }
-      }
-    });
   }
 
   /**
@@ -83,6 +89,9 @@ class ComplianceMonitor {
 
     // Beobachte DOM-Änderungen für dynamisch hinzugefügte Elemente
     this.observeDOM();
+
+    // v2.11.0: Starte Response-Observer für De-Anonymisierung
+    this.observeAIResponses();
   }
 
   /**
@@ -515,8 +524,21 @@ class ComplianceMonitor {
   handleInput(element) {
     clearTimeout(this.analyzeTimer);
 
-    // Dynamisches Debouncing basierend auf Textlänge
     const text = this.getElementText(element);
+
+    // v2.10.7 FIX: Sofort leeren wenn Text leer ist (kein Debounce nötig)
+    // Verhindert dass alte Detektionen im Icon/UI sichtbar bleiben
+    if (!text || text.trim().length === 0) {
+      const emptyAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
+      this.currentAnalysis.set(element, emptyAnalysis);
+      const info = this.monitoredElements.get(element);
+      if (info) info.lastAnalysis = emptyAnalysis;
+      this.updateStatusIcon();
+      this.highlightText(element, emptyAnalysis);
+      return;
+    }
+
+    // Dynamisches Debouncing basierend auf Textlänge
     const textLength = text.length;
 
     // Performance-Optimierung: Längeres Debouncing bei langem Text
@@ -603,6 +625,10 @@ class ComplianceMonitor {
     // Temporär: Status auf safe setzen
     const tempAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
     this.currentAnalysis.set(element, tempAnalysis);
+
+    // v2.10.7 FIX: AUCH lastAnalysis aktualisieren, da updateStatusIcon() davon liest
+    const info = this.monitoredElements.get(element);
+    if (info) info.lastAnalysis = tempAnalysis;
 
     // SOFORT UI aktualisieren (Icon + Highlights löschen)
     this.updateStatusIcon();
@@ -1059,6 +1085,14 @@ class ComplianceMonitor {
       return;
     }
 
+    // v2.10.8 PERF: Cleanup verwaiste Overlay-Container (Memory Leak Fix)
+    for (const [el, container] of this.overlayContainers.entries()) {
+      if (!document.body.contains(el)) {
+        if (container.parentNode) container.parentNode.removeChild(container);
+        this.overlayContainers.delete(el);
+      }
+    }
+
     // Erstelle oder hole Overlay-Container für dieses Element
     let overlayContainer = this.overlayContainers.get(element);
 
@@ -1134,8 +1168,9 @@ class ComplianceMonitor {
    * Erstellt Overlay-Highlights basierend auf Range API
    */
   createHighlightOverlays(element, analysis, container) {
-    // v2.3.4: Verwende normalizeTextWithSpaces (konsistent mit getElementText)
-    const text = this.normalizeTextWithSpaces(element);
+    // v2.10.8 FIX: Offset-Berechnung MUSS konsistent mit getElementText() sein
+    // getElementText() nutzt innerText/value → keine synthetischen Spaces
+    // Vorher: normalizeTextWithSpaces() fügte Spaces ein → Offset-Drift bei langen Texten
 
     // TreeWalker zum Durchlaufen aller TextNodes
     const walker = document.createTreeWalker(
@@ -1146,21 +1181,10 @@ class ComplianceMonitor {
 
     let currentOffset = 0;
     const textNodes = [];
-    let previousNode = null;
 
-    // v2.3.4: Sammle alle TextNodes mit ihren Offsets (inkl. eingefügte Leerzeichen)
     let node;
     while (node = walker.nextNode()) {
       const nodeText = node.textContent;
-
-      // Prüfe ob Leerzeichen vor diesem Node eingefügt wurde
-      if (previousNode) {
-        const needsSpace = this.needsSpaceBetweenNodes(previousNode, node);
-        if (needsSpace) {
-          currentOffset += 1; // Berücksichtige eingefügtes Leerzeichen
-        }
-      }
-
       textNodes.push({
         node: node,
         start: currentOffset,
@@ -1168,7 +1192,6 @@ class ComplianceMonitor {
         text: nodeText
       });
       currentOffset += nodeText.length;
-      previousNode = node;
     }
 
     // Erstelle Overlays für jede Highlight-Range
@@ -1505,7 +1528,7 @@ class ComplianceMonitor {
     allDetections.sort((a, b) => a.start - b.start);
 
     // Erstelle Markdown-Report
-    let report = `# AI Compliance Checker - Validierungsreport v2.10.6
+    let report = `# AI Compliance Checker - Validierungsreport v2.11.0
 
 ## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
@@ -1689,7 +1712,12 @@ Prüfe ob folgende Kategorien übersehen wurden:
       return aSeverity - bSeverity;
     });
 
-    sortedGroups.forEach(([matchKey, detections]) => {
+    // v2.10.9 PERF: Begrenze angezeigte Einträge für schnelleres Modal-Rendering
+    const MAX_VISIBLE_ROWS = 20;
+    const totalGroups = sortedGroups.length;
+    const visibleGroups = sortedGroups.slice(0, MAX_VISIBLE_ROWS);
+
+    visibleGroups.forEach(([matchKey, detections]) => {
       // Nimm die höchste Severity
       const maxSeverity = detections.some(d => d.severity === 'critical') ? 'critical' : 'warning';
 
@@ -1713,6 +1741,16 @@ Prüfe ob folgende Kategorien übersehen wurden:
       html += '</tr>';
     });
 
+    // Hinweis wenn weitere Einträge vorhanden
+    if (totalGroups > MAX_VISIBLE_ROWS) {
+      const remaining = totalGroups - MAX_VISIBLE_ROWS;
+      html += `<tr><td colspan="4" style="text-align:center; padding:12px; color:#666; font-style:italic;">
+        ${this.currentLang === 'de'
+          ? `+ ${remaining} weitere Erkennung${remaining > 1 ? 'en' : ''} (nicht angezeigt)`
+          : `+ ${remaining} more detection${remaining > 1 ? 's' : ''} (not shown)`}
+      </td></tr>`;
+    }
+
     html += '</tbody></table>';
     return html;
   }
@@ -1729,12 +1767,15 @@ Prüfe ob folgende Kategorien übersehen wurden:
     this.isModalShown = true;
 
     // v2.7.0: Lade Developer Mode Setting
+    // v2.11.0: Lade auch Anonymisierungs-Setting
     let isDeveloperMode = false;
+    let isAnonymizationEnabled = true; // Default: true
     if (typeof chrome !== 'undefined' && chrome.storage?.local) {
       try {
-        const result = await chrome.storage.local.get(['aicc_developer_mode']);
+        const result = await chrome.storage.local.get(['aicc_developer_mode', 'aicc_anonymization_enabled']);
         isDeveloperMode = result.aicc_developer_mode || false;
-        console.log('[AI Compliance Checker] Developer Mode:', isDeveloperMode);
+        isAnonymizationEnabled = result.aicc_anonymization_enabled !== false; // Default: true
+        console.log('[AI Compliance Checker] Developer Mode:', isDeveloperMode, '| Anonymization:', isAnonymizationEnabled);
       } catch (error) {
         // Silently handle - developer mode defaults to false
       }
@@ -1743,7 +1784,8 @@ Prüfe ob folgende Kategorien übersehen wurden:
     // WICHTIG: Blende alle Highlight-Overlays aus während Modal offen ist
     document.body.classList.add('aicc-modal-open');
 
-    // v2.7.0: Conditional Report Section
+    // v2.10.9 PERF: Validation Report wird lazy geladen (erst bei Klick)
+    // Vorher: Report wurde sofort generiert (150+ String-Ops auf 7000+ chars = 1-3s)
     const reportSection = isDeveloperMode ? `
           <div class="aicc-validation-report-section">
             <h3>
@@ -1761,7 +1803,7 @@ Prüfe ob folgende Kategorien übersehen wurden:
                   ${this.currentLang === 'de' ? '📋 Kopieren' : '📋 Copy'}
                 </button>
               </div>
-              <pre class="aicc-code-content" id="aicc-validation-report"><code>${this.escapeHtml(this.generateValidationReport(analysis, element, isDeveloperMode))}</code></pre>
+              <pre class="aicc-code-content" id="aicc-validation-report"><code>${this.currentLang === 'de' ? 'Report wird geladen...' : 'Loading report...'}</code></pre>
             </div>
           </div>` : '';
 
@@ -1800,6 +1842,11 @@ Prüfe ob folgende Kategorien übersehen wurden:
             <button class="aicc-btn aicc-btn-secondary aicc-modal-cancel">
               ${this.currentLang === 'de' ? 'Abbrechen & Bearbeiten' : 'Cancel & Edit'}
             </button>
+            ${this.anonymizer && isAnonymizationEnabled ? `
+            <button class="aicc-btn aicc-btn-anonymize aicc-modal-anonymize">
+              ${this.currentLang === 'de' ? '🔒 Anonymisieren & Senden' : '🔒 Anonymize & Send'}
+            </button>
+            ` : ''}
             <button class="aicc-btn aicc-btn-warning aicc-modal-send" autofocus>
               ${this.currentLang === 'de' ? 'Warnung ignorieren & abschicken' : 'Ignore Warning & Send'}
             </button>
@@ -1809,6 +1856,17 @@ Prüfe ob folgende Kategorien übersehen wurden:
     `;
 
     document.body.appendChild(modal);
+
+    // v2.10.9 PERF: Validation Report lazy laden (nach Modal-Render)
+    if (isDeveloperMode) {
+      requestAnimationFrame(() => {
+        const reportEl = modal.querySelector('#aicc-validation-report code');
+        if (reportEl) {
+          const report = this.generateValidationReport(analysis, element, isDeveloperMode);
+          reportEl.textContent = report; // textContent ist sicher (kein XSS) und schneller als escapeHtml+innerHTML
+        }
+      });
+    }
 
     // Event Handlers
     const close = () => {
@@ -1837,6 +1895,15 @@ Prüfe ob folgende Kategorien übersehen wurden:
       }
     });
 
+    // v2.11.0: Anonymize button handler
+    const anonymizeBtn = modal.querySelector('.aicc-modal-anonymize');
+    if (anonymizeBtn) {
+      anonymizeBtn.addEventListener('click', () => {
+        close();
+        this.anonymizeAndSubmit(element, analysis, submitButton);
+      });
+    }
+
     const sendBtn = modal.querySelector('.aicc-modal-send');
     if (sendBtn) {
       sendBtn.addEventListener('click', () => {
@@ -1851,6 +1918,10 @@ Prüfe ob folgende Kategorien übersehen wurden:
           // Temporär: Analysestatus auf "safe" setzen, damit unser Handler nicht nochmal greift
           const tempAnalysis = { status: 'safe', detections: [], highlightRanges: [] };
           this.currentAnalysis.set(element, tempAnalysis);
+
+          // v2.10.7 FIX: AUCH lastAnalysis aktualisieren, da updateStatusIcon() davon liest
+          const infoModal = this.monitoredElements.get(element);
+          if (infoModal) infoModal.lastAnalysis = tempAnalysis;
 
           // Wenn Submit-Button übergeben wurde, klicke darauf
           if (submitButton) {
@@ -1890,10 +1961,12 @@ Prüfe ob folgende Kategorien übersehen wurden:
     }
 
     // Copy button handler (v2.7.0: uses isDeveloperMode)
+    // v2.10.9: Lese Report aus DOM statt nochmals zu generieren
     const copyBtn = modal.querySelector('.aicc-copy-btn');
     if (copyBtn) {
       copyBtn.addEventListener('click', () => {
-        const reportText = this.generateValidationReport(analysis, element, isDeveloperMode);
+        const reportEl = modal.querySelector('#aicc-validation-report code');
+        const reportText = reportEl ? reportEl.textContent : this.generateValidationReport(analysis, element, isDeveloperMode);
         navigator.clipboard.writeText(reportText).then(() => {
           const originalText = copyBtn.textContent;
           copyBtn.textContent = this.currentLang === 'de' ? '✅ Kopiert!' : '✅ Copied!';
@@ -1914,6 +1987,202 @@ Prüfe ob folgende Kategorien übersehen wurden:
   }
 
   /**
+   * v2.11.0: Anonymisiert den Text und sendet ihn ab
+   * @param {HTMLElement} element - Das Textfeld
+   * @param {Object} analysis - Die aktuelle Analyse
+   * @param {HTMLElement} submitButton - Optional: Der Submit-Button
+   */
+  anonymizeAndSubmit(element, analysis, submitButton = null) {
+    if (!this.anonymizer) {
+      console.error('[AICC] Anonymizer nicht verfügbar');
+      return;
+    }
+
+    const originalText = this.getElementText(element);
+    console.log('[AICC Anonymize] Original:', originalText.substring(0, 100) + '...');
+
+    // Anonymisiere den Text
+    const anonymizedText = this.anonymizer.anonymize(originalText, analysis.detections);
+    console.log('[AICC Anonymize] Anonymisiert:', anonymizedText.substring(0, 100) + '...');
+
+    // Schreibe anonymisierten Text zurück ins Element
+    this.setElementText(element, anonymizedText);
+
+    // Warte kurz damit die Plattform die Textänderung registriert, dann Submit
+    setTimeout(() => {
+      this.simulateSubmit(element);
+    }, 150);
+  }
+
+  /**
+   * v2.11.0: Setzt Text in ein Element (textarea oder contentEditable)
+   * @param {HTMLElement} element - Das Textfeld
+   * @param {string} text - Der neue Text
+   */
+  setElementText(element, text) {
+    if (element.contentEditable === 'true') {
+      // ContentEditable: Setze via innerText + Input-Event
+      element.innerText = text;
+
+      // Trigger Input-Event damit die Plattform die Änderung registriert
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      // Textarea: Setze via value
+      element.value = text;
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
+  /**
+   * v2.11.0: Beobachtet KI-Antworten für De-Anonymisierung
+   * Wird bei startMonitoring() aktiviert
+   */
+  observeAIResponses() {
+    if (!this.anonymizer) return;
+    if (this.responseObserver) return; // Bereits aktiv
+
+    // Platform-spezifische Selektoren für KI-Antworten
+    const responseSelectors = this._getResponseSelectors();
+    if (responseSelectors.length === 0) return;
+
+    // Prüfe regelmäßig auf neue Antworten mit aktivem Mapping
+    const checkForResponses = () => {
+      if (!this.anonymizer.hasMapping()) return;
+
+      for (const selector of responseSelectors) {
+        const responses = document.querySelectorAll(selector);
+        responses.forEach(responseEl => {
+          // Nur neue Antworten ohne Banner verarbeiten
+          if (!this.deanonymizeBanners.has(responseEl) && this._containsPlaceholders(responseEl)) {
+            this.showDeanonymizeBanner(responseEl);
+            this.deanonymizeBanners.add(responseEl);
+          }
+        });
+      }
+    };
+
+    // MutationObserver für neue Antwort-Elemente
+    this.responseObserver = new MutationObserver(() => {
+      // Debounced check
+      clearTimeout(this._responseCheckTimer);
+      this._responseCheckTimer = setTimeout(checkForResponses, 500);
+    });
+
+    this.responseObserver.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // Auch periodisch prüfen (Fallback)
+    this._responseCheckInterval = setInterval(checkForResponses, 3000);
+
+    console.log('[AICC] AI Response Observer gestartet');
+  }
+
+  /**
+   * v2.11.0: Gibt platform-spezifische Selektoren für KI-Antworten zurück
+   * @returns {string[]}
+   */
+  _getResponseSelectors() {
+    const name = this.platforms.name;
+    if (name === 'ChatGPT') {
+      return [
+        'div[data-message-author-role="assistant"]',
+        '.markdown.prose',
+        'div.agent-turn'
+      ];
+    } else if (name === 'Claude') {
+      return [
+        'div.font-claude-message',
+        'div[data-is-streaming]',
+        '.prose'
+      ];
+    } else if (name === 'Gemini') {
+      return [
+        '.model-response-text',
+        '.response-container',
+        'message-content'
+      ];
+    }
+    return ['.prose', '[data-message-author-role="assistant"]'];
+  }
+
+  /**
+   * v2.11.0: Prüft ob ein Element Anonymisierungs-Platzhalter enthält
+   * @param {HTMLElement} element
+   * @returns {boolean}
+   */
+  _containsPlaceholders(element) {
+    const text = element.textContent || '';
+    // Prüfe auf Platzhalter-Pattern: [TYPE_N]
+    return /\[[A-ZÄÖÜ_]+_\d+\]/.test(text);
+  }
+
+  /**
+   * v2.11.0: Zeigt De-Anonymisierungs-Banner über einer KI-Antwort
+   * @param {HTMLElement} responseElement - Das Antwort-Element
+   */
+  showDeanonymizeBanner(responseElement) {
+    // Erstelle Banner
+    const banner = document.createElement('div');
+    banner.className = 'aicc-deanonymize-banner';
+
+    const mappingCount = this.anonymizer.getMappingCount();
+
+    banner.innerHTML = `
+      <div class="aicc-deanonymize-content">
+        <div class="aicc-deanonymize-info">
+          <span class="aicc-deanonymize-icon">🔒</span>
+          <span class="aicc-deanonymize-text">
+            ${this.currentLang === 'de'
+              ? `Diese Antwort enthält <strong>${mappingCount}</strong> anonymisierte Platzhalter`
+              : `This response contains <strong>${mappingCount}</strong> anonymized placeholders`}
+          </span>
+        </div>
+        <div class="aicc-deanonymize-actions">
+          <button class="aicc-btn aicc-btn-deanonymize">
+            ${this.currentLang === 'de' ? '🔓 Entanonymisieren' : '🔓 De-anonymize'}
+          </button>
+          <button class="aicc-btn aicc-btn-discard-mapping">
+            ${this.currentLang === 'de' ? '🗑️ Mapping löschen' : '🗑️ Discard mapping'}
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Einfügen vor dem Antwort-Element
+    responseElement.parentNode.insertBefore(banner, responseElement);
+
+    // Event Handlers
+    const deanonymizeBtn = banner.querySelector('.aicc-btn-deanonymize');
+    deanonymizeBtn.addEventListener('click', () => {
+      // Entanonymisiere den Antwort-Text im DOM
+      this.anonymizer.deanonymizeElement(responseElement);
+
+      // Entferne Banner
+      banner.remove();
+
+      // Lösche Mapping
+      this.anonymizer.clearMapping();
+
+      console.log('[AICC] Antwort entanonymisiert');
+    });
+
+    const discardBtn = banner.querySelector('.aicc-btn-discard-mapping');
+    discardBtn.addEventListener('click', () => {
+      // Lösche nur das Mapping, ohne Ersetzung
+      this.anonymizer.clearMapping();
+
+      // Entferne Banner
+      banner.remove();
+
+      console.log('[AICC] Mapping verworfen');
+    });
+
+    console.log('[AICC] De-Anonymisierungs-Banner angezeigt');
+  }
+
+  /**
    * Findet den Submit-Button
    */
   findSubmitButton(element) {
@@ -1931,6 +2200,20 @@ Prüfe ob folgende Kategorien übersehen wurden:
   }
 
   /**
+   * v2.10.7: Prüft ob Submit-Buttons dynamisch ersetzt wurden und hängt Handler neu an
+   * Plattformen wie ChatGPT ersetzen Buttons häufig im DOM
+   */
+  reattachSubmitButtons() {
+    for (const [element] of this.monitoredElements.entries()) {
+      if (!document.contains(element)) continue;
+      const submitButton = this.findSubmitButton(element);
+      if (submitButton && !submitButton.hasAttribute('data-aicc-monitored')) {
+        this.attachSubmitButtonHandler(element);
+      }
+    }
+  }
+
+  /**
    * Beobachtet DOM für neue Eingabefelder
    */
   observeDOM() {
@@ -1939,6 +2222,7 @@ Prüfe ob folgende Kategorien übersehen wurden:
       clearTimeout(this.observerTimeout);
       this.observerTimeout = setTimeout(() => {
         this.findAndMonitorInputs();
+        this.reattachSubmitButtons(); // v2.10.7: Submit-Buttons re-attachen
       }, 200);
     });
 
@@ -1950,6 +2234,7 @@ Prüfe ob folgende Kategorien übersehen wurden:
     // Zusätzlich: Prüfe regelmäßig auf neue Felder (Fallback)
     setInterval(() => {
       this.findAndMonitorInputs();
+      this.reattachSubmitButtons(); // v2.10.7: Submit-Buttons re-attachen
     }, 2000);
   }
 
@@ -2013,10 +2298,12 @@ Prüfe ob folgende Kategorien übersehen wurden:
   /**
    * HTML escapen
    */
+  // v2.10.9 PERF: Wiederverwendbares Element statt 200+ neue DOM-Nodes pro Modal
+  #escapeDiv = document.createElement('div');
+
   escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    this.#escapeDiv.textContent = text;
+    return this.#escapeDiv.innerHTML;
   }
 }
 

@@ -127,6 +127,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // v2.11.0: Anonymization Toggle
+  const anonymizationToggle = document.getElementById('anonymization-toggle');
+
+  if (anonymizationToggle) {
+    // Load current setting (default: true)
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      try {
+        const result = await chrome.storage.local.get([STORAGE_KEYS.ANONYMIZATION_ENABLED]);
+        const isAnonymizationEnabled = result[STORAGE_KEYS.ANONYMIZATION_ENABLED] !== false; // Default: true
+        anonymizationToggle.checked = isAnonymizationEnabled;
+        console.log('[AI Compliance Checker] Anonymization:', isAnonymizationEnabled);
+      } catch (error) {
+        console.error('[AI Compliance Checker] Error loading anonymization setting:', error);
+      }
+    }
+
+    // Save on change
+    anonymizationToggle.addEventListener('change', async (e) => {
+      const isEnabled = e.target.checked;
+      if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+        try {
+          await chrome.storage.local.set({ [STORAGE_KEYS.ANONYMIZATION_ENABLED]: isEnabled });
+          console.log('[AI Compliance Checker] Anonymization updated:', isEnabled);
+
+          // Visual feedback
+          const settingInfo = anonymizationToggle.closest('.setting-item').querySelector('.setting-info p');
+          const originalText = settingInfo.textContent;
+          settingInfo.textContent = isEnabled
+            ? '✅ Aktiviert - Platzhalter werden vor dem Senden eingesetzt'
+            : '✅ Deaktiviert';
+          settingInfo.style.color = 'var(--status-ok)';
+
+          setTimeout(() => {
+            settingInfo.textContent = originalText;
+            settingInfo.style.color = '';
+          }, 2000);
+        } catch (error) {
+          console.error('[AI Compliance Checker] Error saving anonymization setting:', error);
+        }
+      }
+    });
+  }
+
   // Feedback Button
   const feedbackButton = document.getElementById('feedback-button');
 
