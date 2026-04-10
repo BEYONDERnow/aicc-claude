@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.10.9** • by BEYONDER
+**Version 2.11.1** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -15,18 +15,19 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.10.5 (Aktuell) - 2025-11-14
+### Version 2.11.1 (Aktuell) - 2026-04-10
 
-**🐛 Kritische Bugfixes: Plugin-Deaktivierung & UI-Verbesserung**
+**🐛 Storage-Fehler, Toggle-Bug & Performance**
 
-#### 🚀 Fixes
-- **Plugin-Deaktivierung wirkt jetzt auf ALLEN Plattformen** (ChatGPT, Claude, Gemini)
-  - Problem behoben: Deaktivierung funktionierte nur auf ChatGPT
-  - Lösung: Message Broadcasting an alle Tabs + sofortige Reaktion
-- **Toggle-Switch verschoben**: Jetzt direkt neben Status-Display für bessere Sichtbarkeit
-- **Instant-Deaktivierung**: Kein Tab-Reload mehr nötig
+- **Storage-Fehler behoben**: Anonymizer kann jetzt zuverlässig auf `chrome.storage.session` zugreifen
+- **Toggle-Deaktivierung repariert**: Extension lässt sich korrekt über den Popup-Toggle deaktivieren (Event-Listener, Observer und Intervals werden sauber aufgeräumt)
+- **Performance verbessert**: DOM-Polling reduziert, zentrale Cleanup-Methode verhindert doppelte Observer
 
-> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#2105---2025-11-14)
+### Version 2.11.0 - 2026-04-10
+
+**Anonymisierungs-Feature**: Lokale Anonymisierung/Entanonymisierung von erkannten sensiblen Daten
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
 ---
 
@@ -1005,4 +1006,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.10.9** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!
+**Version 2.11.1** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!

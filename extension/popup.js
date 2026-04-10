@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!isSupported) {
           // Open GitHub Issues directly if not on supported platform
           chrome.tabs.create({
-            url: 'https://github.com/chrisbeyeler/aicc-claude/issues/new?labels=beta-feedback'
+            url: 'https://github.com/BEYONDERnow/aicc-claude/issues/new?labels=beta-feedback'
           });
           window.close();
           return;
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('[AI Compliance Checker] Error opening feedback modal:', error);
         // Fallback: Open GitHub Issues
         chrome.tabs.create({
-          url: 'https://github.com/chrisbeyeler/aicc-claude/issues/new?labels=beta-feedback'
+          url: 'https://github.com/BEYONDERnow/aicc-claude/issues/new?labels=beta-feedback'
         });
         window.close();
       }

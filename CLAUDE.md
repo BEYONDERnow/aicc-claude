@@ -1853,7 +1853,7 @@ git push
 - Check git history for context on specific code
 
 **For Human Contributors:**
-- GitHub Issues: https://github.com/chrisbeyeler/aicc-claude/issues
+- GitHub Issues: https://github.com/BEYONDERnow/aicc-claude/issues
 - Website: https://beyonder.ch
 
 ---

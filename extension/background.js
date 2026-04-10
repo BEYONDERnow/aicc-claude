@@ -7,6 +7,15 @@
 
 console.log('[AICC Service Worker] Initialized');
 
+// chrome.storage.session für Content Scripts freigeben (MV3 Requirement)
+// Ohne diesen Aufruf erhalten Content Scripts "Access to storage is not allowed from this context"
+try {
+  chrome.storage.session.setAccessLevel({ accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS' });
+  console.log('[AICC Service Worker] Session storage access level set for content scripts');
+} catch (error) {
+  console.warn('[AICC Service Worker] Could not set session storage access level:', error);
+}
+
 /**
  * Message Listener für Content Script
  */

@@ -84,6 +84,9 @@ class ComplianceMonitor {
    * Startet die Überwachung
    */
   startMonitoring() {
+    // Verhindere doppelte Observer/Intervals bei erneutem Start
+    this._cleanupTimers();
+
     // Finde und überwache Eingabefelder
     this.findAndMonitorInputs();
 
@@ -114,22 +117,63 @@ class ComplianceMonitor {
     });
     this.overlayContainers.clear();
 
-    // Stoppe DOM Observer
-    if (this.observer) {
-      this.observer.disconnect();
-      this.observer = null;
-    }
+    // Stoppe alle Timer und Observer
+    this._cleanupTimers();
 
-    // Entferne Event Listener von monitored elements
-    this.monitoredElements.forEach((listeners, element) => {
-      // Event Listener werden automatisch entfernt wenn Element nicht mehr referenziert wird
+    // Entferne Event Listener und per-Element Observer
+    this.monitoredElements.forEach((info, element) => {
+      if (info.observer) {
+        info.observer.disconnect();
+      }
+      if (info.inputHandler) element.removeEventListener('input', info.inputHandler);
+      if (info.keydownHandler) element.removeEventListener('keydown', info.keydownHandler, { capture: true });
+      if (info.pasteHandler) element.removeEventListener('paste', info.pasteHandler);
     });
     this.monitoredElements.clear();
 
     // Leere alle Analysen
     this.currentAnalysis.clear();
 
+    // Entferne De-Anonymisierungs-Banner
+    document.querySelectorAll('.aicc-deanonymize-banner').forEach(el => el.remove());
+
     console.log('[AI Compliance Checker] Monitoring stopped');
+  }
+
+  /**
+   * Räumt alle Timer, Intervals und Observer auf
+   */
+  _cleanupTimers() {
+    // DOM Observer
+    if (this._domObserver) {
+      this._domObserver.disconnect();
+      this._domObserver = null;
+    }
+
+    // Response Observer
+    if (this.responseObserver) {
+      this.responseObserver.disconnect();
+      this.responseObserver = null;
+    }
+
+    // Intervals
+    if (this._domPollInterval) {
+      clearInterval(this._domPollInterval);
+      this._domPollInterval = null;
+    }
+    if (this._filePollInterval) {
+      clearInterval(this._filePollInterval);
+      this._filePollInterval = null;
+    }
+    if (this._responseCheckInterval) {
+      clearInterval(this._responseCheckInterval);
+      this._responseCheckInterval = null;
+    }
+
+    // Timeouts
+    clearTimeout(this.observerTimeout);
+    clearTimeout(this.analyzeTimer);
+    clearTimeout(this._responseCheckTimer);
   }
 
   /**
@@ -261,20 +305,28 @@ class ComplianceMonitor {
    * Hängt Event-Listener an ein Element
    */
   attachToElement(element) {
+    // Handler-Referenzen für späteres Entfernen
+    const inputHandler = () => this.handleInput(element);
+    const keydownHandler = (e) => this.handleKeyDown(element, e);
+    const pasteHandler = () => this.handlePaste(element);
+
     const info = {
       lastAnalysis: null,
       isContentEditable: element.contentEditable === 'true',
       originalContent: null,
-      observer: null
+      observer: null,
+      inputHandler,
+      keydownHandler,
+      pasteHandler
     };
 
     this.monitoredElements.set(element, info);
 
-    // Event Listener
-    element.addEventListener('input', () => this.handleInput(element));
+    // Event Listener (Referenzen gespeichert für Cleanup)
+    element.addEventListener('input', inputHandler);
     // Wichtig: capture:true damit unser Handler vor ChatGPT's Handler greift
-    element.addEventListener('keydown', (e) => this.handleKeyDown(element, e), { capture: true });
-    element.addEventListener('paste', () => this.handlePaste(element));
+    element.addEventListener('keydown', keydownHandler, { capture: true });
+    element.addEventListener('paste', pasteHandler);
 
     console.log('[AICC] Attached event listeners to element:', element.tagName, element.className || element.id || '(no id/class)');
 
@@ -459,8 +511,9 @@ class ComplianceMonitor {
     // Initial attachment
     attachFileListener();
 
-    // Wiederhole alle 2 Sekunden (falls File-Input dynamisch hinzugefügt wird)
-    setInterval(attachFileListener, 2000);
+    // Wiederhole (Fallback falls File-Input dynamisch hinzugefügt wird)
+    // Interval-ID speichern für Cleanup bei stopMonitoring
+    this._filePollInterval = setInterval(attachFileListener, 5000);
   }
 
   /**
@@ -1528,7 +1581,7 @@ class ComplianceMonitor {
     allDetections.sort((a, b) => a.start - b.start);
 
     // Erstelle Markdown-Report
-    let report = `# AI Compliance Checker - Validierungsreport v2.11.0
+    let report = `# AI Compliance Checker - Validierungsreport v2.11.1
 
 ## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.
@@ -2217,7 +2270,15 @@ Prüfe ob folgende Kategorien übersehen wurden:
    * Beobachtet DOM für neue Eingabefelder
    */
   observeDOM() {
-    const observer = new MutationObserver((mutations) => {
+    // Alte Observer/Intervals aufräumen falls vorhanden
+    if (this._domObserver) {
+      this._domObserver.disconnect();
+    }
+    if (this._domPollInterval) {
+      clearInterval(this._domPollInterval);
+    }
+
+    this._domObserver = new MutationObserver((mutations) => {
       // Debounce - kürzeres Intervall für schnellere Erkennung von Edit-Feldern
       clearTimeout(this.observerTimeout);
       this.observerTimeout = setTimeout(() => {
@@ -2226,16 +2287,16 @@ Prüfe ob folgende Kategorien übersehen wurden:
       }, 200);
     });
 
-    observer.observe(document.body, {
+    this._domObserver.observe(document.body, {
       childList: true,
       subtree: true
     });
 
-    // Zusätzlich: Prüfe regelmäßig auf neue Felder (Fallback)
-    setInterval(() => {
+    // Fallback-Poll (seltener da MutationObserver zuverlässiger ist)
+    this._domPollInterval = setInterval(() => {
       this.findAndMonitorInputs();
-      this.reattachSubmitButtons(); // v2.10.7: Submit-Buttons re-attachen
-    }, 2000);
+      this.reattachSubmitButtons();
+    }, 5000); // 5s statt 2s - MutationObserver deckt den Normalfall ab
   }
 
   /**
