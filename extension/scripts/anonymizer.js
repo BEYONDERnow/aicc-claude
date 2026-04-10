@@ -297,25 +297,17 @@ class TextAnonymizer {
    * Session-Storage lebt nur so lange wie der Browser geöffnet ist
    */
   async _saveMapping() {
+    const data = {
+      aicc_anonymization_mapping: Object.fromEntries(this.mapping),
+      aicc_anonymization_active: this.hasActiveMapping,
+      aicc_anonymization_timestamp: Date.now()
+    };
+
+    const storage = await this._getStorage();
+    if (!storage) return;
+
     try {
-      if (typeof chrome !== 'undefined' && chrome.storage?.session) {
-        const data = {
-          aicc_anonymization_mapping: Object.fromEntries(this.mapping),
-          aicc_anonymization_active: this.hasActiveMapping,
-          aicc_anonymization_timestamp: Date.now()
-        };
-        await chrome.storage.session.set(data);
-        console.log('[AICC Anonymizer] Mapping in Session-Storage gespeichert');
-      } else if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-        // Fallback auf local storage wenn session nicht verfügbar
-        const data = {
-          aicc_anonymization_mapping: Object.fromEntries(this.mapping),
-          aicc_anonymization_active: this.hasActiveMapping,
-          aicc_anonymization_timestamp: Date.now()
-        };
-        await chrome.storage.local.set(data);
-        console.log('[AICC Anonymizer] Mapping in Local-Storage gespeichert (Fallback)');
-      }
+      await storage.set(data);
     } catch (error) {
       console.warn('[AICC Anonymizer] Konnte Mapping nicht speichern:', error);
     }
@@ -325,15 +317,10 @@ class TextAnonymizer {
    * Stellt das Mapping aus chrome.storage wieder her
    */
   async _restoreMapping() {
+    const storage = await this._getStorage();
+    if (!storage) return;
+
     try {
-      const storage = (typeof chrome !== 'undefined' && chrome.storage?.session)
-        ? chrome.storage.session
-        : (typeof chrome !== 'undefined' && chrome.storage?.local)
-          ? chrome.storage.local
-          : null;
-
-      if (!storage) return;
-
       const result = await storage.get([
         'aicc_anonymization_mapping',
         'aicc_anonymization_active',
@@ -369,23 +356,44 @@ class TextAnonymizer {
    * Entfernt gespeichertes Mapping aus Storage
    */
   async _removeStoredMapping() {
-    try {
-      const storage = (typeof chrome !== 'undefined' && chrome.storage?.session)
-        ? chrome.storage.session
-        : (typeof chrome !== 'undefined' && chrome.storage?.local)
-          ? chrome.storage.local
-          : null;
+    const storage = await this._getStorage();
+    if (!storage) return;
 
-      if (storage) {
-        await storage.remove([
-          'aicc_anonymization_mapping',
-          'aicc_anonymization_active',
-          'aicc_anonymization_timestamp'
-        ]);
-      }
+    try {
+      await storage.remove([
+        'aicc_anonymization_mapping',
+        'aicc_anonymization_active',
+        'aicc_anonymization_timestamp'
+      ]);
     } catch (error) {
       console.warn('[AICC Anonymizer] Konnte Mapping nicht entfernen:', error);
     }
+  }
+
+  /**
+   * Ermittelt verfügbaren Storage mit robuster Fallback-Logik.
+   * Probiert session zuerst (Daten sterben mit Browser-Session), fällt auf local zurück.
+   * @returns {Promise<chrome.storage.StorageArea|null>}
+   */
+  async _getStorage() {
+    if (typeof chrome === 'undefined' || !chrome.storage) return null;
+
+    // Session-Storage bevorzugt (stirbt mit Browser-Session = ideal für Anonymisierungs-Mapping)
+    if (chrome.storage.session) {
+      try {
+        // Probe-Zugriff um "Access not allowed" zu erkennen
+        await chrome.storage.session.get([]);
+        return chrome.storage.session;
+      } catch {
+        // Fallthrough zu local
+      }
+    }
+
+    if (chrome.storage.local) {
+      return chrome.storage.local;
+    }
+
+    return null;
   }
 }
 
