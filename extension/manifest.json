@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "AI Compliance Checker",
-  "version": "2.11.1",
-  "description": "Schützt Ihre sensiblen Daten bei ChatGPT, Claude & Gemini. Erkennt Namen, Geburtsdaten, Standorte, Geldbeträge, Organisationen, E-Mails, IBAN uvm. 100% lokal, DSGVO-konform.",
+  "version": "2.12.0",
+  "description": "Schützt Ihre sensiblen Daten bei ChatGPT, Claude, Gemini & Copilot. Erkennt Namen, Geburtsdaten, Standorte, Geldbeträge, Organisationen, E-Mails, IBAN uvm. 100% lokal, DSGVO-konform.",
   "permissions": [
     "storage",
     "activeTab",
@@ -13,6 +13,8 @@
     "https://chatgpt.com/*",
     "https://gemini.google.com/*",
     "https://claude.ai/*",
+    "https://copilot.microsoft.com/*",
+    "https://m365.cloud.microsoft/*",
     "https://api.github.com/*"
   ],
   "content_scripts": [
@@ -21,7 +23,9 @@
         "https://chat.openai.com/*",
         "https://chatgpt.com/*",
         "https://gemini.google.com/*",
-        "https://claude.ai/*"
+        "https://claude.ai/*",
+        "https://copilot.microsoft.com/*",
+        "https://m365.cloud.microsoft/*"
       ],
       "js": [
         "dist/detector.bundle.js",

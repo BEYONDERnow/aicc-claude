@@ -18,6 +18,26 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.12.0] - 2026-08-13
+
+### 🟣 Microsoft Copilot Support
+
+#### Zusammenfassung
+
+Neue Plattform: Microsoft Copilot Web wird jetzt erkannt und geprüft, sowohl die Consumer-Oberfläche (`copilot.microsoft.com`) als auch Microsoft 365 Copilot Chat (`m365.cloud.microsoft`).
+
+#### ✅ Neue Features
+
+- **Plattform-Erkennung Copilot**: `detectPlatform()` in `content.js` erkennt beide Copilot-Domains und nutzt die Fluent-UI-typischen Selektoren (`span[contenteditable="true"][role="textbox"]`, `button[aria-label="Senden"]`), verifiziert live gegen die eingeloggte M365-Copilot-Chat-Oberfläche
+- **Datei-Anhang-Erkennung**: „Anheften"/„Quellen hinzufügen"-Buttons werden wie bei den anderen Plattformen überwacht
+- **Manifest erweitert**: `host_permissions` und `content_scripts.matches` um `https://copilot.microsoft.com/*` und `https://m365.cloud.microsoft/*` ergänzt
+
+#### 🔵 Verifikation
+
+- Claude Web, ChatGPT und Gemini Web wurden live im Browser gegengeprüft (Content-Script aktiv, Analyse läuft, File-Input-Monitoring läuft) — keine Regression durch die Manifest-Änderung
+- Copilot-Selektoren wurden gegen die reale M365-Copilot-Chat-Oberfläche verifiziert (Eingabefeld-ID, Senden-Button-Label)
+
+
 ## [2.11.1] - 2026-04-10
 
 ### 🐛 Storage-Fehler, Toggle-Bug & Performance

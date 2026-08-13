@@ -271,6 +271,39 @@ class ComplianceMonitor {
           '[class*="file-card"]'
         ]
       };
+    } else if (hostname.includes('copilot.microsoft.com') || hostname.includes('m365.cloud.microsoft')) {
+      return {
+        name: 'Copilot',
+        inputSelectors: [
+          '#m365-chat-editor-target-element',
+          'span[contenteditable="true"][role="textbox"]',
+          'div[contenteditable="true"][role="textbox"]',
+          '[aria-label*="Nachricht an"]',
+          '[aria-label*="Message"]',
+          'div[contenteditable="true"]',
+          'textarea'
+        ],
+        submitSelectors: [
+          'button[aria-label="Senden"]',
+          'button[aria-label*="Send"]',
+          'button[aria-label*="Senden"]'
+        ],
+        // v2.11.2: File-Upload Detection
+        fileInputSelectors: [
+          'input[type="file"]',
+          'button[aria-label="Anheften"]',
+          'button[aria-label*="Anhängen"]',
+          'button[aria-label*="Attach"]',
+          'button[aria-label*="Quellen"]'
+        ],
+        attachedFilesSelectors: [
+          '[data-testid="attachment"]',
+          '.attachment',
+          '[class*="attachment"]',
+          '[class*="file-preview"]',
+          '[class*="file-card"]'
+        ]
+      };
     }
 
     return {
@@ -1581,7 +1614,7 @@ class ComplianceMonitor {
     allDetections.sort((a, b) => a.start - b.start);
 
     // Erstelle Markdown-Report
-    let report = `# AI Compliance Checker - Validierungsreport v2.11.1
+    let report = `# AI Compliance Checker - Validierungsreport v2.12.0
 
 ## 🎯 Rolle
 Du bist ein Experte für Datenschutz, DSGVO/DSG-Compliance und PII (Personally Identifiable Information) Erkennung.

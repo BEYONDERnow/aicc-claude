@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.11.1** • by BEYONDER
+**Version 2.12.0** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -15,7 +15,16 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.11.1 (Aktuell) - 2026-04-10
+### Version 2.12.0 (Aktuell) - 2026-08-13
+
+**🟣 Microsoft Copilot Support**
+
+- **Neue Plattform**: Microsoft Copilot Web wird erkannt und geprüft (`copilot.microsoft.com` sowie Microsoft 365 Copilot Chat unter `m365.cloud.microsoft`)
+- Selektoren live gegen die reale Copilot-Oberfläche verifiziert, Claude/ChatGPT/Gemini gegengeprüft (keine Regression)
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#2120---2026-08-13)
+
+### Version 2.11.1 - 2026-04-10
 
 **🐛 Storage-Fehler, Toggle-Bug & Performance**
 
@@ -610,6 +619,7 @@ Das Feedback-System funktioniert sofort im **Fallback-Modus** (öffnet GitHub Is
 - ✅ **ChatGPT** (inkl. Edit-Modus)
 - ✅ **Claude**
 - ✅ **Gemini**
+- ✅ **Microsoft Copilot** (copilot.microsoft.com & Microsoft 365 Copilot Chat)
 
 ---
 
@@ -645,7 +655,7 @@ Das Feedback-System funktioniert sofort im **Fallback-Modus** (öffnet GitHub Is
    ```
 
 5. **Fertig!** 🎉
-   - Besuchen Sie ChatGPT, Claude oder Gemini
+   - Besuchen Sie ChatGPT, Claude, Gemini oder Copilot
    - Der Compliance Checker überwacht automatisch Ihre Eingaben
 
 ### ⚙️ Build-System (v2.5.0+)
@@ -878,7 +888,7 @@ Der gesamte Code ist:
 ### Version 3.0 (Zukunft - 2025)
 
 - [ ] **Browser-übergreifend** (Firefox, Edge, Safari)
-- [ ] **Mehr Plattformen** (Microsoft Copilot, Perplexity, You.com)
+- [ ] **Mehr Plattformen** (Perplexity, You.com)
 - [ ] **Enterprise-Features** (zentrales Policy Management)
 - [ ] **Custom ML-Models** (Fine-tuning für spezifische Domänen)
 - [ ] **Audit-Logs** (Compliance-Reporting)
@@ -1006,4 +1016,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.11.1** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!
+**Version 2.12.0** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!
