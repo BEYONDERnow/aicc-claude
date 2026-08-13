@@ -1,6 +1,6 @@
 # 🛡️ AI Compliance Checker - Chrome Browser Extension
 
-**Version 2.12.0** • by BEYONDER
+**Version 2.12.1** • by BEYONDER
 
 Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteingaben in Echtzeit auf personenbezogene, sensible und firmenspezifische Daten prüft.
 
@@ -15,7 +15,16 @@ Ein lokaler KI-gestützter Compliance-Checker für KI-Plattformen, der Texteinga
 
 > **💡 Vollständige Änderungshistorie**: Siehe [CHANGELOG.md](./CHANGELOG.md)
 
-### Version 2.12.0 (Aktuell) - 2026-08-13
+### Version 2.12.1 (Aktuell) - 2026-08-13
+
+**🐛 Popup-Breite & fehlendes Copilot-Badge**
+
+- Weissraum rechts im Popup behoben (`html`-Breite fehlte, Viewport-Meta-Tag entfernt)
+- Copilot-Badge im Popup ergänzt
+
+> **📖 Details**: Siehe [CHANGELOG.md](./CHANGELOG.md#2121---2026-08-13)
+
+### Version 2.12.0 - 2026-08-13
 
 **🟣 Microsoft Copilot Support**
 
@@ -1016,4 +1025,4 @@ Bei Fragen, Problemen oder Feedback:
 
 **Made with ❤️ for Privacy & Compliance by BEYONDER**
 
-**Version 2.12.0** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!
+**Version 2.12.1** - Powered by [Compromise.js](https://github.com/spencermountain/compromise) - Critical Bugfixes & Validation!

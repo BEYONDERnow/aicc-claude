@@ -18,6 +18,13 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ---
 
+## [2.12.1] - 2026-08-13
+
+### 🐛 Popup-Breite & fehlendes Copilot-Badge
+
+- **Weissraum rechts im Popup behoben**: `html` hatte keine explizite Breite, nur `body` (`width: 400px`). Zusammen mit dem `viewport`-Meta-Tag (`width=device-width`, für ein festes 400px-Popup unnötig) konnte Chrome das Popup-Fenster breiter als den eigentlichen Inhalt berechnen. Fix: `html { width: 400px }` ergänzt, `viewport`-Meta-Tag entfernt.
+- **Copilot-Badge ergänzt**: Der Plattform-Bereich im Popup zeigte Copilot noch nicht an, obwohl v2.12.0 die Plattform bereits unterstützt.
+
 ## [2.12.0] - 2026-08-13
 
 ### 🟣 Microsoft Copilot Support
